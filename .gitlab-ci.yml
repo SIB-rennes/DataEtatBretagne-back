@@ -1,0 +1,26 @@
+stages:
+  - 🔨 build
+
+
+
+
+
+# job pour construction image docker
+docker-build:
+  image: docker:stable-dind
+  stage: 🔨 build
+  only:
+    - develop
+    - /^feature.*$/
+    - /^hotfix.*$/
+  variables:
+    BUILD_CONTEXT: "."
+    DOCKER_FILE: "Dockerfile"
+  script:
+    - export IMAGE="${REGISTRY_DOCKER}data-transform/${CI_COMMIT_REF_NAME}"
+    - echo $IMAGE
+    - docker build -f ${BUILD_CONTEXT}/Dockerfile -t ${IMAGE} ${BUILD_CONTEXT}
+    - echo ${REGISTRY_DOCKER_PWD} | docker login ${REGISTRY_DOCKER} -u ${REGISTRY_DOCKER_USER} --password-stdin
+    - docker tag ${IMAGE} ${IMAGE}:${CI_COMMIT_SHA:0:8}
+    - echo "push ${IMAGE}:latest" && docker push ${IMAGE}:latest
+    - echo "push ${IMAGE}:${CI_COMMIT_SHA:0:8}-snapshot" && docker push ${IMAGE}:${CI_COMMIT_SHA:0:8}-snapshot

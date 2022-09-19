@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: e1909379b371
+Revision ID: eab12c622c57
 Revises: 
-Create Date: 2022-09-19 10:11:19.917141
+Create Date: 2022-09-19 16:47:24.357247
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'e1909379b371'
+revision = 'eab12c622c57'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -83,12 +83,13 @@ def upgrade():
     sa.UniqueConstraint('code')
     )
     op.create_table('siret',
-    sa.Column('siret', sa.Integer(), nullable=False),
-    sa.Column('type_etablissement', sa.String(), nullable=True),
+    sa.Column('siret', sa.String(), nullable=False),
+    sa.Column('categorie_juridique', sa.String(), nullable=True),
     sa.Column('code_commune', sa.String(), nullable=True),
-    sa.Column('departement', sa.String(), nullable=True),
     sa.Column('denomination', sa.String(), nullable=True),
     sa.Column('adresse', sa.String(), nullable=True),
+    sa.Column('longitude', sa.Float(), nullable=True),
+    sa.Column('latitude', sa.Float(), nullable=True),
     sa.PrimaryKeyConstraint('siret')
     )
     op.create_table('data_chorus',
@@ -102,7 +103,7 @@ def upgrade():
     sa.Column('groupe_marchandise', sa.String(), nullable=False),
     sa.Column('compte_general', sa.String(), nullable=False),
     sa.Column('fournisseur_titulaire', sa.String(), nullable=False),
-    sa.Column('siret', sa.Integer(), nullable=False),
+    sa.Column('siret', sa.String(), nullable=False),
     sa.Column('date_modification_ej', sa.DateTime(), nullable=False),
     sa.Column('compte_budgetaire', sa.String(length=255), nullable=False),
     sa.Column('contrat_etat_region', sa.String(length=255), nullable=True),

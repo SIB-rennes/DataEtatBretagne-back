@@ -9,3 +9,8 @@ database:
 
 api:
   port: 5000
+
+api_siren : http://152.228.212.208:443/v3/etablissements/
+
+data:
+  chorus : "<path fichier chorus>"

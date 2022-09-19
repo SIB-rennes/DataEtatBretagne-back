@@ -1,7 +1,6 @@
 from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Float
 from app import db
 
-# TODO ajouter table REF SIREN
 class Chorus(db.Model):
     __tablename__ = 'data_chorus'
     # PK
@@ -16,7 +15,7 @@ class Chorus(db.Model):
     groupe_marchandise = Column(String, db.ForeignKey('ref_groupe_marchandise.code'), nullable=False)
     compte_general = Column(String, db.ForeignKey('ref_compte_general.code'), nullable=False)
     fournisseur_titulaire = Column(String, db.ForeignKey('ref_fournisseur_titulaire.code'), nullable=False)
-    siret = Column(Integer, db.ForeignKey('siret.siret'), nullable=False)
+    siret = Column(String, db.ForeignKey('siret.siret'), nullable=False)
 
     # autre colonnes
     date_modification_ej = Column(DateTime, nullable=False)
