@@ -1,5 +1,6 @@
 stages:
   - 🔨 build
+  - 🐣 deploy
 
 
 
@@ -21,6 +22,19 @@ docker-build:
     - echo $IMAGE
     - docker build -f ${BUILD_CONTEXT}/Dockerfile -t ${IMAGE} ${BUILD_CONTEXT}
     - echo ${REGISTRY_DOCKER_PWD} | docker login ${REGISTRY_DOCKER} -u ${REGISTRY_DOCKER_USER} --password-stdin
-    - docker tag ${IMAGE} ${IMAGE}:${CI_COMMIT_SHA:0:8}
+    - docker tag ${IMAGE} ${IMAGE}:${CI_COMMIT_SHA:0:8}-snapshot
     - echo "push ${IMAGE}:latest" && docker push ${IMAGE}:latest
     - echo "push ${IMAGE}:${CI_COMMIT_SHA:0:8}-snapshot" && docker push ${IMAGE}:${CI_COMMIT_SHA:0:8}-snapshot
+
+
+deploy-integ:
+  stage: 🐣 deploy
+  only:
+    - /^develop.*$/
+  when: manual
+  script:
+    - export IMAGE="${REGISTRY_DOCKER}data-transform/${CI_COMMIT_REF_NAME}"
+    - echo $IMAGE
+    - ssh ${USER_INTEG}@${SERVER_INTEG} "docker network create -d overlay --attachable app_network || true"
+    - ssh ${USER_INTEG}@${SERVER_INTEG} "export BRANCH=${CI_COMMIT_REF_NAME};export CI_COMMIT=${CI_COMMIT_SHA:0:8};"'export $(cat ~/stack-nocode/livraison/env-file-integ);docker stack deploy --with-registry-auth --compose-file ~/stack-nocode/compose/integ/data-transform.yml '"${STACK_NAME}"
+
