@@ -2,6 +2,7 @@ import logging
 import requests
 import pandas
 
+from datetime import datetime
 from flask_script import Command
 from flask import current_app
 
@@ -60,6 +61,7 @@ class ImportChorus(Command):
                     self._insert_chorus(chorus)
                 except Exception as e:
                     LOGGER.error("erreur index %s", index)
+                    LOGGER.error(e)
 
             # break
 
@@ -114,7 +116,6 @@ class ImportChorus(Command):
         return False
 
     def _insert_chorus(self, chorus_data):
-        LOGGER.info('[IMPORT][CHORUS] Ajout ligne chorus')
         chorus = Chorus(n_ej=chorus_data['n_ej'], n_poste_ej=chorus_data['n_poste_ej'],
                             programme=chorus_data['programme_code'],
                             domaine_fonctionnel=chorus_data['domaine_code'],
@@ -125,12 +126,13 @@ class ImportChorus(Command):
                             compte_general=chorus_data['compte_code'],
                             fournisseur_titulaire=chorus_data['Fournisseur_code'],
                             siret=chorus_data['siret'],
-                            date_modification_ej=chorus_data['date_modif'],
+                            date_modification_ej=datetime.strptime(chorus_data['date_modif'], '%d.%m.%Y'),
                             compte_budgetaire=chorus_data['compte_budgetaire'],
                             contrat_etat_region=chorus_data['contrat_etat_region'],
-                            montant= float(chorus_data['montant'].replace('\U00002013', '-').replace(',','.')))
+                            montant= float(str(chorus_data['montant']).replace('\U00002013', '-').replace(',','.')))
         try:
            db.session.add(chorus)
+           LOGGER.info('[IMPORT][CHORUS] Ajout ligne chorus')
            db.session.commit()
         except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
            LOGGER.error(e)
