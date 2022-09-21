@@ -16,7 +16,7 @@ from app.models.refs.fournisseur_titulaire import FournisseurTitulaire
 from app.models.refs.groupe_marchandise import GroupeMarchandise
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
-from app.models.siret import Siret
+from app.models.refs.siret import Siret
 
 CHORUS_COLUMN_NAME = ['programme_code','domaine_code','domaine_label','centre_cout_code','centre_cout_label',
                                              'ref_programmation_code','ref_programmation_label','n_ej','n_poste_ej','date_modif',
@@ -85,10 +85,10 @@ class ImportChorus(Command):
 
 
     def _check_siret(self, siret):
-        instance = db.session.query(Siret.Siret).filter_by(siret=siret).one_or_none()
+        instance = db.session.query(Siret).filter_by(code=str(siret)).one_or_none()
         if not instance:
             resp = requests.get(url=current_app.config['api_siren']+siret)
-            siret = Siret.Siret(siret=int(siret))
+            siret = Siret(code=str(siret))
             if resp.status_code != 200:
                 LOGGER.warning("[IMPORT][CHORUS] Siret %s non trouvé via l'api", siret)
             else :
@@ -140,7 +140,7 @@ class ImportChorus(Command):
                             groupe_marchandise=chorus_data['groupe_marchandise_code'],
                             compte_general=chorus_data['compte_code'],
                             fournisseur_titulaire=chorus_data['Fournisseur_code'],
-                            siret=chorus_data['siret'],
+                            siret=str(chorus_data['siret']),
                             date_modification_ej=datetime.strptime(chorus_data['date_modif'], '%d.%m.%Y'),
                             compte_budgetaire=chorus_data['compte_budgetaire'],
                             contrat_etat_region=chorus_data['contrat_etat_region'],
@@ -163,7 +163,7 @@ class ImportChorus(Command):
         chorus_to_update.groupe_marchandise=chorus_data['groupe_marchandise_code']
         chorus_to_update.compte_general=chorus_data['compte_code']
         chorus_to_update.fournisseur_titulaire=chorus_data['Fournisseur_code']
-        chorus_to_update.siret=chorus_data['siret']
+        chorus_to_update.siret=str(chorus_data['siret'])
         chorus_to_update.date_modification_ej=datetime.strptime(chorus_data['date_modif'], '%d.%m.%Y')
         chorus_to_update.compte_budgetaire=chorus_data['compte_budgetaire']
         chorus_to_update.contrat_etat_region=chorus_data['contrat_etat_region']

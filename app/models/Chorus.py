@@ -15,7 +15,7 @@ class Chorus(db.Model):
     groupe_marchandise = Column(String, db.ForeignKey('ref_groupe_marchandise.code'), nullable=False)
     compte_general = Column(String, db.ForeignKey('ref_compte_general.code'), nullable=False)
     fournisseur_titulaire = Column(String, db.ForeignKey('ref_fournisseur_titulaire.code'), nullable=False)
-    siret = Column(String, db.ForeignKey('siret.siret'), nullable=False)
+    siret = Column(String, db.ForeignKey('ref_siret.code'), nullable=False)
 
     # autre colonnes
     date_modification_ej = Column(DateTime, nullable=False)

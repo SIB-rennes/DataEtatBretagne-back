@@ -82,9 +82,9 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('code')
     )
-    op.create_table('siret',
+    op.create_table('ref_siret',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('siret', sa.String(), nullable=False),
+    sa.Column('code', sa.String(), nullable=False),
     sa.Column('categorie_juridique', sa.String(), nullable=True),
     sa.Column('code_commune', sa.String(), nullable=True),
     sa.Column('denomination', sa.String(), nullable=True),
@@ -92,7 +92,7 @@ def upgrade():
     sa.Column('longitude', sa.Float(), nullable=True),
     sa.Column('latitude', sa.Float(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('siret')
+    sa.UniqueConstraint('code')
     )
     op.create_table('data_chorus',
     sa.Column('n_ej', sa.String(), nullable=False),
@@ -118,7 +118,7 @@ def upgrade():
     sa.ForeignKeyConstraint(['localisation_interministerielle'], ['ref_localisation_interministerielle.code'], ),
     sa.ForeignKeyConstraint(['programme'], ['ref_code_programme.code'], ),
     sa.ForeignKeyConstraint(['referentiel_programmation'], ['ref_programmation.code'], ),
-    sa.ForeignKeyConstraint(['siret'], ['siret.siret'], ),
+    sa.ForeignKeyConstraint(['siret'], ['ref_siret.code'], ),
     sa.PrimaryKeyConstraint('n_ej', 'n_poste_ej')
     )
     # ### end Alembic commands ###
