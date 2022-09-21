@@ -17,6 +17,7 @@ RUN pip install -r requirements.txt
 COPY app/ ./app/
 COPY config/ ./config/
 COPY manage.py ./
+COPY migrations ./migrations
 RUN rm /appli/config/config_template.yml
 
 CMD ["python", "/appli/manage.py"]
