@@ -94,7 +94,7 @@ class ImportChorus(Command):
             else :
                 data = resp.json()
                 info = data['etablissement']
-                siret.type_etablissement=info['unite_legale']['categorie_juridique']
+                siret.categorie_juridique=info['unite_legale']['categorie_juridique']
                 siret.code_commune=info['code_commune']
                 siret.denomination=info['unite_legale']['denomination']
                 siret.adresse = info['geo_adresse']
