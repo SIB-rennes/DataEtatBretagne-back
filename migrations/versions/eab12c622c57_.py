@@ -83,6 +83,7 @@ def upgrade():
     sa.UniqueConstraint('code')
     )
     op.create_table('siret',
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('siret', sa.String(), nullable=False),
     sa.Column('categorie_juridique', sa.String(), nullable=True),
     sa.Column('code_commune', sa.String(), nullable=True),
@@ -90,7 +91,8 @@ def upgrade():
     sa.Column('adresse', sa.String(), nullable=True),
     sa.Column('longitude', sa.Float(), nullable=True),
     sa.Column('latitude', sa.Float(), nullable=True),
-    sa.PrimaryKeyConstraint('siret')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('siret')
     )
     op.create_table('data_chorus',
     sa.Column('n_ej', sa.String(), nullable=False),
