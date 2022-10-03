@@ -39,7 +39,7 @@ def upgrade():
 
     op.alter_column('ref_siret', 'code_commune',
                existing_type=sa.VARCHAR(),
-               nullable=False)
+               nullable=True)
     op.create_foreign_key(None, 'ref_siret', 'ref_commune_crte', ['code_commune'], ['code_commune'])
     # ### end Alembic commands ###
 
