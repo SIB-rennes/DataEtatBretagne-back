@@ -29,13 +29,16 @@ def upgrade():
     op.create_table('ref_commune_crte',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('code_commune', sa.String(), nullable=False),
-    sa.Column('code_crte', sa.String(), nullable=False),
+    sa.Column('code_crte', sa.String(), nullable=True),
     sa.Column('label_crte', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('code_commune')
     )
 
     _insert_ref()
+    # Cas où un code commune n'est pas présent dans le ref
+    op.execute("INSERT INTO ref_commune_crte (code_commune)"
+               "SELECT DISTINCT code_commune FROM ref_siret WHERE code_commune NOT IN ( SELECT code_commune FROM ref_commune_crte) ")
 
     op.alter_column('ref_siret', 'code_commune',
                existing_type=sa.VARCHAR(),
