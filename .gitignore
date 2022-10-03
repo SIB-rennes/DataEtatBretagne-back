@@ -1,3 +1,4 @@
 /.idea
 **/__pycache__
 /config/config.yml
+/migrations/data/ref_crte.csv

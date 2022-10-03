@@ -22,7 +22,7 @@ depends_on = None
 def upgrade():
     session = orm.Session(bind=op.get_bind())
     file = f'migrations/data/{revision}/code_programme_theme.csv'
-    df_programme = pandas.read_csv(file, sep=",", names=['code_programme', 'titre_programme','theme'],
+    df_programme = pandas.read_csv(file, sep=",", usecols=['code_programme', 'titre_programme','theme'],
                                   dtype={'code_programme': str, 'titre_programme': str, 'theme': str})
     try:
         for index, programme in df_programme.iterrows():
