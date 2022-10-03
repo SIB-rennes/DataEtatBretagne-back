@@ -9,7 +9,8 @@ class Siret(db.Model):
     # code siret
     code: str = Column(String, unique=True, nullable=False)
     categorie_juridique: str = Column(String)
-    code_commune: str = Column(String)
+    #FK
+    code_commune = Column(String, db.ForeignKey('ref_commune_crte.code_commune'), nullable=False)
     denomination = Column(String)
     adresse = Column(String)
     longitude= Column(db.Float)
