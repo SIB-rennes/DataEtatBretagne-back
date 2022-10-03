@@ -8,9 +8,11 @@ class Siret(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     # code siret
     code: str = Column(String, unique=True, nullable=False)
-    categorie_juridique: str = Column(String)
+
     #FK
     code_commune = Column(String, db.ForeignKey('ref_commune_crte.code_commune'), nullable=False)
+    categorie_juridique = Column(String, db.ForeignKey('ref_categorie_juridique.code'), nullable=True)
+
     denomination = Column(String)
     adresse = Column(String)
     longitude= Column(db.Float)
