@@ -9,14 +9,12 @@ import logging
 from app import create_app
 from flask_script import Manager
 
-from app.script import ImportChorus
 
 app_flask = create_app()
 manager = Manager(app_flask)
-manager.add_command('import', ImportChorus())
 
 if __name__ == "__main__":
 
-    logging.basicConfig(format='%(asctime)s.%(msecs)03d : %(levelname)s : %(message)s', datefmt='%Y-%m-%d %H:%M:%S', )
-    logging.getLogger("transform").setLevel(logging.INFO)
+    # logging.basicConfig(format='%(asctime)s.%(msecs)03d : %(levelname)s : %(message)s', datefmt='%Y-%m-%d %H:%M:%S', )
+    # logging.getLogger("transform").setLevel(logging.INFO)
     manager.run()

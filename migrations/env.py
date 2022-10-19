@@ -41,7 +41,7 @@ def run_migrations_offline():
     we don't even need a DBAPI to be available.
 
     Calls to context.execute() here emit the given string to the
-    script output.
+    tasks output.
 
     """
     url = config.get_main_option("sqlalchemy.url")
