@@ -30,7 +30,9 @@ docker-build:
 deploy-integ:
   stage: 🐣 deploy
   only:
-    - /^develop.*$/
+    - develop
+    - /^feature.*$/
+    - /^hotfix.*$/
   when: manual
   script:
     - export IMAGE="${REGISTRY_DOCKER}data-transform/${CI_COMMIT_REF_NAME}"

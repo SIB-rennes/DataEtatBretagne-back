@@ -20,4 +20,6 @@ COPY manage.py ./
 COPY migrations ./migrations
 RUN rm /appli/config/config_template.yml
 
-CMD ["python", "/appli/manage.py"]
+EXPOSE 80
+
+CMD ["waitress-serve","--port=80","--call", "app:create_app"]

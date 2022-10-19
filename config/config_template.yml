@@ -1,16 +1,11 @@
 DEBUG: true
 
-database:
-  DB_HOST: localhost
-  DB_PORT: '5432'
-  DB_USER: postgres
-  DB_PASSWORD: password
-  DB_NAME: CHORUS
+SQLALCHEMY_DATABASE_URI : "postgresql://postgres:password@localhost:5432/CHORUS"
 
-api:
-  port: 5000
+
+CELERY_BROKER_URL: 'redis://localhost:6379/1'
+result_backend: "postgresql://postgres:password@localhost:5432/tasks"
 
 api_siren : http://152.228.212.208:443/v3/etablissements/
 
-data:
-  chorus : "<path fichier chorus>"
+UPLOAD_FOLDER: "c:\\toWatch"
