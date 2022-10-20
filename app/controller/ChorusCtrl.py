@@ -40,6 +40,22 @@ class ChorusImport(Resource):
             return {"statut": 'le fichier n\'est pas un csv'}, 400
 
 
+
+parser_line = reqparse.RequestParser()
+parser_line.add_argument('json', type=str, help="ligne chorus à importer en json", required=True)
+@api.route('/import/line')
+class LineImport(Resource):
+
+    @api.expect(parser_line)
+    def post(self):
+        args = parser_line.parse_args()
+        json_line = args['json']
+        from app.tasks.import_chorus_tasks import import_line_chorus_ae
+        task = import_line_chorus_ae.delay(str(json_line),-1)
+        return jsonify({
+            "statut": f'Ligne récupéré. Demande d`import d\'une ligne chorus AE en cours (taches asynchrone id = {task.id}'})
+
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
