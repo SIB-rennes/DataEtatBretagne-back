@@ -6,6 +6,7 @@ import pandas
 
 from datetime import datetime
 
+import sqlalchemy.exc
 from celery import subtask
 from flask import current_app
 
@@ -33,6 +34,8 @@ LOGGER = logging.getLogger()
 
 celery = celeryapp.celery
 
+class ChorusException(Exception):
+    pass
 
 @celery.task(name='import_file_ae_chorus', bind=True)
 def import_file_ae_chorus(self, fichier):
@@ -56,10 +59,17 @@ def import_file_ae_chorus(self, fichier):
         raise e
 
 
-@celery.task(name='import_line_chorus_ae')
+@celery.task(name='import_line_chorus_ae', autoretry_for=(ChorusException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
 def import_line_chorus_ae(data_chorus, index):
     line = json.loads(data_chorus)
-    chorus_instance = _check_insert__update_chorus(line)
+    try :
+        chorus_instance = _check_insert__update_chorus(line)
+    except sqlalchemy.exc.OperationalError as o:
+        LOGGER.error("[IMPORT][CHORUS] Erreur index %s sur le check ligne chorus", index)
+        LOGGER.error(o)
+        raise ChorusException(o)
+
+
     if chorus_instance != False:
         try:
             _check_ref(CodeProgramme, **{'code': line['programme_code']})
