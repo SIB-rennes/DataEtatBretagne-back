@@ -1,8 +1,12 @@
 from flask import Blueprint
 from flask_restx import Api
 
-from app.proxy_nocodb.NococbCtrl import api as nocodbApi
+from app.proxy_nocodb.NococbCtrl import api as nsApi
 
-proxy_bp = Blueprint('proxy', __name__)
-proxyApi = Api(proxy_bp, doc='/doc', description="API proxy nocodb", title="API proxy nocodb")
-proxyApi.add_namespace(nocodbApi)
+
+def mount_blueprint(project):
+    proxy_bp = Blueprint(project, __name__)
+    proxy_api = Api(proxy_bp, doc='/doc', description="API proxy nocodb", title="API proxy nocodb")
+    proxy_api.add_namespace(nsApi)
+    proxy_api.description = f'API passe plats nocodb pour le projet {project}'
+    return proxy_bp

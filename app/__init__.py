@@ -11,7 +11,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from app import celeryapp
 from app.controller import api_v1
-from app.proxy_nocodb import proxy_bp
+from app.proxy_nocodb import mount_blueprint
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -49,7 +49,8 @@ def create_app(extra_config_settings={}):
 
     # flask_restx
     app.register_blueprint(api_v1, url_prefix='/')
-    app.register_blueprint(proxy_bp, url_prefix='/proxy')
+    mount_proxy_endpoint_nocodb(app)
+    # app.register_blueprint(proxy_bp, url_prefix='/proxy')
 
     return app
 
@@ -70,3 +71,7 @@ def read_config(app, extra_config_settings={}):
         app.config['SQLALCHEMY_ECHO'] = False
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+def mount_proxy_endpoint_nocodb(app):
+    for project in app.config['TOKEN_NOCO_DB']:
+        app.register_blueprint(mount_blueprint(project), url_prefix=f"/nocodb/{project}")

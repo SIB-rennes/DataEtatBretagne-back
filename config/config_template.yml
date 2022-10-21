@@ -10,4 +10,7 @@ api_siren : http://152.228.212.208:443/v3/etablissements/
 
 UPLOAD_FOLDER: "c:\\toWatch"
 
-NOCODB_URL : "https://nocode.csm.ovh/"
+NOCODB_URL : "<url>"
+
+TOKEN_NOCO_DB :
+  PROJET-NOCO : "<TOKEN>"
