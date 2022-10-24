@@ -4,7 +4,7 @@ from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
 from nocodb.nocodb import APIToken, NocoDBProject
 
-from app.proxy_nocodb.client.NocoDBRequestsCustomClient import NocoDBRequestsCustomClient
+from app.proxy_nocodb.client.NocoDBRequestsCustomClient import NocoDBRequestsCustomClient, get_auth_token
 
 args_get = reqparse.RequestParser()
 args_get.add_argument('sort', type=str, required=False, help="Champ à trier")
@@ -24,13 +24,7 @@ class NocoDb(Resource):
     def get(self, table, views):
         # le nom du projet correspond au nom du blueprint
         project = request.blueprint
-        API_TOKEN = None if project not in current_app.config['TOKEN_NOCO_DB'] else current_app.config['TOKEN_NOCO_DB'][
-            project]
-
-        if API_TOKEN is None:
-            abort(403, f"Clé API introuvable pour le projet {project}")
-
-        client = NocoDBRequestsCustomClient(APIToken(API_TOKEN), current_app.config['NOCODB_URL'])
+        client = build_client(project)
 
         params = build_params(args_get.parse_args())
         table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
@@ -43,14 +37,7 @@ class ExportCsv(Resource):
     @api.response(200, 'Success')
     def get(self, table, views):
         project = request.blueprint
-        API_TOKEN = None if project not in current_app.config['TOKEN_NOCO_DB'] else \
-            current_app.config['TOKEN_NOCO_DB'][project]
-
-        if API_TOKEN is None:
-            abort(403, f"Clé API introuvable pour le projet {project}")
-
-        client = NocoDBRequestsCustomClient(APIToken(API_TOKEN), current_app.config['NOCODB_URL'])
-
+        client = build_client(project)
         params = build_params(args_get.parse_args())
         table_rows = client.table_export_csv(NocoDBProject("noco", project), f'{table}/views/{views}',
                                              params=params)
@@ -60,6 +47,23 @@ class ExportCsv(Resource):
         response.headers["Content-Disposition"] = "attachment; filename=test.csv"
         response.headers["Content-type"] = "text/csv"
         return response
+
+
+
+def build_client(project) -> NocoDBRequestsCustomClient:
+    '''
+    Construit le client nocodb
+    :param project: nom du projet
+    :return:
+    '''
+    uri = current_app.config['NOCODB_URL']
+    email = current_app.config['NOCODB_TECH_LOGIN']
+    pwd = current_app.config['NOCODB_TECH_PWD']
+
+    if uri is None or email is None or pwd is None:
+        abort(403, f"Information manquante pour le projet {project}")
+
+    return NocoDBRequestsCustomClient(get_auth_token(uri, email, pwd), uri)
 
 def build_params(args):
     params = {
