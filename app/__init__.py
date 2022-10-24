@@ -73,5 +73,5 @@ def read_config(app, extra_config_settings={}):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 def mount_proxy_endpoint_nocodb(app):
-    for project in app.config['TOKEN_NOCO_DB']:
+    for project in app.config['NOCODB_PROJECT']:
         app.register_blueprint(mount_blueprint(project), url_prefix=f"/nocodb/{project}")
