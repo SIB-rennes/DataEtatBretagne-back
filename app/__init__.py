@@ -3,7 +3,6 @@
 import logging
 
 import yaml
-from celery import Celery
 from flask import Flask
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
@@ -11,7 +10,8 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 
 from app import celeryapp
-from app.controller import api
+from app.controller import api_v1
+from app.proxy_nocodb import mount_blueprint
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -48,7 +48,9 @@ def create_app(extra_config_settings={}):
     celeryapp.celery = celery
 
     # flask_restx
-    api.init_app(app)
+    app.register_blueprint(api_v1, url_prefix='/')
+    mount_proxy_endpoint_nocodb(app)
+    # app.register_blueprint(proxy_bp, url_prefix='/proxy')
 
     return app
 
@@ -69,3 +71,7 @@ def read_config(app, extra_config_settings={}):
         app.config['SQLALCHEMY_ECHO'] = False
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+def mount_proxy_endpoint_nocodb(app):
+    for project in app.config['TOKEN_NOCO_DB']:
+        app.register_blueprint(mount_blueprint(project), url_prefix=f"/nocodb/{project}")
