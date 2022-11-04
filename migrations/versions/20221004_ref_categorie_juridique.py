@@ -12,8 +12,8 @@ from sqlalchemy import orm
 from app.models.refs.categorie_juridique import CategorieJuridique
 
 # revision identifiers, used by Alembic.
-revision = '2deb826b5cdb'
-down_revision = '99811ad2865a'
+revision = '20221004_ref_categorie_juridique'
+down_revision = '20221003_ref_crte'
 branch_labels = None
 depends_on = None
 

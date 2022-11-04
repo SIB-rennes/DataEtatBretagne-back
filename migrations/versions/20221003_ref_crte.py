@@ -1,7 +1,7 @@
 """empty message
 
 Revision ID: 99811ad2865a
-Revises: 3c55e2610f54
+Revises: 20220929_ref_theme_label_programme
 Create Date: 2022-09-29 17:04:07.706585
 
 """
@@ -17,8 +17,8 @@ from sqlalchemy import orm
 from app.models.refs.commune_crte import CommuneCrte
 
 # revision identifiers, used by Alembic.
-revision = '99811ad2865a'
-down_revision = '3c55e2610f54'
+revision = '20221003_ref_crte'
+down_revision = '20220929_ref_theme_label_programme'
 branch_labels = None
 depends_on = None
 
@@ -58,11 +58,11 @@ def downgrade():
 
 
 def _insert_ref():
-    file = 'migrations/data/ref_crte.csv'
-    wget.download(url_csv, out=file)
+    file_crte = 'migrations/data/ref_crte.csv'
+    wget.download(url_csv, out=file_crte)
 
     session = orm.Session(bind=op.get_bind())
-    data_frame = pandas.read_csv(file, usecols=["insee_com","lib_com","id_crte","lib_crte"], sep=",")
+    data_frame = pandas.read_csv(file_crte, usecols=["insee_com","lib_com","id_crte","lib_crte"], sep=",")
     try:
         for index, programme in data_frame.iterrows():
             commune = session.query(CommuneCrte).filter_by(**{'code_commune':programme['insee_com'] }).one_or_none()

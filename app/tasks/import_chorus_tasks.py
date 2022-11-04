@@ -56,6 +56,7 @@ def import_file_ae_chorus(self, fichier):
         LOGGER.info('[IMPORT][CHORUS] End')
         return True
     except Exception as e:
+        LOGGER.error(f"[IMPORT][CHORUS] Error lors de l'import du fichier {fichier} chorus")
         raise e
 
 
