@@ -1,6 +1,6 @@
 """empty message
 
-Revision ID: 3c55e2610f54
+Revision ID: 20220929_ref_theme_label_programme
 Revises: 0af544930fc5
 Create Date: 2022-09-29 12:04:32.664941
 
@@ -13,16 +13,16 @@ from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.theme import Theme
 
 # revision identifiers, used by Alembic.
-revision = '3c55e2610f54'
-down_revision = '0af544930fc5'
+revision = '20220929_ref_theme_label_programme'
+down_revision = '20220929_ref_theme'
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
     session = orm.Session(bind=op.get_bind())
-    file = f'migrations/data/{revision}/code_programme_theme.csv'
-    df_programme = pandas.read_csv(file, sep=",", usecols=['code_programme', 'titre_programme','theme'],
+    code_programme_file = f'migrations/data/{revision}/code_programme_theme.csv'
+    df_programme = pandas.read_csv(code_programme_file, sep=",", usecols=['code_programme', 'titre_programme','theme'],
                                   dtype={'code_programme': str, 'titre_programme': str, 'theme': str})
     try:
         for index, programme in df_programme.iterrows():
