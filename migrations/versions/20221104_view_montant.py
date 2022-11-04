@@ -16,17 +16,18 @@ depends_on = None
 
 def upgrade():
     view_montant = "CREATE VIEW public.montant_par_commune AS " \
-          " SELECT SUM(dc.montant) as montant, rs.code_commune FROM data_chorus as dc LEFT JOIN ref_siret AS  rs ON (rs.code = dc.siret) WHERE dc.montant >=0 GROUP BY rs.code_commune"
+                   " SELECT SUM(dc.montant) as montant, rs.code_commune FROM data_chorus as dc LEFT JOIN ref_siret AS  rs ON (rs.code = dc.siret) WHERE dc.montant >=0 GROUP BY rs.code_commune"
 
-    view_theme = "CREATE VIEW public.montant_par_commune_theme AS " \
-          "SELECT SUM(dc.montant) as montant, rs.code_commune, rt.label AS theme FROM data_chorus as dc LEFT JOIN ref_siret AS  rs ON (rs.code = dc.siret) LEFT JOIN ref_code_programme AS rcp ON (rcp.code = dc.programme) LEFT JOIN ref_theme AS rt ON (rt.id = rcp.theme) WHERE dc.montant >=0 GROUP BY (rs.code_commune, rt.label)"
+    view_theme = "CREATE VIEW public.montant_par_commune_type_theme AS " \
+                 "SELECT SUM(dc.montant) AS montant, rs.code_commune, rcj.type AS type, rt.label as theme FROM data_chorus as dc LEFT JOIN ref_siret AS  rs ON (rs.code = dc.siret) LEFT JOIN ref_code_programme AS rcp ON (rcp.code = dc.programme) LEFT JOIN ref_theme AS rt ON (rt.id = rcp.theme) LEFT JOIN ref_categorie_juridique AS rcj ON (rcj.code = rs.categorie_juridique) WHERE dc.montant >=0 GROUP BY (rs.code_commune,rcj.type, rt.label)"
 
     view_type = "CREATE VIEW public.montant_par_commune_type AS " \
-                 "SELECT SUM(dc.montant) AS montant, rs.code_commune, rcj.type as type FROM data_chorus as dc LEFT JOIN ref_siret AS  rs ON (rs.code = dc.siret) LEFT JOIN ref_categorie_juridique AS rcj ON (rcj.code = rs.categorie_juridique) WHERE dc.montant >=0 GROUP BY (rs.code_commune,rcj.type)"
+                "SELECT SUM(dc.montant) AS montant, rs.code_commune, rcj.type as type FROM data_chorus as dc LEFT JOIN ref_siret AS  rs ON (rs.code = dc.siret) LEFT JOIN ref_categorie_juridique AS rcj ON (rcj.code = rs.categorie_juridique) WHERE dc.montant >=0 GROUP BY (rs.code_commune,rcj.type)"
 
     op.execute(view_montant)
     op.execute(view_theme)
     op.execute(view_type)
+
 
 def downgrade():
     op.execute('DROP VIEW public.montant_par_commune_type')
