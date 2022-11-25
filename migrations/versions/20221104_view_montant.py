@@ -9,7 +9,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '20221104_view_montant'
-down_revision = '20221004_ref_categorie_juridique'
+down_revision = '20221004_ref_cat_juridique'
 branch_labels = None
 depends_on = None
 

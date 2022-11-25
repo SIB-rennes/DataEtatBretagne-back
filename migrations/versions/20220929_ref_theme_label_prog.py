@@ -1,6 +1,6 @@
 """empty message
 
-Revision ID: 20220929_ref_theme_label_programme
+Revision ID: 20220929_ref_theme_label_prog
 Revises: 0af544930fc5
 Create Date: 2022-09-29 12:04:32.664941
 
@@ -13,7 +13,7 @@ from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.theme import Theme
 
 # revision identifiers, used by Alembic.
-revision = '20220929_ref_theme_label_programme'
+revision = '20220929_ref_theme_label_prog'
 down_revision = '20220929_ref_theme'
 branch_labels = None
 depends_on = None

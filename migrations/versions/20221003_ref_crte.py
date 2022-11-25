@@ -1,7 +1,7 @@
 """empty message
 
 Revision ID: 99811ad2865a
-Revises: 20220929_ref_theme_label_programme
+Revises: 20220929_ref_theme_label_prog
 Create Date: 2022-09-29 17:04:07.706585
 
 """
@@ -18,7 +18,7 @@ from app.models.refs.commune_crte import CommuneCrte
 
 # revision identifiers, used by Alembic.
 revision = '20221003_ref_crte'
-down_revision = '20220929_ref_theme_label_programme'
+down_revision = '20220929_ref_theme_label_prog'
 branch_labels = None
 depends_on = None
 
