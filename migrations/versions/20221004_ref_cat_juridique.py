@@ -12,7 +12,7 @@ from sqlalchemy import orm
 from app.models.refs.categorie_juridique import CategorieJuridique
 
 # revision identifiers, used by Alembic.
-revision = '20221004_ref_categorie_juridique'
+revision = '20221004_ref_cat_juridique'
 down_revision = '20221003_ref_crte'
 branch_labels = None
 depends_on = None

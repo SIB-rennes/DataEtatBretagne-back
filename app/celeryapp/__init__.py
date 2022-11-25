@@ -1,4 +1,4 @@
-from celery import Celery, states
+from celery import Celery
 from kombu import Queue
 
 CELERY_TASK_LIST = [

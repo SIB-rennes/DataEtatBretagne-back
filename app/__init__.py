@@ -50,7 +50,6 @@ def create_app(extra_config_settings={}):
     # flask_restx
     app.register_blueprint(api_v1, url_prefix='/')
     mount_proxy_endpoint_nocodb(app)
-    # app.register_blueprint(proxy_bp, url_prefix='/proxy')
 
     return app
 

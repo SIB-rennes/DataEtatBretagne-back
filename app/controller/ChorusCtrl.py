@@ -1,6 +1,7 @@
 import logging
 import os
 
+import requests
 from flask import jsonify, current_app
 from flask_restx import Namespace, Resource, reqparse
 from werkzeug.datastructures import FileStorage
@@ -55,6 +56,13 @@ class LineImport(Resource):
         return jsonify({
             "statut": f'Ligne récupéré. Demande d`import d\'une ligne chorus AE en cours (taches asynchrone id = {task.id}'})
 
+
+@api.route('/siret/<siret>')
+class TestSiret(Resource):
+    @api.response(200, 'Success')
+    def get(self, siret):
+        resp = requests.get(url=current_app.config['api_siren'] + siret)
+        return resp.json()
 
 def allowed_file(filename):
     return '.' in filename and \
