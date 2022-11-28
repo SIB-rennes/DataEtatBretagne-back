@@ -2,3 +2,4 @@
 **/__pycache__
 /config/config.yml
 /migrations/data/ref_crte*.csv
+/config/keycloak.json

@@ -6,22 +6,23 @@ import yaml
 from flask import Flask
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
+from flask_oidc import OpenIDConnect
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 
 from app import celeryapp
-from app.controller import api_v1
 from app.proxy_nocodb import mount_blueprint
 
 db = SQLAlchemy()
 migrate = Migrate()
 ma = Marshmallow()
+oidc = OpenIDConnect()
 
 from flask_cors import CORS
 from app.models import Chorus
 
 
-def create_app(extra_config_settings={}):
+def create_app(extra_config_settings={}, oidcEnable=True):
     """Create a Flask application.
     """
 
@@ -40,6 +41,19 @@ def create_app(extra_config_settings={}):
     db.init_app(app)
     ma.init_app(app)
 
+    # init oidc
+    if oidcEnable:
+        app.config.update({
+            'OIDC_CLIENT_SECRETS': 'config/keycloak.json',
+            'OIDC_ID_TOKEN_COOKIE_SECURE': False,
+            'OIDC_REQUIRE_VERIFIED_EMAIL': False,
+            'OIDC_USER_INFO_ENABLED': True,
+            'OIDC_OPENID_REALM': 'nocode',
+            'OIDC_SCOPES': ['openid', 'email', 'profile'],
+            'OIDC_INTROSPECTION_AUTH_METHOD': 'client_secret_post'
+        })
+        oidc.init_app(app)
+
     # Setup Flask-Migrate
     migrate.init_app(app, db)
 
@@ -48,6 +62,7 @@ def create_app(extra_config_settings={}):
     celeryapp.celery = celery
 
     # flask_restx
+    from app.controller import api_v1 # pour éviter les import circulaire avec oidc
     app.register_blueprint(api_v1, url_prefix='/')
     mount_proxy_endpoint_nocodb(app)
 
