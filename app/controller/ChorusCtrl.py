@@ -2,10 +2,14 @@ import logging
 import os
 
 import requests
+
 from flask import jsonify, current_app
 from flask_restx import Namespace, Resource, reqparse
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
+
+from app import oidc
+from app.controller.Decorator import isAdmin
 
 api = Namespace(name="chorus", path='/chorus',
                 description='Api de délenchements des taks chorus')
@@ -15,11 +19,13 @@ parser.add_argument('fichier', type=FileStorage, help="fichier à importer", loc
 
 ALLOWED_EXTENSIONS = {'csv'}
 
-
 @api.route('/import/ae')
 class ChorusImport(Resource):
 
     @api.expect(parser)
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @isAdmin
+    @api.doc(security="Bearer")
     def post(self):
         args = parser.parse_args()
         file_chorus = args['fichier']
@@ -48,6 +54,9 @@ parser_line.add_argument('json', type=str, help="ligne chorus à importer en jso
 class LineImport(Resource):
 
     @api.expect(parser_line)
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @isAdmin
+    @api.doc(security="Bearer")
     def post(self):
         args = parser_line.parse_args()
         json_line = args['json']
