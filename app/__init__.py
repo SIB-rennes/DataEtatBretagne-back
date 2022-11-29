@@ -1,6 +1,7 @@
 # __init__.py is a special Python file that allows a directory to become
 # a Python package so it can be accessed using the 'import' statement.
 import logging
+from os.path import exists
 
 import yaml
 from flask import Flask
@@ -21,8 +22,10 @@ oidc = OpenIDConnect()
 from flask_cors import CORS
 from app.models import Chorus
 
+def create_app_migrate():
+    return create_app_base(oidcEnable=False, expose_endpoint=False)
 
-def create_app(extra_config_settings={}, oidcEnable=True):
+def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=True):
     """Create a Flask application.
     """
 
@@ -31,18 +34,18 @@ def create_app(extra_config_settings={}, oidcEnable=True):
 
     # Instantiate Flask
     app = Flask(__name__)
-    app.wsgi_app = ProxyFix(app.wsgi_app)
-
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
-
-    read_config(app, extra_config_settings)
+    read_config(app)
 
     # Setup Flask-SQLAlchemy
     db.init_app(app)
     ma.init_app(app)
 
+    # Celery
+    celery = celeryapp.create_celery_app(app)
+    celeryapp.celery = celery
+
     # init oidc
-    if oidcEnable:
+    if oidcEnable and exists('config/keycloak.json'):
         app.config.update({
             'OIDC_CLIENT_SECRETS': 'config/keycloak.json',
             'OIDC_ID_TOKEN_COOKIE_SECURE': False,
@@ -55,20 +58,22 @@ def create_app(extra_config_settings={}, oidcEnable=True):
         oidc.init_app(app)
 
     # Setup Flask-Migrate
-    migrate.init_app(app, db)
+    if init_falsk_migrate :
+        migrate.init_app(app, db)
 
-    # Celery
-    celery = celeryapp.create_celery_app(app)
-    celeryapp.celery = celery
 
     # flask_restx
-    from app.controller import api_v1 # pour éviter les import circulaire avec oidc
-    app.register_blueprint(api_v1, url_prefix='/')
-    mount_proxy_endpoint_nocodb(app)
+    if expose_endpoint:
+        app.wsgi_app = ProxyFix(app.wsgi_app)
+        CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+        from app.controller import api_v1 # pour éviter les import circulaire avec oidc
+        app.register_blueprint(api_v1, url_prefix='/')
+        mount_proxy_endpoint_nocodb(app)
 
     return app
 
-def read_config(app, extra_config_settings={}):
+def read_config(app):
     try:
         with open('config/config.yml') as yamlfile:
             config_data = yaml.load(yamlfile, Loader=yaml.FullLoader)
@@ -79,7 +84,6 @@ def read_config(app, extra_config_settings={}):
     app.config.from_object('app.settings')
     # Load extra settings from extra_config_settings param
     app.config.update(config_data)
-    app.config.update(extra_config_settings)
 
     if (app.config['DEBUG'] == True):
         app.config['SQLALCHEMY_ECHO'] = False
