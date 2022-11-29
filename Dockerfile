@@ -22,4 +22,4 @@ RUN rm /appli/config/config_template.yml
 
 EXPOSE 80
 
-CMD ["waitress-serve","--port=80","--call", "app:create_app"]
+CMD ["waitress-serve","--port=80","--call", "app:create_app_api"]

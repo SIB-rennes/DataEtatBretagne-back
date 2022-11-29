@@ -25,6 +25,9 @@ from app.models import Chorus
 def create_app_migrate():
     return create_app_base(oidcEnable=False, expose_endpoint=False)
 
+def create_app_api():
+    return create_app_base(init_falsk_migrate=False)
+
 def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=True):
     """Create a Flask application.
     """
