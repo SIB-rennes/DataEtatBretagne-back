@@ -1,4 +1,5 @@
 import io
+import logging
 
 from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
@@ -27,6 +28,7 @@ class NocoDb(Resource):
         client = build_client(project)
 
         params = build_params(args_get.parse_args())
+        logging.info(f'[NOCODB] get {table} {views} where {params}')
         table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
         return table_rows, 200
 
