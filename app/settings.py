@@ -6,3 +6,5 @@
 # Application settings
 APP_NAME = "DATA-TRANSFORM"
 APP_SYSTEM_ERROR_SUBJECT_LINE = APP_NAME + " system error"
+
+API_GEO = "https://geo.api.gouv.fr"

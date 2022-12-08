@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 from app import oidc
 from app.controller.Decorator import isAdmin
 
+
 api = Namespace(name="chorus", path='/chorus',
                 description='Api de délenchements des taks chorus')
 
@@ -18,6 +19,18 @@ parser = reqparse.RequestParser()
 parser.add_argument('fichier', type=FileStorage, help="fichier à importer", location='files', required=True)
 
 ALLOWED_EXTENSIONS = {'csv'}
+
+
+@api.route('/update/commune')
+class CommuneRef(Resource):
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @isAdmin
+    @api.doc(security="Bearer")
+    def post(self):
+        from app.tasks import maj_all_communes_tasks
+        task = maj_all_communes_tasks.delay()
+        return jsonify({
+                           "statut": f'Demande de mise à jours des communes faites (taches asynchrone id = {task.id}'})
 
 @api.route('/import/ae')
 class ChorusImport(Resource):
