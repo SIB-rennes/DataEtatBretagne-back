@@ -12,7 +12,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 
 from app import celeryapp
-from app.proxy_nocodb import mount_blueprint
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -71,6 +70,7 @@ def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=Tr
         CORS(app, resources={r"/api/*": {"origins": "*"}})
 
         from app.controller import api_v1 # pour éviter les import circulaire avec oidc
+
         app.register_blueprint(api_v1, url_prefix='/')
         mount_proxy_endpoint_nocodb(app)
 
@@ -94,5 +94,6 @@ def read_config(app):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 def mount_proxy_endpoint_nocodb(app):
+    from app.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
     for project in app.config['NOCODB_PROJECT']:
         app.register_blueprint(mount_blueprint(project), url_prefix=f"/nocodb/{project}")
