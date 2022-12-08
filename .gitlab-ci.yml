@@ -3,9 +3,6 @@ stages:
   - 🐣 deploy
 
 
-
-
-
 # job pour construction image docker
 docker-build:
   image: docker:stable-dind
@@ -18,7 +15,7 @@ docker-build:
     BUILD_CONTEXT: "."
     DOCKER_FILE: "Dockerfile"
   script:
-    - export IMAGE="${REGISTRY_DOCKER}data-transform/${CI_COMMIT_REF_NAME}"
+    - export IMAGE="${REGISTRY_DOCKER}nocode/data-transform/${CI_COMMIT_REF_NAME}"
     - echo $IMAGE
     - docker build -f ${BUILD_CONTEXT}/Dockerfile -t ${IMAGE} ${BUILD_CONTEXT}
     - echo ${REGISTRY_DOCKER_PWD} | docker login ${REGISTRY_DOCKER} -u ${REGISTRY_DOCKER_USER} --password-stdin

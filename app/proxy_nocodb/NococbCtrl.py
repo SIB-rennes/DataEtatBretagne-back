@@ -1,6 +1,7 @@
 import io
 import logging
 
+from app import oidc
 from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
 from nocodb.nocodb import NocoDBProject
@@ -22,6 +23,8 @@ api = Namespace(name="nocodb", path='/',
 class NocoDb(Resource):
     @api.expect(args_get)
     @api.response(200, 'Success')
+    @api.doc(security="Bearer")
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self, table, views):
         # le nom du projet correspond au nom du blueprint
         project = request.blueprint
@@ -37,6 +40,8 @@ class NocoDb(Resource):
 @api.expect(args_get)
 class ExportCsv(Resource):
     @api.response(200, 'Success')
+    @api.doc(security="Bearer")
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self, table, views):
         project = request.blueprint
         client = build_client(project)
