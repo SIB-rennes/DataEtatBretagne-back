@@ -13,7 +13,7 @@ from app.models.refs.categorie_juridique import CategorieJuridique
 
 # revision identifiers, used by Alembic.
 revision = '20221004_ref_cat_juridique'
-down_revision = '20221003_ref_crte'
+down_revision = '20221003_ref_commune'
 branch_labels = None
 depends_on = None
 
