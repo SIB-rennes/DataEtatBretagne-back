@@ -15,6 +15,7 @@ def maj_all_communes_tasks(self):
     LOGGER.info('[UPDATE][COMMUNE] Start')
 
     communes = Commune.query.filter(Commune.code_epci == None).all()
+    index = 0
     for commune in communes:
         index += 1
         if (index == 30):
