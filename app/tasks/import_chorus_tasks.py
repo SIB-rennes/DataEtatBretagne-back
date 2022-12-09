@@ -14,6 +14,7 @@ from app import db, celeryapp
 from app.models.Chorus import Chorus
 from app.models.refs.centre_couts import CentreCouts
 from app.models.refs.code_programme import CodeProgramme
+from app.models.refs.commune import Commune
 from app.models.refs.compte_general import CompteGeneral
 from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
 from app.models.refs.fournisseur_titulaire import FournisseurTitulaire
@@ -21,6 +22,7 @@ from app.models.refs.groupe_marchandise import GroupeMarchandise
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.models.refs.siret import Siret
+from app.tasks import maj_one_commune
 
 CHORUS_COLUMN_NAME = ['programme_code', 'domaine_code', 'domaine_label', 'centre_cout_code', 'centre_cout_label',
                       'ref_programmation_code', 'ref_programmation_label', 'n_ej', 'n_poste_ej', 'date_modif',
@@ -118,6 +120,18 @@ def _check_ref(model, **kwargs):
             LOGGER.warning(e)
 
 
+def __check_commune(code):
+    instance = db.session.query(Commune).filter_by(code_commune=code).one_or_none()
+    if not instance:
+        LOGGER.info('[IMPORT][CHORUS] Ajout commune %s', code)
+        commune = Commune(code_commune = code)
+        try:
+            maj_one_commune(commune)
+        except Exception as e:
+            db.session.rollback()
+            LOGGER.warning("[IMPORT][CHORUS] Error sur ajout commune %s ",code)
+            LOGGER.warning(e)
+
 def _check_siret(siret):
     instance = db.session.query(Siret).filter_by(code=str(siret)).one_or_none()
     if not instance:
@@ -135,15 +149,16 @@ def _check_siret(siret):
             if info['longitude'] is not None and info['latitude'] is not None:
                 siret.longitude = float(info['longitude'])
                 siret.latitude = float(info['latitude'])
-
-        LOGGER.info("[IMPORT][CHORUS] Siret %s ajouté", siret)
-        try:
-            db.session.add(siret)
-            db.session.commit()
-        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-            db.session.rollback()
-            LOGGER.warning(e)
-            LOGGER.warning("[IMPORT][CHORUS] Error sur ajout Siret %s  ",siret)
+            # On check que la commune est bien en base
+            __check_commune(siret.code_commune)
+            LOGGER.info("[IMPORT][CHORUS] Siret %s ajouté", siret)
+            try:
+                db.session.add(siret)
+                db.session.commit()
+            except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+                db.session.rollback()
+                LOGGER.warning(e)
+                LOGGER.warning("[IMPORT][CHORUS] Error sur ajout Siret %s  ",siret)
 
 
 def _check_insert__update_chorus(chorus_data):
