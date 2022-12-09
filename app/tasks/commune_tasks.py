@@ -14,8 +14,7 @@ celery = celeryapp.celery
 def maj_all_communes_tasks(self):
     LOGGER.info('[UPDATE][COMMUNE] Start')
 
-    communes = Commune.query.all()
-    index = 0
+    communes = Commune.query.filter(Commune.code_epci == None).all()
     for commune in communes:
         index += 1
         if (index == 30):
@@ -24,13 +23,17 @@ def maj_all_communes_tasks(self):
             time.sleep(2)
 
         apigeo = get_info_commune(commune)
-        commune.code_epci = apigeo['epci']['code']
-        commune.label_epci =  apigeo['epci']['nom']
-        commune.code_region = apigeo['region']['code']
-        commune.label_region = apigeo['region']['nom']
-        commune.code_departement = apigeo['departement']['code']
-        commune.label_departement = apigeo['departement']['nom']
-        logging.info(f'[UPDATE][COMMUNE] {commune.code_commune} {commune.label_region}')
+        if 'epci' in apigeo:
+            commune.code_epci = apigeo['epci']['code']
+            commune.label_epci =  apigeo['epci']['nom']
+        if 'region' in apigeo:
+            commune.code_region = apigeo['region']['code']
+            commune.label_region = apigeo['region']['nom']
+        if 'departement' in apigeo:
+            commune.code_departement = apigeo['departement']['code']
+            commune.label_departement = apigeo['departement']['nom']
+
+        logging.info(f'[UPDATE][COMMUNE] {commune.code_commune} {commune.label_commune}')
 
         db.session.commit()
 
