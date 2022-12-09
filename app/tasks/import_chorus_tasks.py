@@ -126,7 +126,8 @@ def __check_commune(code):
         LOGGER.info('[IMPORT][CHORUS] Ajout commune %s', code)
         commune = Commune(code_commune = code)
         try:
-            maj_one_commune(commune)
+            commune = maj_one_commune(commune)
+            db.session.add(commune)
         except Exception as e:
             db.session.rollback()
             LOGGER.warning("[IMPORT][CHORUS] Error sur ajout commune %s ",code)

@@ -23,7 +23,9 @@ def maj_all_communes_tasks(self):
             index = 0
             time.sleep(1)
 
-        maj_one_commune(commune)
+        commune = maj_one_commune(commune)
+        logging.info(f'[UPDATE][COMMUNE] {commune.code_commune} {commune.label_commune}')
+        db.session.commit()
 
 
 def maj_one_commune(commune: Commune):
@@ -43,8 +45,7 @@ def maj_one_commune(commune: Commune):
     if 'departement' in apigeo:
         commune.code_departement = apigeo['departement']['code']
         commune.label_departement = apigeo['departement']['nom']
+    return commune
 
-    logging.info(f'[UPDATE][COMMUNE] {commune.code_commune} {commune.label_commune}')
 
-    db.session.commit()
 
