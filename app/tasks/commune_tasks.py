@@ -18,10 +18,10 @@ def maj_all_communes_tasks(self):
     index = 0
     for commune in communes:
         index += 1
-        if (index == 30):
-            LOGGER.info('[UPDATE][COMMUNE] sleep 2s après 30 appel api geo')
+        if (index == 40):
+            LOGGER.info('[UPDATE][COMMUNE] sleep 1s après 40 appel api geo')
             index = 0
-            time.sleep(2)
+            time.sleep(1)
 
         apigeo = get_info_commune(commune)
         if 'epci' in apigeo:
