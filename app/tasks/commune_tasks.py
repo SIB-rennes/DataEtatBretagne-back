@@ -23,20 +23,29 @@ def maj_all_communes_tasks(self):
             index = 0
             time.sleep(1)
 
-        apigeo = get_info_commune(commune)
-        if 'epci' in apigeo:
-            commune.code_epci = apigeo['epci']['code']
-            commune.label_epci =  apigeo['epci']['nom']
-        if 'region' in apigeo:
-            commune.code_region = apigeo['region']['code']
-            commune.label_region = apigeo['region']['nom']
-        if 'departement' in apigeo:
-            commune.code_departement = apigeo['departement']['code']
-            commune.label_departement = apigeo['departement']['nom']
-
+        commune = maj_one_commune(commune)
         logging.info(f'[UPDATE][COMMUNE] {commune.code_commune} {commune.label_commune}')
-
         db.session.commit()
+
+
+def maj_one_commune(commune: Commune):
+    """
+    Lance la MAj d'une communce
+    :param commune:
+    :return:
+    """
+    apigeo = get_info_commune(commune)
+    commune.label_commune = apigeo['nom']
+    if 'epci' in apigeo:
+        commune.code_epci = apigeo['epci']['code']
+        commune.label_epci = apigeo['epci']['nom']
+    if 'region' in apigeo:
+        commune.code_region = apigeo['region']['code']
+        commune.label_region = apigeo['region']['nom']
+    if 'departement' in apigeo:
+        commune.code_departement = apigeo['departement']['code']
+        commune.label_departement = apigeo['departement']['nom']
+    return commune
 
 
 
