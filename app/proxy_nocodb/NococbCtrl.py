@@ -6,7 +6,8 @@ from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
 from nocodb.nocodb import NocoDBProject
 
-from app.proxy_nocodb.client.NocoDBRequestsCustomClient import NocoDBRequestsCustomClient, get_auth_token
+from app.proxy_nocodb.client.NocoDBRequestsCustomClient import NocoDBRequestsCustomClient, get_auth_token, \
+    NocoDbClientException
 
 args_get = reqparse.RequestParser()
 args_get.add_argument('sort', type=str, required=False, help="Champ à trier")
@@ -60,6 +61,17 @@ class ExportCsv(Resource):
 
 
 
+@api.route('/')
+class HealthCheck(Resource):
+    @api.response(200, 'Success')
+    def get(self):
+        project = request.blueprint
+        logging.debug('[NOCODB] HealthCheck')
+        build_client(project)
+        return 200
+
+
+
 def build_client(project) -> NocoDBRequestsCustomClient:
     '''
     Construit le client nocodb
@@ -73,7 +85,13 @@ def build_client(project) -> NocoDBRequestsCustomClient:
     if uri is None or email is None or pwd is None:
         abort(403, f"Information manquante pour le projet {project}")
 
-    return NocoDBRequestsCustomClient(get_auth_token(uri, email, pwd), uri)
+    try :
+        token = get_auth_token(uri, email, pwd)
+        return NocoDBRequestsCustomClient(token, uri)
+    except NocoDbClientException as clientException:
+        logging.error(clientException)
+        abort(500, f"Erreur interne ")
+
 
 def build_params(args):
     params = {

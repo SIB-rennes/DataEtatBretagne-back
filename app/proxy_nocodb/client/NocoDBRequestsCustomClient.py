@@ -10,6 +10,10 @@ from nocodb.utils import get_query_params
 
 V1_DB_AUTH_API = "api/v1/auth/user/signin"
 
+class NocoDbClientException(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
 
 def get_auth_token(base_uri, email, password) -> JWTAuthToken :
     '''
@@ -28,6 +32,7 @@ def get_auth_token(base_uri, email, password) -> JWTAuthToken :
     else :
         logging.error("[NOCODB] Failed retrieved token")
         logging.error(auth_token)
+        raise NocoDbClientException("Failed retrieve token")
 
 
 class NocoDBRequestsCustomClient(NocoDBRequestsClient):
