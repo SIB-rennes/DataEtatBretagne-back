@@ -4,7 +4,8 @@ FROM python:3.9.9-slim-buster
 
 RUN apt-get update -y && \
 apt-get upgrade -y && \
-apt-get install -y p7zip
+apt-get install -y p7zip \
+apt-get install -y curl
 
 # set the working directory in the container
 WORKDIR /appli
