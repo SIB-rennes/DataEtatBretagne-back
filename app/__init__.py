@@ -90,6 +90,7 @@ def read_config(app):
 
     if (app.config['DEBUG'] == True):
         app.config['SQLALCHEMY_ECHO'] = False
+        logging.getLogger().setLevel(logging.DEBUG)
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
