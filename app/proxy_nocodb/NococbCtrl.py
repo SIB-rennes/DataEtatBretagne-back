@@ -31,8 +31,9 @@ class NocoDb(Resource):
         client = build_client(project)
 
         params = build_params(args_get.parse_args())
-        logging.info(f'[NOCODB] get {table} {views} where {params}')
+        logging.debug(f'[NOCODB] get {table} {views} where {params}')
         table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
+        logging.debug('[NOCODB] return response')
         return table_rows, 200
 
 
@@ -46,6 +47,7 @@ class ExportCsv(Resource):
         project = request.blueprint
         client = build_client(project)
         params = build_params(args_get.parse_args())
+        logging.debug(f'[NOCODB] get CSV {table} {views} where {params}')
         table_rows = client.table_export_csv(NocoDBProject("noco", project), f'{table}/views/{views}',
                                              params=params)
         output = io.StringIO()
@@ -53,6 +55,7 @@ class ExportCsv(Resource):
         response = make_response(output.getvalue())
         response.headers["Content-Disposition"] = "attachment; filename=test.csv"
         response.headers["Content-type"] = "text/csv"
+        logging.debug('[NOCODB] return response csv')
         return response
 
 

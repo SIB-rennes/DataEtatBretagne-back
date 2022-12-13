@@ -1,8 +1,9 @@
 import requests
-from nocodb.api import NocoDBAPI
 from nocodb.infra.requests_client import NocoDBRequestsClient
 from nocodb.nocodb import NocoDBProject, WhereFilter, JWTAuthToken
 from typing import Optional
+import logging
+
 
 from nocodb.utils import get_query_params
 
@@ -18,10 +19,15 @@ def get_auth_token(base_uri, email, password) -> JWTAuthToken :
     :param password:
     :return:
     '''
+    logging.debug(f'[NOCODB] get token {base_uri}/{V1_DB_AUTH_API}')
     auth_token  = requests.session().post(f'{base_uri}/{V1_DB_AUTH_API}',
                             json=dict(email=email, password=password))
     if auth_token.status_code == 200 :
+        logging.debug('[NOCODB] Token ok')
         return JWTAuthToken(auth_token.json()['token'])
+    else :
+        logging.error("[NOCODB] Failed retrieved token")
+        logging.error(auth_token)
 
 
 class NocoDBRequestsCustomClient(NocoDBRequestsClient):
