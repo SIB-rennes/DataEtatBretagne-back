@@ -14,7 +14,7 @@ stages:
 
 .build-docker:
   image: docker:stable-dind
-  stage: 🔨 docker-build
+  stage: 🔨 build
   variables:
     IMAGE: ""
     DOCKERFILE: ""
