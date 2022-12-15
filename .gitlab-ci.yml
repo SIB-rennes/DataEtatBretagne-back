@@ -8,6 +8,7 @@ stages:
   variables:
     VERSION: ""
   script:
+    - echo ${VERSION}
     - ssh ${USER_INTEG}@${SERVER_INTEG} "docker network create -d overlay --attachable app_network || true"
     - ssh ${USER_INTEG}@${SERVER_INTEG} "export VERSION=${VERSION};"'export $(cat ~/stack-nocode/livraison/env-file-integ);docker stack deploy --with-registry-auth --compose-file ~/stack-nocode/compose/integ/data-transform.yml '"${STACK_NAME}"
 
