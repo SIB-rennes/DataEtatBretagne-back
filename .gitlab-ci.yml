@@ -57,7 +57,7 @@ deploy-integ-tag:
   only:
     - tags
   before_script:
-    - export VERSION= ":${CI_COMMIT_REF_NAME}"
+    - export VERSION=":${CI_COMMIT_REF_NAME}"
 
 deploy-integ-snapshot:
   extends: .deploy-integ
