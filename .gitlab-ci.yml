@@ -5,8 +5,6 @@ stages:
 
 .deploy-integ:
   stage: 🐣 deploy
-  variables:
-    VERSION: ""
   script:
     - echo ${VERSION}
     - ssh ${USER_INTEG}@${SERVER_INTEG} "docker network create -d overlay --attachable app_network || true"
@@ -58,8 +56,8 @@ deploy-integ-tag:
   extends: .deploy-integ
   only:
     - tags
-  variables:
-    VERSION: ":${CI_COMMIT_REF_NAME}"
+  before_script:
+    - export VERSION= ":${CI_COMMIT_REF_NAME}"
 
 deploy-integ-snapshot:
   extends: .deploy-integ
@@ -69,5 +67,5 @@ deploy-integ-snapshot:
     - /^feature.*$/
     - /^hotfix.*$/
   when: manual
-  variables:
-    VERSION: "/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHA:0:8}-snapshot"
+  before_script:
+    - export VERSION="/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHA:0:8}-snapshot"
