@@ -31,7 +31,7 @@ docker-build-snapshot:
   extends: .build-docker
   only:
     - develop
-    - master
+    - main
     - /^feature.*$/
     - /^hotfix.*$/
   variables:
@@ -63,7 +63,7 @@ deploy-integ-snapshot:
   extends: .deploy-integ
   only:
     - develop
-    - master
+    - main
     - /^feature.*$/
     - /^hotfix.*$/
   when: manual
