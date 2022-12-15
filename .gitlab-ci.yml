@@ -37,7 +37,7 @@ docker-build-snapshot:
     - /^hotfix.*$/
   variables:
     IMAGE: "${REGISTRY_DOCKER}nocode/data-transform/${CI_COMMIT_REF_NAME}"
-    DOCKERFILE: "DockerFile"
+    DOCKERFILE: "Dockerfile"
   before_script:
     - export VERSION_IMAGE="${CI_COMMIT_SHA:0:8}-snapshot"
 
