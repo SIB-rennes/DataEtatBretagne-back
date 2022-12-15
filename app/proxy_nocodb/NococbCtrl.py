@@ -1,6 +1,10 @@
 import io
 import logging
 
+import csv
+
+import pandas
+
 from app import oidc
 from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
@@ -49,17 +53,22 @@ class ExportCsv(Resource):
         client = build_client(project)
         params = build_params(args_get.parse_args())
         logging.debug(f'[NOCODB] get CSV {table} {views} where {params}')
-        table_rows = client.table_export_csv(NocoDBProject("noco", project), f'{table}/views/{views}',
-                                             params=params)
+
+        table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
+        data = table_rows['list']
+        # on met à plat les données
+        df = pandas.json_normalize(data, sep='_', max_level = 1)
+        # supression des colonnes les identifiant technique contenant _Id
+        df = df[df.columns.drop(list(df.filter(regex='_Id')))]
+        my_csv_string = df.to_csv(index=False)
+
         output = io.StringIO()
-        output.write(table_rows.content.decode('utf-8'))
+        output.write(my_csv_string)
         response = make_response(output.getvalue())
         response.headers["Content-Disposition"] = "attachment; filename=test.csv"
         response.headers["Content-type"] = "text/csv"
         logging.debug('[NOCODB] return response csv')
         return response
-
-
 
 @api.route('/')
 class HealthCheck(Resource):
