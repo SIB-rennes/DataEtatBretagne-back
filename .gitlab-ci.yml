@@ -47,7 +47,7 @@ docker-build-tags:
     - tags
   variables:
     IMAGE: "${REGISTRY_DOCKER}nocode/data-transform"
-    DOCKERFILE: "DockerFile"
+    DOCKERFILE: "Dockerfile"
   before_script:
     - export VERSION_IMAGE="${CI_COMMIT_REF_NAME}"
 
