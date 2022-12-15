@@ -1,0 +1,71 @@
+stages:
+  - 🔨 build
+  - 🐣 deploy
+
+
+.deploy-integ:
+  stage: 🐣 deploy
+  script:
+    - echo ${VERSION}
+    - ssh ${USER_INTEG}@${SERVER_INTEG} "docker network create -d overlay --attachable app_network || true"
+    - ssh ${USER_INTEG}@${SERVER_INTEG} "export VERSION=${VERSION};"'export $(cat ~/stack-nocode/livraison/env-file-integ);docker stack deploy --with-registry-auth --compose-file ~/stack-nocode/compose/integ/data-transform.yml '"${STACK_NAME}"
+
+
+.build-docker:
+  image: docker:stable-dind
+  stage: 🔨 build
+  variables:
+    IMAGE: ""
+    DOCKERFILE: ""
+  script:
+    - if [[ $VERSION_IMAGE == ""]]; then  echo "VERSION NOT SET"; VERSION_IMAGE=${CI_COMMIT_REF_NAME}-snapshot; fi
+    - echo ${VERSION_IMAGE}
+    - echo $IMAGE
+    - docker build -f ${DOCKERFILE} -t ${IMAGE} .
+    - echo ${REGISTRY_DOCKER_PWD} | docker login ${REGISTRY_DOCKER} -u ${REGISTRY_DOCKER_USER} --password-stdin
+    - docker tag ${IMAGE} ${IMAGE}:${VERSION_IMAGE}
+    - echo "push ${IMAGE}:${VERSION_IMAGE}" && docker push ${IMAGE}:${VERSION_IMAGE}
+
+# job pour construction image docker
+docker-build-snapshot:
+  extends: .build-docker
+  only:
+    - develop
+    - main
+    - /^feature.*$/
+    - /^hotfix.*$/
+  variables:
+    IMAGE: "${REGISTRY_DOCKER}nocode/data-transform/${CI_COMMIT_REF_NAME}"
+    DOCKERFILE: "Dockerfile"
+  before_script:
+    - export VERSION_IMAGE="${CI_COMMIT_SHA:0:8}-snapshot"
+
+
+docker-build-tags:
+  extends: .build-docker
+  only:
+    - tags
+  variables:
+    IMAGE: "${REGISTRY_DOCKER}nocode/data-transform"
+    DOCKERFILE: "DockerFile"
+  before_script:
+    - export VERSION_IMAGE="${CI_COMMIT_REF_NAME}"
+
+
+deploy-integ-tag:
+  extends: .deploy-integ
+  only:
+    - tags
+  before_script:
+    - export VERSION= ":${CI_COMMIT_REF_NAME}"
+
+deploy-integ-snapshot:
+  extends: .deploy-integ
+  only:
+    - develop
+    - main
+    - /^feature.*$/
+    - /^hotfix.*$/
+  when: manual
+  before_script:
+    - export VERSION="/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHA:0:8}-snapshot"
