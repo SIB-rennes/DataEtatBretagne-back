@@ -38,8 +38,14 @@ class NocoDb(Resource):
         params = build_params(args_get.parse_args())
         logging.debug(f'[NOCODB] get {table} {views} where {params}')
         table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
-        logging.debug('[NOCODB] return response')
-        return table_rows, 200
+
+        if ('msg' in table_rows):
+            logging.error(f'[NOCODB] Erreur sur la réponse {table_rows["msg"]}')
+            return table_rows, 400
+        else :
+            logging.debug('[NOCODB] return response')
+            return table_rows, 200
+
 
 
 @api.route('/<table>/<views>/csv')
@@ -55,20 +61,26 @@ class ExportCsv(Resource):
         logging.debug(f'[NOCODB] get CSV {table} {views} where {params}')
 
         table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
-        data = table_rows['list']
-        # on met à plat les données
-        df = pandas.json_normalize(data, sep='_', max_level = 1)
-        # supression des colonnes les identifiant technique contenant _Id
-        df = df[df.columns.drop(list(df.filter(regex='_Id')))]
-        my_csv_string = df.to_csv(index=False)
+        if ('msg' in table_rows):
+            logging.error(f'[NOCODB] Erreur sur la réponse {table_rows["msg"]}')
+            return table_rows, 400
+        else :
+            logging.debug('[NOCODB] return response')
+            data = table_rows['list']
+            # on met à plat les données
+            df = pandas.json_normalize(data, sep='_', max_level=1)
+            # supression des colonnes les identifiant technique contenant _Id
+            df = df[df.columns.drop(list(df.filter(regex='_Id')))]
+            my_csv_string = df.to_csv(index=False)
 
-        output = io.StringIO()
-        output.write(my_csv_string)
-        response = make_response(output.getvalue())
-        response.headers["Content-Disposition"] = "attachment; filename=test.csv"
-        response.headers["Content-type"] = "text/csv"
-        logging.debug('[NOCODB] return response csv')
-        return response
+            output = io.StringIO()
+            output.write(my_csv_string)
+            response = make_response(output.getvalue())
+            response.headers["Content-Disposition"] = "attachment; filename=test.csv"
+            response.headers["Content-type"] = "text/csv"
+            logging.debug('[NOCODB] return response csv')
+            return response
+
 
 @api.route('/')
 class HealthCheck(Resource):
