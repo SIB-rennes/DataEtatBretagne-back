@@ -1,8 +1,5 @@
 import io
 import logging
-
-import csv
-
 import pandas
 
 from app import oidc
@@ -10,7 +7,7 @@ from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
 from nocodb.nocodb import NocoDBProject
 
-from app.proxy_nocodb.client.NocoDBRequestsCustomClient import NocoDBRequestsCustomClient, get_auth_token, \
+from app.clients.nocodb.NocoDBRequestsCustomClient import NocoDBRequestsCustomClient, get_auth_token, \
     NocoDbClientException
 
 args_get = reqparse.RequestParser()

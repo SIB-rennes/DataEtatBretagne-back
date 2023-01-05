@@ -95,6 +95,6 @@ def read_config(app):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 def mount_proxy_endpoint_nocodb(app):
-    from app.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
+    from app.controller.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
     for project in app.config['NOCODB_PROJECT']:
         app.register_blueprint(mount_blueprint(project), url_prefix=f"/nocodb/{project}")
