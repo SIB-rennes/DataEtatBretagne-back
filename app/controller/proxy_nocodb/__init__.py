@@ -1,7 +1,7 @@
 from flask import Blueprint
 from flask_restx import Api
 
-from app.proxy_nocodb.NococbCtrl import api as nsApi
+from app.controller.proxy_nocodb.NococbCtrl import api as nsApi
 
 
 def mount_blueprint(project):
