@@ -70,8 +70,10 @@ def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=Tr
         CORS(app, resources={r"/api/*": {"origins": "*"}})
 
         from app.controller import api_v1 # pour éviter les import circulaire avec oidc
+        from app.controller.user_management import api_management
 
         app.register_blueprint(api_v1, url_prefix='/')
+        app.register_blueprint(api_management, url_prefix='/management')
         mount_proxy_endpoint_nocodb(app)
 
     return app

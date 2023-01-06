@@ -12,6 +12,11 @@ api_siren : http://152.228.212.208:443/v3/etablissements/
 
 UPLOAD_FOLDER: "c:\\toWatch"
 
+
+KEYCLOAK_ADMIN_URL: "url"
+KEYCLOAK_ADMIN_SECRET_KEY: "<secret key>"
+KEYCLOAK_ADMIN_REALM: "realm"
+
 NOCODB_URL : "<url>"
 NOCODB_TECH_LOGIN: 'USER'
 NOCODB_TECH_PWD: 'PWD'
