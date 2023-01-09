@@ -44,14 +44,12 @@ Remplacer les variables
 | result_backend	                                                              | URL de connexion à la base de données PostgreSQL pour stocker les résultats de Celery |
 | api_siren |                                  	URL de l'API SIREN                                  |                                              
 | UPLOAD_FOLDER	|            Dossier où sont stockés les fichiers envoyés par l'utilisateur             |
-| KEYCLOAK_ADMIN_URL|	URL de l'administration de Keycloak |                      
-| KEYCLOAK_ADMIN_SECRET_KEY	| Clé secrète pour l'administration de Keycloak      |
-| KEYCLOAK_ADMIN_REALM|	Realm de Keycloak          |
-| SECRET_KEY                                                                   |                            	Clé secrète utilisée par keycloak
-| NOCODB_URL	|URL de NocoDB       |                                              
-| NOCODB_TECH_LOGIN	|Nom d'utilisateur de l'utilisateur technique de NocoDB |    
-| NOCODB_TECH_PWD	|Mot de passe de l'utilisateur technique de NocoDB  |          
-| NOCODB_PROJECT|	Liste des projets de NocoDB à utiliser         |               
+| KEYCLOAK_ADMIN_URL|                         	URL de l'administration de Keycloak                          |                      
+| KEYCLOAK_ADMIN_SECRET_KEY	|                     Clé secrète pour l'administration de Keycloak                     |
+| KEYCLOAK_ADMIN_REALM|                                  	Realm de Keycloak                                   |
+| SECRET_KEY                                                                   |                          	Clé secrète utilisée par keycloak                           
+| NOCODB_URL	|                                     URL de NocoDB                                     |                                              
+| NOCODB_PROJECT|              	Liste des projets de NocoDB à utiliser  avec le token api               |               
 
 
 
