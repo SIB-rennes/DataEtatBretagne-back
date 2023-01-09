@@ -68,7 +68,7 @@ class UsersDisable(Resource):
         except KeycloakAdminException as admin_exception:
             return abort(message= admin_exception.message, code=HTTPStatus.BAD_REQUEST)
 @api.route('/enable/<uuid>')
-class UsersDisable(Resource):
+class UsersEnable(Resource):
     """
     Resource for enabling users.
     """
