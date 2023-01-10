@@ -1,8 +1,5 @@
 from flask import g
 from functools import wraps
-
-from flask_restx import abort
-
 from app.models.enums.ConnectionProfile import ConnectionProfile
 
 

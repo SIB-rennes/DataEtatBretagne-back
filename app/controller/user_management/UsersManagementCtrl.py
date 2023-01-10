@@ -3,9 +3,11 @@ import logging
 from flask import make_response
 from flask_restx._http import HTTPStatus
 from keycloak import KeycloakAdmin
+from flask import g
+
 
 from app import oidc
-from flask_restx import Namespace, Resource, reqparse, abort
+from flask_restx import Namespace, Resource, abort
 
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
 from app.controller.Decorator import check_permission
@@ -17,7 +19,7 @@ api = Namespace(name="users", path='/users',
                 description='API for managing users')
 pagination_parser = get_pagination_parser()
 
-@api.route('/')
+@api.route('')
 class UsersManagement(Resource):
     """
     Resource for managing users.
@@ -62,6 +64,9 @@ class UsersDisable(Resource):
         Disable a user.
         """
         logging.debug(f'[USERS] Call disable users {uuid}')
+
+        if 'sub' in g.oidc_token_info and g.oidc_token_info['sub'] == uuid:
+             return abort(message= "Vous ne pouvez désactiver votre utilisateur", code=HTTPStatus.BAD_REQUEST)
         try:
             _update_enable_user(build_admin_client(), uuid, False)
             return make_response("", 200)
