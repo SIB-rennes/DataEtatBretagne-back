@@ -7,7 +7,7 @@ from flask import g
 
 
 from app import oidc
-from flask_restx import Namespace, Resource, abort
+from flask_restx import Namespace, Resource, abort, inputs
 
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
 from app.controller.Decorator import check_permission
@@ -17,7 +17,8 @@ from app.models.enums.ConnectionProfile import ConnectionProfile
 
 api = Namespace(name="users", path='/users',
                 description='API for managing users')
-pagination_parser = get_pagination_parser()
+parser_get = get_pagination_parser()
+parser_get.add_argument("only_disable", type=inputs.boolean, required=False, default=False, help="Only disable user or not")
 
 @api.route('')
 class UsersManagement(Resource):
@@ -26,26 +27,31 @@ class UsersManagement(Resource):
     """
     @api.response(200, 'List of users and pagination information')
     @api.doc(security="Bearer")
-    @api.expect(pagination_parser)
+    @api.expect(parser_get)
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @check_permission(ConnectionProfile.ADMIN)
     def get(self):
         """
         Get a list of users.
         """
-        p_args = pagination_parser.parse_args()
+        p_args = parser_get.parse_args()
         page_number = p_args.get("pageNumber")
         limit = p_args.get("limit")
-        if (page_number < 0 ) :
-            page_number = 0
+        if (page_number < 1 ) :
+            page_number = 1
         if limit < 0:
             limit = 1
 
-        logging.debug(f'[USERS] Call users get with limit {limit}, page {page_number}')
+        only_disable = p_args.get("only_disable")
+
+        logging.debug(f'[USERS] Call users get with limit {limit}, page {page_number}, only_disable {only_disable}')
         try:
             keycloak_admin = build_admin_client()
-            count_users = keycloak_admin.users_count()
-            users = keycloak_admin.get_users({'briefRepresentation': True, 'max': limit, 'first': (page_number-1) * limit})
+            query = {'briefRepresentation': True, 'max': limit, 'first': (page_number-1) * limit}
+            if only_disable :
+                query['enabled'] = False
+            count_users = keycloak_admin.users_count(query)
+            users = keycloak_admin.get_users(query)
             return { 'users' : users , 'pageInfo': Pagination(count_users, page_number, users.__len__()).to_json()}, 200
         except KeycloakAdminException as admin_exception:
             return admin_exception.message, 400
