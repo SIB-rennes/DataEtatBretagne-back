@@ -11,7 +11,7 @@ from celery import subtask
 from flask import current_app
 
 from app import db, celeryapp
-from app.models.Chorus import Chorus
+from app.models.financial.Chorus import Chorus
 from app.models.refs.centre_couts import CentreCouts
 from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.commune import Commune

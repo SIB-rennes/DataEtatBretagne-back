@@ -19,7 +19,8 @@ ma = Marshmallow()
 oidc = OpenIDConnect()
 
 from flask_cors import CORS
-from app.models import Chorus
+from app.models.financial import Chorus
+
 
 def create_app_migrate():
     return create_app_base(oidcEnable=False, expose_endpoint=False)
