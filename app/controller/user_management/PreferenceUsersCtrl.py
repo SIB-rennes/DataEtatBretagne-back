@@ -79,7 +79,7 @@ class PreferenceUsers(Resource):
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
 
-        list_pref =  Preference.query.filter_by(username=username).all()
+        list_pref =  Preference.query.filter_by(username=username).order_by(Preference.id).all()
         schema = PreferenceSchema(many=True)
         result = schema.dump(list_pref)
         return result,200
