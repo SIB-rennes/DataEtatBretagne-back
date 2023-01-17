@@ -8,6 +8,7 @@ from app import db, ma
 
 class Preference(db.Model):
     __tablename__ = 'preference_users'
+    __table_args__ = {'schema': 'settings'}
     # PK
     id = Column(Integer, primary_key=True, nullable = False)
 
@@ -17,6 +18,7 @@ class Preference(db.Model):
     # user
     username = Column(String, nullable = False)
     name = Column(String, nullable = False)
+    # Donnée technique du filtre brut
     filters = Column(JSON, nullable = False)
     # Relationship
     shares = relationship("Share", lazy="select",uselist=True)
@@ -24,11 +26,12 @@ class Preference(db.Model):
 
 class Share(db.Model):
     __tablename__ = 'share_preference'
+    __table_args__ = {'schema': 'settings'}
     # PK
     id = Column(Integer, primary_key=True, nullable = False)
 
     # FK
-    preference_id = db.Column(Integer, db.ForeignKey('preference_users.id'))
+    preference_id = db.Column(Integer, db.ForeignKey('settings.preference_users.id'))
     shared_username_email = db.Column(String, nullable = False)
 
 
