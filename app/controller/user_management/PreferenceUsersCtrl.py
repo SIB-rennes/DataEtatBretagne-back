@@ -83,3 +83,53 @@ class PreferenceUsers(Resource):
         schema = PreferenceSchema(many=True)
         result = schema.dump(list_pref)
         return result,200
+
+@api.route('/<uuid>')
+class CrudPreferenceUsers(Resource):
+
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @api.doc(security="Bearer")
+    @api.response(200, "Success if delete")
+    def delete(self, uuid):
+        """
+        Delete uuid preference
+        """
+        logging.debug(f"Delete users prefs {uuid}")
+
+        if 'username' not in g.oidc_token_info:
+            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
+        username = g.oidc_token_info['username']
+        preference = Preference.query.filter_by(uuid=uuid).one()
+
+        if preference.username != username:
+            return abort(message="Vous n'avez pas les droits de supprimer cette préférence", code=HTTPStatus.FORBIDDEN)
+
+        try:
+            db.session.delete(preference)
+            db.session.commit()
+            return "Success", 200
+        except Exception as e:
+            logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid}", e)
+            return abort(message="Error when delete preference", code=HTTPStatus.BAD_REQUEST)
+
+
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @api.doc(security="Bearer")
+    @api.response(200, "User preference", [preference_get])
+    def get(self, uuid):
+        """
+        Get by uuid preference
+        """
+        logging.debug(f"Get users prefs {uuid}")
+
+        if 'username' not in g.oidc_token_info:
+            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
+        username = g.oidc_token_info['username']
+        preference = Preference.query.filter_by(uuid=uuid).one()
+
+        if preference.username != username:
+            return abort(message="Vous n'avez pas les droits pour voir cette préférence", code=HTTPStatus.FORBIDDEN)
+        schema = PreferenceSchema()
+        result = schema.dump(preference)
+        return result,200
+
