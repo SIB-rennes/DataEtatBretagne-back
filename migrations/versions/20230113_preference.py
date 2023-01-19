@@ -27,6 +27,7 @@ def upgrade():
     sa.Column('username', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('filters', sa.JSON(), nullable=False),
+    sa.Column('options', sa.JSON(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     schema='settings'
     )

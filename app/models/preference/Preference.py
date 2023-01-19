@@ -20,6 +20,8 @@ class Preference(db.Model):
     name = Column(String, nullable = False)
     # Donnée technique du filtre brut
     filters = Column(JSON, nullable = False)
+    # Autre Options pour les preferences (pour les group by par exemple)
+    options = Column(JSON, nullable = True)
     # Relationship
     shares = relationship("Share", lazy="select",uselist=True)
 
