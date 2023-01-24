@@ -18,7 +18,7 @@ class RefCrte(Resource):
     @api.expect(parser_crte)
     def get(self):
         p_args = parser_crte.parse_args()
-        name = f'%{p_args.get("nom")}%' if p_args.get("name") is not None else None
+        name = f'%{p_args.get("nom")}%' if p_args.get("nom") is not None else None
         dept = p_args.get("departement") if p_args.get("departement") is not None else None
         limit = p_args.get("limit")
         sql_select = "SELECT DISTINCT label_crte, code_crte FROM ref_commune"
@@ -26,10 +26,13 @@ class RefCrte(Resource):
             result = db.engine.execute(
                 text(f"{sql_select} ORDER BY label_crte LIMIT :limit"), limit=limit).all()
         else :
-            sql_select += " WHERE "
-            sql_select += f" {'label_crte ilike :name AND ' if name is not None else ''} "
-            sql_select += f" {'code_departement =:dpt' if dept is not None else ''} "
-            result = db.engine.execute(text(f"{sql_select} ORDER BY label_crte LIMIT :limit"),
+            where_clause = []
+            if name is not None :
+                where_clause.append('label_crte ilike :name')
+            if dept is not None:
+                where_clause.append('code_departement =:dpt')
+
+            result = db.engine.execute(text(f"{sql_select} WHERE {' AND '.join(where_clause)} ORDER BY label_crte LIMIT :limit"),
                                        limit=limit, name=name, dpt=dept).all()
 
         return [{'nom': row[0], 'code':row[1]} for row in result], 200
