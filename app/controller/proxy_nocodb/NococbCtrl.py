@@ -1,17 +1,12 @@
-import io
 import logging
-
-import csv
-
 import pandas
+from nocodb.infra.requests_client import NocoDBRequestsClient
 
 from app import oidc
 from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
-from nocodb.nocodb import NocoDBProject
+from nocodb.nocodb import NocoDBProject, APIToken
 
-from app.proxy_nocodb.client.NocoDBRequestsCustomClient import NocoDBRequestsCustomClient, get_auth_token, \
-    NocoDbClientException
 
 args_get = reqparse.RequestParser()
 args_get.add_argument('sort', type=str, required=False, help="Champ à trier")
@@ -93,23 +88,20 @@ class HealthCheck(Resource):
 
 
 
-def build_client(project) -> NocoDBRequestsCustomClient:
+def build_client(project) -> NocoDBRequestsClient:
     '''
     Construit le client nocodb
     :param project: nom du projet
     :return:
     '''
     uri = current_app.config['NOCODB_URL']
-    email = current_app.config['NOCODB_TECH_LOGIN']
-    pwd = current_app.config['NOCODB_TECH_PWD']
+    token = current_app.config['NOCODB_PROJECT'][project]
 
-    if uri is None or email is None or pwd is None:
+    if token is None :
         abort(403, f"Information manquante pour le projet {project}")
-
     try :
-        token = get_auth_token(uri, email, pwd)
-        return NocoDBRequestsCustomClient(token, uri)
-    except NocoDbClientException as clientException:
+        return NocoDBRequestsClient(APIToken(token), uri)
+    except Exception as clientException:
         logging.error(clientException)
         abort(500, f"Erreur interne ")
 

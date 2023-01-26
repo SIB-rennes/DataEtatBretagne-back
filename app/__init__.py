@@ -13,13 +13,15 @@ from flask_sqlalchemy import SQLAlchemy
 
 from app import celeryapp
 
+
 db = SQLAlchemy()
 migrate = Migrate()
 ma = Marshmallow()
 oidc = OpenIDConnect()
 
 from flask_cors import CORS
-from app.models import Chorus
+from app.models.financial import Chorus
+
 
 def create_app_migrate():
     return create_app_base(oidcEnable=False, expose_endpoint=False)
@@ -70,8 +72,12 @@ def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=Tr
         CORS(app, resources={r"/api/*": {"origins": "*"}})
 
         from app.controller import api_v1 # pour éviter les import circulaire avec oidc
+        from app.controller.user_management import api_management
+        from app.controller.ref_controller import api_ref
 
         app.register_blueprint(api_v1, url_prefix='/')
+        app.register_blueprint(api_management, url_prefix='/management')
+        app.register_blueprint(api_ref, url_prefix='/referentiels')
         mount_proxy_endpoint_nocodb(app)
 
     return app
@@ -89,12 +95,12 @@ def read_config(app):
     app.config.update(config_data)
 
     if (app.config['DEBUG'] == True):
-        app.config['SQLALCHEMY_ECHO'] = False
+        app.config['SQLALCHEMY_ECHO'] = True
         logging.getLogger().setLevel(logging.DEBUG)
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 def mount_proxy_endpoint_nocodb(app):
-    from app.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
-    for project in app.config['NOCODB_PROJECT']:
-        app.register_blueprint(mount_blueprint(project), url_prefix=f"/nocodb/{project}")
+    from app.controller.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
+    for project in app.config['NOCODB_PROJECT'].items():
+        app.register_blueprint(mount_blueprint(project[0]), url_prefix=f"/nocodb/{project[0]}")
