@@ -9,8 +9,8 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from app import oidc
-from app.controller.Decorator import isAdmin
-
+from app.controller.Decorator import check_permission
+from app.models.enums.ConnectionProfile import ConnectionProfile
 
 api = Namespace(name="chorus", path='/chorus',
                 description='Api de délenchements des taks chorus')
@@ -24,7 +24,7 @@ ALLOWED_EXTENSIONS = {'csv'}
 @api.route('/update/commune')
 class CommuneRef(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @isAdmin
+    @check_permission(ConnectionProfile.ADMIN)
     @api.doc(security="Bearer")
     def post(self):
         from app.tasks import maj_all_communes_tasks
@@ -37,7 +37,7 @@ class ChorusImport(Resource):
 
     @api.expect(parser)
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @isAdmin
+    @check_permission(ConnectionProfile.ADMIN)
     @api.doc(security="Bearer")
     def post(self):
         args = parser.parse_args()
@@ -68,7 +68,7 @@ class LineImport(Resource):
 
     @api.expect(parser_line)
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @isAdmin
+    @check_permission(ConnectionProfile.ADMIN)
     @api.doc(security="Bearer")
     def post(self):
         args = parser_line.parse_args()

@@ -2,7 +2,7 @@ import logging
 import time
 
 from app import db, celeryapp
-from app.clients import get_info_commune
+from app.clients.geo import get_info_commune
 from app.models.refs.commune import Commune
 
 LOGGER = logging.getLogger()
