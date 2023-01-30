@@ -1,3 +1,4 @@
+import io
 import logging
 import pandas
 from nocodb.infra.requests_client import NocoDBRequestsClient
