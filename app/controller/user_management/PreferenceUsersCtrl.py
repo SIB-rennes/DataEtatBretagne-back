@@ -8,10 +8,11 @@ The `PreferenceUsers` class, which inherits from `Resource`, is responsible for 
 import logging
 from http import HTTPStatus
 
-from flask_restx import Namespace, Resource, fields, abort
+from flask_restx import Namespace, Resource, fields, abort, reqparse
 from flask import request, g
 from marshmallow import ValidationError
 from app import db, oidc
+from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
 from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema
 
 api = Namespace(name="preferences", path='/users/preferences',
@@ -133,3 +134,30 @@ class CrudPreferenceUsers(Resource):
         result = schema.dump(preference)
         return result,200
 
+
+parser_search =  reqparse.RequestParser()
+parser_search.add_argument("username", type=str, required=True, help="Username")
+@api.route('/search-user')
+class UsersSearch(Resource):
+
+    @api.response(200, 'Search user by email/username for sharing')
+    @api.doc(security="Bearer")
+    @api.expect(parser_search)
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    def get(self):
+        """
+        Search users by userName
+        """
+        p_args = parser_search.parse_args()
+        search_username = p_args.get("username")
+
+        if search_username is None or len(search_username)  < 4:
+            return {'users': []}, 200
+        try:
+            keycloak_admin = build_admin_client()
+            query = {'briefRepresentation': True, 'enabled':True, 'search': search_username}
+            users = keycloak_admin.get_users(query)
+
+            return [{'username': user['username']} for user in users], 200
+        except KeycloakAdminException as admin_exception:
+            return admin_exception.message, 400
