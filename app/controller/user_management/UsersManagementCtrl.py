@@ -7,7 +7,7 @@ from flask import g
 
 
 from app import oidc
-from flask_restx import Namespace, Resource, abort, inputs
+from flask_restx import Namespace, Resource, abort, inputs, reqparse
 
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
 from app.controller.Decorator import check_permission
@@ -19,6 +19,10 @@ api = Namespace(name="users", path='/users',
                 description='API for managing users')
 parser_get = get_pagination_parser()
 parser_get.add_argument("only_disable", type=inputs.boolean, required=False, default=False, help="Only disable user or not")
+
+
+parser_search =  reqparse.RequestParser()
+parser_search.add_argument("username", type=str, required=True, help="Username")
 
 @api.route('')
 class UsersManagement(Resource):
@@ -55,6 +59,33 @@ class UsersManagement(Resource):
             return { 'users' : users , 'pageInfo': Pagination(count_users, page_number, users.__len__()).to_json()}, 200
         except KeycloakAdminException as admin_exception:
             return admin_exception.message, 400
+
+
+@api.route('/search')
+class UsersSearch(Resource):
+
+    @api.response(200, 'Search user by email/username')
+    @api.doc(security="Bearer")
+    @api.expect(parser_search)
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    def get(self):
+        """
+        Search users by userName
+        """
+        p_args = parser_search.parse_args()
+        search_username = p_args.get("username")
+
+        if search_username is None or len(search_username)  < 4:
+            return {'users': []}, 200
+        try:
+            keycloak_admin = build_admin_client()
+            query = {'briefRepresentation': True, 'enabled':True, 'search': search_username}
+            users = keycloak_admin.get_users(query)
+            return {'users': users}, 200
+        except KeycloakAdminException as admin_exception:
+            return admin_exception.message, 400
+
+
 
 @api.route('/disable/<uuid>')
 class UsersDisable(Resource):
