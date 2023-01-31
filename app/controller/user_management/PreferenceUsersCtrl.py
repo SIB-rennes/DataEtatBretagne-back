@@ -8,11 +8,14 @@ The `PreferenceUsers` class, which inherits from `Resource`, is responsible for 
 import logging
 from http import HTTPStatus
 
-from flask_restx import Namespace, Resource, fields, abort
+from flask_restx import Namespace, Resource, fields, abort, reqparse
 from flask import request, g
 from marshmallow import ValidationError
+from sqlalchemy.orm import joinedload, subqueryload, lazyload
+
 from app import db, oidc
-from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema
+from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
+from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema, Share
 
 api = Namespace(name="preferences", path='/users/preferences',
                 description='API for managing users preference')
@@ -20,7 +23,10 @@ api = Namespace(name="preferences", path='/users/preferences',
 
 preference = api.model('CreatePreference', {
     'name': fields.String(required=True, description='Name of the preference'),
-    'filters':  fields.Wildcard(fields.Raw, description="JSON object representing the user's filter")
+    'filters':  fields.Wildcard(fields.Raw, description="JSON object representing the user's filter"),
+    'shares': fields.List(fields.Nested( api.model('shares', {
+        'shared_username_email': fields.String(required=True, description="Courriel d'un utilisateur"),
+    }), required = False), required = False)
 })
 
 preference_get  = api.model('Preference', {
@@ -54,7 +60,10 @@ class PreferenceUsers(Resource):
         except ValidationError as err:
             logging.error(f"[PREFERENCE][CTRL] {err.messages}")
             return {"message": "Invalid", "details": err.messages}, 400
-        pref = Preference(**data)
+
+        share_list = [Share(**share) for share in data['shares']]
+        pref = Preference(username = data['username'], name = data['name'], options = data['options'], filters = data['filters'])
+        pref.shares = share_list
 
         try:
             db.session.add(pref)
@@ -79,7 +88,7 @@ class PreferenceUsers(Resource):
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
 
-        list_pref =  Preference.query.filter_by(username=username).order_by(Preference.id).all()
+        list_pref =  Preference.query.options(lazyload(Preference.shares)).filter_by(username=username).order_by(Preference.id).all()
         schema = PreferenceSchema(many=True)
         result = schema.dump(list_pref)
         return result,200
@@ -133,3 +142,30 @@ class CrudPreferenceUsers(Resource):
         result = schema.dump(preference)
         return result,200
 
+
+parser_search =  reqparse.RequestParser()
+parser_search.add_argument("username", type=str, required=True, help="Username")
+@api.route('/search-user')
+class UsersSearch(Resource):
+
+    @api.response(200, 'Search user by email/username for sharing')
+    @api.doc(security="Bearer")
+    @api.expect(parser_search)
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    def get(self):
+        """
+        Search users by userName
+        """
+        p_args = parser_search.parse_args()
+        search_username = p_args.get("username")
+
+        if search_username is None or len(search_username)  < 4:
+            return {'users': []}, 200
+        try:
+            keycloak_admin = build_admin_client()
+            query = {'briefRepresentation': True, 'enabled':True, 'search': search_username}
+            users = keycloak_admin.get_users(query)
+
+            return [{'username': user['username']} for user in users], 200
+        except KeycloakAdminException as admin_exception:
+            return admin_exception.message, 400
