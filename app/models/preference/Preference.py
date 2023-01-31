@@ -36,20 +36,29 @@ class Share(db.Model):
     preference_id = db.Column(Integer, db.ForeignKey('settings.preference_users.id'))
     shared_username_email = db.Column(String, nullable = False)
 
-
-class PreferenceSchema(ma.SQLAlchemyAutoSchema):
+class SharesFormSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        model = Preference
-        exclude = ('shares','id','username',)
+        model = Share
+        exclude = ('id',)
+
+    shared_username_email = fields.Email(required=True)
 
 class PreferenceFormSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Preference
-        exclude = ('shares','uuid',)
+        exclude = ('uuid',)
 
     filters = fields.Raw(required=True)
+    shares = fields.List(fields.Nested(SharesFormSchema), required=False)
 
 class ShareSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Share
-        include_fk = True
+        exclude = ('id','preference_id',)
+
+class PreferenceSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Preference
+        exclude = ('id','username',)
+
+    shares = fields.List(fields.Nested(ShareSchema), required=False)
