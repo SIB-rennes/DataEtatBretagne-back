@@ -22,8 +22,9 @@ api = Namespace(name="preferences", path='/users/preferences',
                 description='API for managing users preference')
 
 
-preference = api.model('CreatePreference', {
+preference = api.model('CreateUpdatePreference', {
     'name': fields.String(required=True, description='Name of the preference'),
+    'uuid': fields.String(required=False, description='Uuid of the preference for update'),
     'filters':  fields.Wildcard(fields.Raw, description="JSON object representing the user's filter"),
     'shares': fields.List(fields.Nested( api.model('shares', {
         'shared_username_email': fields.String(required=True, description="Courriel d'un utilisateur"),
@@ -129,6 +130,35 @@ class CrudPreferenceUsers(Resource):
 
         try:
             db.session.delete(preference)
+            db.session.commit()
+            return "Success", 200
+        except Exception as e:
+            logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid}", e)
+            return abort(message="Error when delete preference", code=HTTPStatus.BAD_REQUEST)
+
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @api.doc(security="Bearer")
+    @api.expect(preference)
+    @api.response(200, "Success if delete")
+    def post(self, uuid):
+        """
+        Update uuid preference
+        """
+        logging.debug(f"Update users prefs {uuid}")
+        if 'username' not in g.oidc_token_info:
+            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
+        username = g.oidc_token_info['username']
+        preference_to_save = Preference.query.filter_by(uuid=uuid).one()
+
+        if preference_to_save.username != username:
+            return abort(message="Vous n'avez pas les droits de modifier cette préférence", code=HTTPStatus.FORBIDDEN)
+
+        json_data = request.get_json()
+
+        share_list = [Share(**share) for share in json_data['shares']]
+        preference_to_save.shares = share_list
+        preference_to_save.name = json_data['name']
+        try:
             db.session.commit()
             return "Success", 200
         except Exception as e:
