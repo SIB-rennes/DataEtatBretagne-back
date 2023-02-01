@@ -59,6 +59,6 @@ class ShareSchema(ma.SQLAlchemyAutoSchema):
 class PreferenceSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Preference
-        exclude = ('id','username',)
+        exclude = ('id',)
 
     shares = fields.List(fields.Nested(ShareSchema), required=False)
