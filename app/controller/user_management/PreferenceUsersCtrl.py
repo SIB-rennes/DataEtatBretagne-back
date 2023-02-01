@@ -11,6 +11,7 @@ from http import HTTPStatus
 from flask_restx import Namespace, Resource, fields, abort, reqparse
 from flask import request, g
 from marshmallow import ValidationError
+from sqlalchemy import distinct, join
 from sqlalchemy.orm import joinedload, subqueryload, lazyload
 
 from app import db, oidc
@@ -21,8 +22,9 @@ api = Namespace(name="preferences", path='/users/preferences',
                 description='API for managing users preference')
 
 
-preference = api.model('CreatePreference', {
+preference = api.model('CreateUpdatePreference', {
     'name': fields.String(required=True, description='Name of the preference'),
+    'uuid': fields.String(required=False, description='Uuid of the preference for update'),
     'filters':  fields.Wildcard(fields.Raw, description="JSON object representing the user's filter"),
     'shares': fields.List(fields.Nested( api.model('shares', {
         'shared_username_email': fields.String(required=True, description="Courriel d'un utilisateur"),
@@ -31,8 +33,17 @@ preference = api.model('CreatePreference', {
 
 preference_get  = api.model('Preference', {
     'name': fields.String(required=True, description='Name of the preference'),
+    'username': fields.String(required = True, description='Creator of the preference'),
     'uuid': fields.String(required=True, description='Uuid of the preference'),
-    'filters':  fields.Wildcard(fields.Raw, description="JSON object representing the user's filter")
+    'filters':  fields.Wildcard(fields.Raw, description="JSON object representing the user's filter"),
+    'shares': fields.List(fields.Nested( api.model('shares', {
+        'shared_username_email': fields.String(required=True, description="Courriel d'un utilisateur"),
+    }), required = False), required = False)
+})
+
+list_preference_get = api.model('Preference_Share', {
+    'create_by_user' : fields.List(fields.Nested(preference_get)),
+    'shared_with_user': fields.List(fields.Nested(preference_get))
 })
 
 @api.route('')
@@ -77,7 +88,7 @@ class PreferenceUsers(Resource):
 
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer")
-    @api.response(200, "List of the user's preferences", [preference_get] )
+    @api.response(200, "List of the user's preferences", [list_preference_get] )
     def get(self):
         """
         Retrieve the list
@@ -88,10 +99,14 @@ class PreferenceUsers(Resource):
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
 
-        list_pref =  Preference.query.options(lazyload(Preference.shares)).filter_by(username=username).order_by(Preference.id).all()
+        list_pref = Preference.query.options(lazyload(Preference.shares)).filter_by(username=username).order_by(
+            Preference.id).all()
+        list_pref_shared = Preference.query.join(Share).filter(Share.shared_username_email == username).distinct(Preference.id).all()
+
         schema = PreferenceSchema(many=True)
-        result = schema.dump(list_pref)
-        return result,200
+        create_by_user = schema.dump(list_pref)
+        shared_with_user=schema.dump(list_pref_shared)
+        return { 'create_by_user': create_by_user, 'shared_with_user' :shared_with_user} ,200
 
 @api.route('/<uuid>')
 class CrudPreferenceUsers(Resource):
@@ -121,23 +136,47 @@ class CrudPreferenceUsers(Resource):
             logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid}", e)
             return abort(message="Error when delete preference", code=HTTPStatus.BAD_REQUEST)
 
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @api.doc(security="Bearer")
+    @api.expect(preference)
+    @api.response(200, "Success if delete")
+    def post(self, uuid):
+        """
+        Update uuid preference
+        """
+        logging.debug(f"Update users prefs {uuid}")
+        if 'username' not in g.oidc_token_info:
+            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
+        username = g.oidc_token_info['username']
+        preference_to_save = Preference.query.filter_by(uuid=uuid).one()
+
+        if preference_to_save.username != username:
+            return abort(message="Vous n'avez pas les droits de modifier cette préférence", code=HTTPStatus.FORBIDDEN)
+
+        json_data = request.get_json()
+
+        share_list = [Share(**share) for share in json_data['shares']]
+        preference_to_save.shares = share_list
+        preference_to_save.name = json_data['name']
+        try:
+            db.session.commit()
+            return "Success", 200
+        except Exception as e:
+            logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid}", e)
+            return abort(message="Error when delete preference", code=HTTPStatus.BAD_REQUEST)
+
 
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer")
-    @api.response(200, "User preference", [preference_get])
+    @api.response(200, "User preference", preference_get)
     def get(self, uuid):
         """
         Get by uuid preference
         """
         logging.debug(f"Get users prefs {uuid}")
 
-        if 'username' not in g.oidc_token_info:
-            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.oidc_token_info['username']
         preference = Preference.query.filter_by(uuid=uuid).one()
 
-        if preference.username != username:
-            return abort(message="Vous n'avez pas les droits pour voir cette préférence", code=HTTPStatus.FORBIDDEN)
         schema = PreferenceSchema()
         result = schema.dump(preference)
         return result,200
