@@ -72,7 +72,10 @@ class PreferenceUsers(Resource):
             logging.error(f"[PREFERENCE][CTRL] {err.messages}")
             return {"message": "Invalid", "details": err.messages}, 400
 
-        share_list = [Share(**share) for share in data['shares']]
+        # on retire les shares pour soit même.
+        shares = list(filter(lambda d: d['shared_username_email'] != json_data['username'], data['shares']))
+
+        share_list = [Share(**share) for share in shares]
         pref = Preference(username = data['username'], name = data['name'], options = data['options'], filters = data['filters'])
         pref.shares = share_list
 
@@ -155,7 +158,9 @@ class CrudPreferenceUsers(Resource):
 
         json_data = request.get_json()
 
-        share_list = [Share(**share) for share in json_data['shares']]
+        # on retire les shares pour soit même.
+        shares = list(filter(lambda d: d['shared_username_email'] != username, json_data['shares']))
+        share_list = [Share(**share) for share in shares]
         preference_to_save.shares = share_list
         preference_to_save.name = json_data['name']
         try:
