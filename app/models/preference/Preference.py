@@ -1,7 +1,7 @@
 import datetime
 import uuid as uuid
 from marshmallow import fields
-from sqlalchemy import Column, String, Integer, JSON, DateTime
+from sqlalchemy import Column, String, Integer, JSON, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app import db, ma
@@ -28,7 +28,7 @@ class Preference(db.Model):
     dernier_acces = Column(DateTime, nullable=True)
     nombre_utilisation = Column(Integer, nullable=True, default=0)
     # Relationship
-    shares = relationship("Share", lazy="select",uselist=True)
+    shares = relationship("Share", lazy="select",uselist=True, cascade="delete")
 
 
 class Share(db.Model):
@@ -40,11 +40,12 @@ class Share(db.Model):
     # FK
     preference_id = db.Column(Integer, db.ForeignKey('settings.preference_users.id'))
     shared_username_email = db.Column(String, nullable = False)
+    email_send = db.Column(Boolean, nullable = False, default = False)
 
 class SharesFormSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Share
-        exclude = ('id',)
+        exclude = ('id','email_send',)
 
     shared_username_email = fields.Email(required=True)
 

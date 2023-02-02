@@ -14,7 +14,7 @@ from flask import request, g
 from marshmallow import ValidationError
 from sqlalchemy.orm import lazyload
 
-from app import db, oidc
+from app import db, oidc, mailapp
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
 from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema, Share
 
@@ -59,6 +59,7 @@ class PreferenceUsers(Resource):
         """
         Create a new preference for the current user
         """
+        from app.tasks.management_tasks import share_filter_user
         logging.debug("[PREFERENCE][CTRL] Post users prefs")
         json_data = request.get_json()
         if 'username' not in g.oidc_token_info :
@@ -83,6 +84,7 @@ class PreferenceUsers(Resource):
             db.session.add(pref)
             logging.info(f'[PREFERENCE][CTRL] Adding preference for user {json_data["username"]}')
             db.session.commit()
+            share_filter_user.delay("test subject", str(pref.uuid))
         except Exception as e:
             logging.error("[PREFERENCE][CTRL] Error when saving preference", e)
             return abort(message= "Error when saving preference", code=HTTPStatus.BAD_REQUEST)
@@ -220,3 +222,32 @@ class UsersSearch(Resource):
             return [{'username': user['username']} for user in users], 200
         except KeycloakAdminException as admin_exception:
             return admin_exception.message, 400
+
+import smtplib, ssl
+
+mail = mailapp.mail
+@api.route('/test-send-mail')
+class TestSendMail(Resource):
+
+    def get(self):
+        from app.tasks.management_tasks import share_filter_user
+        share_filter_user.delay("toto", "5f4efa27-7757-414e-9221-c163444bec8b")
+        # test_mail = "sylv1.jolivet@gmail.com"
+        #
+        # text_template = """
+        #                   Geekflare
+        #
+        #                   Hi {0},
+        #                   We are delighted announce that our website hits 10 Million views this month.
+        #                   """
+        # html_template = """
+        #                   <h1>Geekflare</h1>
+        #
+        #                   <p>Hi {0},</p>
+        #                   <p>We are delighted announce that our website hits <b>10 Million</b> views last month.</p>
+        #                   """
+        #
+        # mail.send_email("Test mail", test_mail, text_template.format(test_mail.split("@")[0]),
+        #                 html_template.format(test_mail.split("@")[0]) )
+
+        return "", 200

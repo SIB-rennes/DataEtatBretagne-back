@@ -23,3 +23,10 @@ NOCODB_TECH_PWD: 'PWD'
 NOCODB_PROJECT:
   PROJECT: TOKEN_API
   PROJECT_2: TOKEN_API_PROJECT
+
+SMTP:
+  server: ""
+  port: 465
+  from_email: ""
+  pwd: "password"
+  use_ssl: True
