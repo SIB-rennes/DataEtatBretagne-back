@@ -5,14 +5,14 @@ The `preference` and `preference_get` models are used to define the expected inp
 
 The `PreferenceUsers` class, which inherits from `Resource`, is responsible for handling the `post` and `get` methods, and it has the decorators to handle the request validation, token validation, and request/response serialization.
 """
+import datetime
 import logging
 from http import HTTPStatus
 
 from flask_restx import Namespace, Resource, fields, abort, reqparse
 from flask import request, g
 from marshmallow import ValidationError
-from sqlalchemy import distinct, join
-from sqlalchemy.orm import joinedload, subqueryload, lazyload
+from sqlalchemy.orm import lazyload
 
 from app import db, oidc
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
@@ -72,7 +72,10 @@ class PreferenceUsers(Resource):
             logging.error(f"[PREFERENCE][CTRL] {err.messages}")
             return {"message": "Invalid", "details": err.messages}, 400
 
-        share_list = [Share(**share) for share in data['shares']]
+        # on retire les shares pour soit même.
+        shares = list(filter(lambda d: d['shared_username_email'] != json_data['username'], data['shares']))
+
+        share_list = [Share(**share) for share in shares]
         pref = Preference(username = data['username'], name = data['name'], options = data['options'], filters = data['filters'])
         pref.shares = share_list
 
@@ -105,7 +108,7 @@ class PreferenceUsers(Resource):
 
         schema = PreferenceSchema(many=True)
         create_by_user = schema.dump(list_pref)
-        shared_with_user=schema.dump(list_pref_shared)
+        shared_with_user = schema.dump(list_pref_shared)
         return { 'create_by_user': create_by_user, 'shared_with_user' :shared_with_user} ,200
 
 @api.route('/<uuid>')
@@ -155,7 +158,9 @@ class CrudPreferenceUsers(Resource):
 
         json_data = request.get_json()
 
-        share_list = [Share(**share) for share in json_data['shares']]
+        # on retire les shares pour soit même.
+        shares = list(filter(lambda d: d['shared_username_email'] != username, json_data['shares']))
+        share_list = [Share(**share) for share in shares]
         preference_to_save.shares = share_list
         preference_to_save.name = json_data['name']
         try:
@@ -179,6 +184,13 @@ class CrudPreferenceUsers(Resource):
 
         schema = PreferenceSchema()
         result = schema.dump(preference)
+        try :
+            preference.nombre_utilisation += 1
+            preference.dernier_acces = datetime.datetime.utcnow()
+            db.session.commit()
+        except Exception as e:
+            logging.warning(f"[PREFERENCE][CTRL] Error when update count usage preference {uuid}", e)
+
         return result,200
 
 
