@@ -1,6 +1,7 @@
+import datetime
 import uuid as uuid
 from marshmallow import fields
-from sqlalchemy import Column, String, Integer, JSON
+from sqlalchemy import Column, String, Integer, JSON, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app import db, ma
@@ -22,6 +23,10 @@ class Preference(db.Model):
     filters = Column(JSON, nullable = False)
     # Autre Options pour les preferences (pour les group by par exemple)
     options = Column(JSON, nullable = True)
+    # date de creation
+    date_creation = Column(DateTime, nullable=True, default=datetime.datetime.utcnow)
+    dernier_acces = Column(DateTime, nullable=True)
+    nombre_utilisation = Column(Integer, nullable=True, default=0)
     # Relationship
     shares = relationship("Share", lazy="select",uselist=True)
 
@@ -46,7 +51,7 @@ class SharesFormSchema(ma.SQLAlchemyAutoSchema):
 class PreferenceFormSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Preference
-        exclude = ('uuid',)
+        exclude = ('uuid','date_creation','nombre_utilisation','dernier_acces',)
 
     filters = fields.Raw(required=True)
     shares = fields.List(fields.Nested(SharesFormSchema), required=False)
@@ -59,6 +64,6 @@ class ShareSchema(ma.SQLAlchemyAutoSchema):
 class PreferenceSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Preference
-        exclude = ('id',)
+        exclude = ('id','date_creation','nombre_utilisation','dernier_acces',)
 
     shares = fields.List(fields.Nested(ShareSchema), required=False)
