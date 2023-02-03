@@ -39,6 +39,9 @@ def create_celery_app(_app=None):
         'update_all_*': {
             'queue': 'file'
         },
+        'share_*': {
+            'queue': 'file'
+        },
         'import_line_*': {
             'queue': 'line'
         }

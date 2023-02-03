@@ -14,7 +14,7 @@ from flask import request, g
 from marshmallow import ValidationError
 from sqlalchemy.orm import lazyload
 
-from app import db, oidc
+from app import db, oidc, mailapp
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
 from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema, Share
 
@@ -59,6 +59,7 @@ class PreferenceUsers(Resource):
         """
         Create a new preference for the current user
         """
+        from app.tasks.management_tasks import share_filter_user
         logging.debug("[PREFERENCE][CTRL] Post users prefs")
         json_data = request.get_json()
         if 'username' not in g.oidc_token_info :
@@ -83,6 +84,7 @@ class PreferenceUsers(Resource):
             db.session.add(pref)
             logging.info(f'[PREFERENCE][CTRL] Adding preference for user {json_data["username"]}')
             db.session.commit()
+            share_filter_user.delay(str(pref.uuid), request.host_url)
         except Exception as e:
             logging.error("[PREFERENCE][CTRL] Error when saving preference", e)
             return abort(message= "Error when saving preference", code=HTTPStatus.BAD_REQUEST)
@@ -97,7 +99,6 @@ class PreferenceUsers(Resource):
         Retrieve the list
         """
         logging.debug("get users prefs")
-
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
@@ -147,6 +148,7 @@ class CrudPreferenceUsers(Resource):
         """
         Update uuid preference
         """
+        from app.tasks.management_tasks import share_filter_user
         logging.debug(f"Update users prefs {uuid}")
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
@@ -158,13 +160,39 @@ class CrudPreferenceUsers(Resource):
 
         json_data = request.get_json()
 
-        # on retire les shares pour soit même.
+        # filter the shares list to exclude the current username
         shares = list(filter(lambda d: d['shared_username_email'] != username, json_data['shares']))
-        share_list = [Share(**share) for share in shares]
-        preference_to_save.shares = share_list
+        # create a list of Share objects from the filtered shares
+        new_share_list = [Share(**share) for share in shares]
+        # initialize a list to store the final shares to save
+        shares_to_save = []
+        # create sets of existing and new shares, based on their shared_username_email values
+        existing_shares = {s.shared_username_email for s in preference_to_save.shares}
+        new_shares = {s.shared_username_email for s in new_share_list}
+
+        # find shares to delete and add
+        to_delete = existing_shares - new_shares
+        to_add = new_shares - existing_shares
+
+        # delete shares that are no longer in the new share list
+        for current_share in preference_to_save.shares:
+            if current_share.shared_username_email in to_delete:
+                db.session.delete(current_share)
+
+        # add new shares that were not in the existing share list
+        for new_share in new_share_list:
+            if new_share.shared_username_email in to_add:
+                shares_to_save.append(new_share)
+
+        # set the final shares for the preference to save
+        preference_to_save.shares = shares_to_save + [s for s in preference_to_save.shares if
+                                                      s.shared_username_email not in to_delete]
+
         preference_to_save.name = json_data['name']
         try:
             db.session.commit()
+            # send task async
+            share_filter_user.delay(str(preference_to_save.uuid), request.host_url)
             return "Success", 200
         except Exception as e:
             logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid}", e)
