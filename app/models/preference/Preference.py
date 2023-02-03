@@ -28,7 +28,7 @@ class Preference(db.Model):
     dernier_acces = Column(DateTime, nullable=True)
     nombre_utilisation = Column(Integer, nullable=True, default=0)
     # Relationship
-    shares = relationship("Share", lazy="select",uselist=True, cascade="delete")
+    shares = relationship("Share", lazy="select",uselist=True, cascade="delete,save-update,merge")
 
 
 class Share(db.Model):
