@@ -22,7 +22,7 @@ stages:
     - echo ${VERSION_IMAGE}
     - echo $IMAGE
     - docker build -f ${DOCKERFILE} -t ${IMAGE} .
-    - echo ${REGISTRY_DOCKER_PWD} | docker login ${REGISTRY_DOCKER} -u ${REGISTRY_DOCKER_USER} --password-stdin
+    - echo ${REGISTRY_PASSWORD} | docker login ${REGISTRY} -u ${REGISTRY_USER} --password-stdin
     - docker tag ${IMAGE} ${IMAGE}:${VERSION_IMAGE}
     - echo "push ${IMAGE}:${VERSION_IMAGE}" && docker push ${IMAGE}:${VERSION_IMAGE}
 
@@ -32,10 +32,11 @@ docker-build-snapshot:
   only:
     - develop
     - main
+    - /^chore.*$/
     - /^feature.*$/
     - /^hotfix.*$/
   variables:
-    IMAGE: "${REGISTRY_DOCKER}nocode/data-transform/${CI_COMMIT_REF_NAME}"
+    IMAGE: "${REGISTRY}nocode/data-transform/${CI_COMMIT_REF_NAME}"
     DOCKERFILE: "Dockerfile"
   before_script:
     - export VERSION_IMAGE="${CI_COMMIT_SHA:0:8}-snapshot"
@@ -46,7 +47,7 @@ docker-build-tags:
   only:
     - tags
   variables:
-    IMAGE: "${REGISTRY_DOCKER}nocode/data-transform"
+    IMAGE: "${REGISTRY}nocode/data-transform"
     DOCKERFILE: "Dockerfile"
   before_script:
     - export VERSION_IMAGE="${CI_COMMIT_REF_NAME}"
@@ -64,6 +65,7 @@ deploy-integ-snapshot:
   only:
     - develop
     - main
+    - /^chore.*$/
     - /^feature.*$/
     - /^hotfix.*$/
   when: manual

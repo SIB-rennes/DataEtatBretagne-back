@@ -7,7 +7,7 @@ from flask import g
 
 
 from app import oidc
-from flask_restx import Namespace, Resource, abort, inputs
+from flask_restx import Namespace, Resource, abort, inputs, reqparse
 
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
 from app.controller.Decorator import check_permission
@@ -19,6 +19,7 @@ api = Namespace(name="users", path='/users',
                 description='API for managing users')
 parser_get = get_pagination_parser()
 parser_get.add_argument("only_disable", type=inputs.boolean, required=False, default=False, help="Only disable user or not")
+
 
 @api.route('')
 class UsersManagement(Resource):
@@ -55,6 +56,7 @@ class UsersManagement(Resource):
             return { 'users' : users , 'pageInfo': Pagination(count_users, page_number, users.__len__()).to_json()}, 200
         except KeycloakAdminException as admin_exception:
             return admin_exception.message, 400
+
 
 @api.route('/disable/<uuid>')
 class UsersDisable(Resource):

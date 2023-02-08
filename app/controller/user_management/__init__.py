@@ -7,7 +7,7 @@ api_management = Blueprint('api_management', __name__)
 
 authorizations = {"Bearer": {"type": "apiKey", "in": "header", "name": "Authorization"}}
 
-api = Api(api_management, doc='/doc', prefix="/api/v1", description="API de gestion des utilisateurs", title="Gestion des utilisateurs",
+api = Api(api_management, doc='/doc', prefix="/api/v1", description="API de gestion des paramétrages et utilisateurs", title="Gestion des paramétrages/utilisateurs",
           authorizations=authorizations)
 api.add_namespace(userApi)
 api.add_namespace(prefApi)

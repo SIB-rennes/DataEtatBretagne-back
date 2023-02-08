@@ -11,7 +11,8 @@ from flask_oidc import OpenIDConnect
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 
-from app import celeryapp
+from app import celeryapp, mailapp
+
 
 
 db = SQLAlchemy()
@@ -47,6 +48,9 @@ def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=Tr
     # Celery
     celery = celeryapp.create_celery_app(app)
     celeryapp.celery = celery
+
+    mail = mailapp.create_mail_app(app)
+    mailapp.mail = mail
 
     # init oidc
     if oidcEnable and exists('config/keycloak.json'):
