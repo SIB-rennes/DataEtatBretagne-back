@@ -77,7 +77,7 @@ class PreferenceUsers(Resource):
         shares = list(filter(lambda d: d['shared_username_email'] != json_data['username'], data['shares']))
 
         share_list = [Share(**share) for share in shares]
-        application = request.host
+        application = request.host_url
         pref = Preference(username = data['username'], name = data['name'], options = data['options'], filters = data['filters'], application_host=application)
         pref.shares = share_list
 
@@ -101,11 +101,11 @@ class PreferenceUsers(Resource):
         """
         Retrieve the list
         """
-        logging.debug(f"get users prefs {request.host}")
+        logging.debug(f"get users prefs {request.host_url}")
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
-        application = request.host
+        application = request.host_url
 
         list_pref = Preference.query.options(lazyload(Preference.shares)).filter_by(username=username,application_host=application).order_by(
             Preference.id).all()
@@ -131,7 +131,7 @@ class CrudPreferenceUsers(Resource):
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
-        application = request.host
+        application = request.host_url
         preference = Preference.query.filter_by(uuid=uuid, application_host=application).one()
 
         if preference.username != username:
@@ -158,7 +158,7 @@ class CrudPreferenceUsers(Resource):
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
-        application = request.host
+        application = request.host_url
         preference_to_save = Preference.query.filter_by(uuid=uuid, application_host=application).one()
 
         if preference_to_save.username != username:
@@ -215,7 +215,7 @@ class CrudPreferenceUsers(Resource):
         """
         logging.debug(f"Get users prefs {uuid}")
 
-        application = request.host
+        application = request.host_url
         preference = Preference.query.filter_by(uuid=uuid, application_host=application).one()
 
         schema = PreferenceSchema()
