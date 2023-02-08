@@ -24,11 +24,13 @@ def upgrade():
     query_column_dernier_acces = "ALTER TABLE settings.preference_users ADD COLUMN dernier_acces timestamptz DEFAULT NULL"
     query_column_nombre_utilisation = "ALTER TABLE settings.preference_users ADD COLUMN nombre_utilisation INTEGER DEFAULT 0"
     query_column_email_send = "ALTER TABLE settings.share_preference ADD COLUMN email_send BOOLEAN DEFAULT False"
+    query_column_application = "ALTER TABLE settings.preference_users ADD COLUMN application_host VARCHAR  NOT NULL DEFAULT ''"
 
     op.execute(query_column_date_creation)
     op.execute(query_column_dernier_acces)
     op.execute(query_column_nombre_utilisation)
     op.execute(query_column_email_send)
+    op.execute(query_column_application)
 
     # ### end Alembic commands ###
 
@@ -40,7 +42,11 @@ def downgrade():
     query_column_nombre_utilisation = "ALTER TABLE settings.preference_users DROP COLUMN nombre_utilisation "
     query_column_email_send = "ALTER TABLE settings.share_preference DROP COLUMN email_send "
 
+    query_column_application = "ALTER TABLE settings.preference_users DROP COLUMN application_host"
+
+
     op.execute(query_column_date_creation)
     op.execute(query_column_dernier_acces)
     op.execute(query_column_nombre_utilisation)
     op.execute(query_column_email_send)
+    op.execute(query_column_application)
