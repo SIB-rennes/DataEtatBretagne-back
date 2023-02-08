@@ -7,6 +7,7 @@ class Chorus(db.Model):
     n_ej = Column(String, primary_key=True)
     n_poste_ej = Column(Integer, primary_key=True)
     # liens vers les référentiels
+    source_region = Column(String, ForeignKey('ref_region.code'), nullable=True)
     programme = Column(String, ForeignKey('ref_code_programme.code'), nullable=False)
     domaine_fonctionnel = Column(String, db.ForeignKey('ref_domaine_fonctionnel.code'), nullable=False)
     centre_couts = Column(String, db.ForeignKey('ref_centre_couts.code'), nullable=False)

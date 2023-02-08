@@ -17,6 +17,7 @@ api = Namespace(name="chorus", path='/chorus',
 
 parser = reqparse.RequestParser()
 parser.add_argument('fichier', type=FileStorage, help="fichier à importer", location='files', required=True)
+parser.add_argument('code_region', type=str, help="Code INSEE de la région émettrice du fichier chorus", required=True)
 
 ALLOWED_EXTENSIONS = {'csv'}
 
@@ -42,6 +43,7 @@ class ChorusImport(Resource):
     def post(self):
         args = parser.parse_args()
         file_chorus = args['fichier']
+        code_source_region = args['code_region']
         from app.tasks.import_chorus_tasks import import_file_ae_chorus
 
         if file_chorus.filename == '':
@@ -53,7 +55,7 @@ class ChorusImport(Resource):
             save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             file_chorus.save(save_path)
             logging.info(f'[IMPORT CHORUS] Récupération du fichier {filename}')
-            task =  import_file_ae_chorus.delay( str(save_path))
+            task =  import_file_ae_chorus.delay( str(save_path), code_source_region)
             return jsonify({"statut": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
         else:
             logging.error(f'[IMPORT CHORUS] Fichier refusé {file_chorus.filename}')
