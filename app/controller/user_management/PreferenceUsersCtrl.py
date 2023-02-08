@@ -77,7 +77,7 @@ class PreferenceUsers(Resource):
         shares = list(filter(lambda d: d['shared_username_email'] != json_data['username'], data['shares']))
 
         share_list = [Share(**share) for share in shares]
-        application = request.host_url
+        application = request.origin
         pref = Preference(username = data['username'], name = data['name'], options = data['options'], filters = data['filters'], application_host=application)
         pref.shares = share_list
 
@@ -87,7 +87,7 @@ class PreferenceUsers(Resource):
             db.session.commit()
 
             if (len(pref.shares) > 0) :
-                share_filter_user.delay(str(pref.uuid), request.host_url)
+                share_filter_user.delay(str(pref.uuid), request.origin)
         except Exception as e:
             logging.error("[PREFERENCE][CTRL] Error when saving preference", e)
             return abort(message= "Error when saving preference", code=HTTPStatus.BAD_REQUEST)
@@ -101,11 +101,11 @@ class PreferenceUsers(Resource):
         """
         Retrieve the list
         """
-        logging.debug(f"get users prefs {request.host_url}")
+        logging.debug(f"get users prefs {request.origin}")
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
-        application = request.host_url
+        application = request.origin
 
         list_pref = Preference.query.options(lazyload(Preference.shares)).filter_by(username=username,application_host=application).order_by(
             Preference.id).all()
@@ -131,7 +131,7 @@ class CrudPreferenceUsers(Resource):
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
-        application = request.host_url
+        application = request.origin
         preference = Preference.query.filter_by(uuid=uuid, application_host=application).one()
 
         if preference.username != username:
@@ -158,7 +158,7 @@ class CrudPreferenceUsers(Resource):
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
-        application = request.host_url
+        application = request.origin
         preference_to_save = Preference.query.filter_by(uuid=uuid, application_host=application).one()
 
         if preference_to_save.username != username:
@@ -199,7 +199,7 @@ class CrudPreferenceUsers(Resource):
             db.session.commit()
             if (len(preference_to_save.shares) >  0) :
                 # send task async
-                share_filter_user.delay(str(preference_to_save.uuid), request.host_url)
+                share_filter_user.delay(str(preference_to_save.uuid), request.origin)
             return "Success", 200
         except Exception as e:
             logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid}", e)
@@ -215,7 +215,7 @@ class CrudPreferenceUsers(Resource):
         """
         logging.debug(f"Get users prefs {uuid}")
 
-        application = request.host_url
+        application = request.origin
         preference = Preference.query.filter_by(uuid=uuid, application_host=application).one()
 
         schema = PreferenceSchema()
