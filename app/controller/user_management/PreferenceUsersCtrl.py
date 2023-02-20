@@ -88,7 +88,7 @@ class PreferenceUsers(Resource):
             db.session.commit()
 
             if (len(pref.shares) > 0) :
-                share_filter_user.delay(str(pref.uuid), request.origin)
+                share_filter_user.delay(str(pref.uuid), application)
         except Exception as e:
             logging.error("[PREFERENCE][CTRL] Error when saving preference", e)
             return abort(message= "Error when saving preference", code=HTTPStatus.BAD_REQUEST)
@@ -102,7 +102,7 @@ class PreferenceUsers(Resource):
         """
         Retrieve the list
         """
-        logging.debug(f"get users prefs {request.origin}")
+
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
@@ -201,7 +201,7 @@ class CrudPreferenceUsers(Resource):
             db.session.commit()
             if (len(preference_to_save.shares) >  0) :
                 # send task async
-                share_filter_user.delay(str(preference_to_save.uuid), request.origin)
+                share_filter_user.delay(str(preference_to_save.uuid), application)
             return "Success", 200
         except Exception as e:
             logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid}", e)

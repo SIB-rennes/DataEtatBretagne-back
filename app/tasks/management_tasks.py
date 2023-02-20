@@ -24,7 +24,9 @@ html_template = """
 <p>Pour y accéder, veuillez cliquer sur le lien {2} et vous connecter.</p>
 <p>Si vous n'avez pas de compte, vous pouvez faire une demande en suivant le lien {3}.</p>"""
 
-subject = "Budget Data État Bretagne"
+subject_budget = "Budget Data État Bretagne"
+subject_france_relance = "France Relance Bretagne"
+
 
 @celery.task(name='share_filter_user', bind=True)
 def share_filter_user(self, preference_uuid, host_link):
@@ -40,6 +42,7 @@ def share_filter_user(self, preference_uuid, host_link):
 
     link_preference = f'{host_link}/?uuid={preference_uuid}'
     link_register = f'{host_link}/register'
+    subject = get_subject(host_link)
 
     if (preference is not None and len(preference.shares) > 0):
         for share in preference.shares:
@@ -51,6 +54,12 @@ def share_filter_user(self, preference_uuid, host_link):
                 db.session.commit()
                 LOGGER.debug(f'[SHARE][FILTER] Send mail to {share.shared_username_email}')
 
+
+
+def get_subject(link):
+    if 'relance' in link:
+        return subject_france_relance
+    return subject_budget
 
 
 
