@@ -1,5 +1,14 @@
 from flask_restx import reqparse
 
+def get_origin_referrer(request):
+    # This function returns the origin of the request if it is present
+    # and it is not "localhost", otherwise it returns the referrer
+    if request.origin is not None and "localhost" not in request.origin:
+        return request.origin
+    else:
+        return request.host
+
+
 
 def get_pagination_parser(default_page_number = 1, default_limit = 100):
     """Returns a request parser for pagination parameters.
