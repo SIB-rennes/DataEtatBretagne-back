@@ -1,3 +1,4 @@
+import logging
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
@@ -5,12 +6,12 @@ from email.mime.text import MIMEText
 
 
 class Mail:
-    def __init__(self, server, port, from_email, pwd, use_ssl):
+    def __init__(self, server, port, from_email, use_ssl, pwd=None):
         self.server = server
         self.port = port
         self.from_email = from_email
-        self.pwd=pwd
         self.use_ssl = use_ssl
+        self.pwd = pwd
 
     def send_email(self, subject, recipients, template_text, template_html):
         if self.use_ssl:
@@ -22,12 +23,13 @@ class Mail:
         try :
             mail = self._prepare_message(subject, recipients, template_html, template_text)
 
-            smtp.login(self.from_email, self.pwd)
+            if (self.pwd is not None) :
+                smtp.login(self.from_email, self.pwd)
+
             smtp.sendmail(self.from_email, recipients, mail.as_string())
             smtp.quit()
-        except Exception as e:
-            # Print any error messages to stdout
-            print(e)
+        except smtplib.SMTPException:
+            logging.exception("Erreur envoi de mail")
 
 
     def _prepare_message(self, subject, recipient, template_html, template_text):
