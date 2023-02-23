@@ -1,6 +1,6 @@
 from flask import jsonify
 from flask_restx import Namespace, Resource, reqparse
-from sqlalchemy import text
+from sqlalchemy import text, bindparam
 
 from app import oidc, db
 
@@ -23,17 +23,22 @@ class RefCrte(Resource):
         limit = p_args.get("limit")
         sql_select = "SELECT DISTINCT label_crte, code_crte FROM ref_commune"
         if name is None and dept is None :
-            result = db.engine.execute(
-                text(f"{sql_select} ORDER BY label_crte LIMIT :limit"), limit=limit).all()
+            sql_execute = text(f"{sql_select} ORDER BY label_crte LIMIT :limit")
+            sql_execute.bindparams(limit=limit)
         else :
             where_clause = []
+            params = (bindparam('limit', value=limit), )
             if name is not None :
                 where_clause.append('label_crte ilike :name')
+                params = params + ( bindparam('name', value=name), )
             if dept is not None:
                 where_clause.append('code_departement =:dpt')
+                params = params + (bindparam('dpt', value=dept),)
 
-            result = db.engine.execute(text(f"{sql_select} WHERE {' AND '.join(where_clause)} ORDER BY label_crte LIMIT :limit"),
-                                       limit=limit, name=name, dpt=dept).all()
+            sql_execute = text(f"{sql_select} WHERE {' AND '.join(where_clause)} ORDER BY label_crte LIMIT :limit").bindparams(*params)
+
+        with db.engine.connect() as conn:
+            result = conn.execute(sql_execute).all()
 
         return [{'nom': row[0], 'code':row[1]} for row in result], 200
 

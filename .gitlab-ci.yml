@@ -34,6 +34,7 @@ docker-build-snapshot:
     - main
     - /^chore.*$/
     - /^feature.*$/
+    - /^fix.*$/
     - /^hotfix.*$/
   variables:
     IMAGE: "${REGISTRY}nocode/data-transform/${CI_COMMIT_REF_NAME}"
@@ -68,6 +69,7 @@ deploy-integ-snapshot:
     - /^chore.*$/
     - /^feature.*$/
     - /^hotfix.*$/
+    - /^fix.*$/
   when: manual
   before_script:
     - export VERSION="/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHA:0:8}-snapshot"

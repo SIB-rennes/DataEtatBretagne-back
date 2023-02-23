@@ -16,6 +16,7 @@ from sqlalchemy.orm import lazyload
 
 from app import db, oidc
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
+from app.controller.utils.ControllerUtils import get_origin_referrer
 from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema, Share
 
 api = Namespace(name="preferences", path='/users/preferences',
@@ -77,7 +78,7 @@ class PreferenceUsers(Resource):
         shares = list(filter(lambda d: d['shared_username_email'] != json_data['username'], data['shares']))
 
         share_list = [Share(**share) for share in shares]
-        application = request.origin
+        application = get_origin_referrer(request)
         pref = Preference(username = data['username'], name = data['name'], options = data['options'], filters = data['filters'], application_host=application)
         pref.shares = share_list
 
@@ -87,7 +88,7 @@ class PreferenceUsers(Resource):
             db.session.commit()
 
             if (len(pref.shares) > 0) :
-                share_filter_user.delay(str(pref.uuid), request.origin)
+                share_filter_user.delay(str(pref.uuid), application)
         except Exception as e:
             logging.error("[PREFERENCE][CTRL] Error when saving preference", e)
             return abort(message= "Error when saving preference", code=HTTPStatus.BAD_REQUEST)
@@ -101,11 +102,12 @@ class PreferenceUsers(Resource):
         """
         Retrieve the list
         """
-        logging.debug(f"get users prefs {request.origin}")
+
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
-        application = request.origin
+        application = get_origin_referrer(request)
+        logging.debug(f"get users prefs {application}")
 
         list_pref = Preference.query.options(lazyload(Preference.shares)).filter_by(username=username,application_host=application).order_by(
             Preference.id).all()
@@ -131,7 +133,7 @@ class CrudPreferenceUsers(Resource):
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
-        application = request.origin
+        application = get_origin_referrer(request)
         preference = Preference.query.filter_by(uuid=uuid, application_host=application).one()
 
         if preference.username != username:
@@ -158,7 +160,7 @@ class CrudPreferenceUsers(Resource):
         if 'username' not in g.oidc_token_info:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
-        application = request.origin
+        application = get_origin_referrer(request)
         preference_to_save = Preference.query.filter_by(uuid=uuid, application_host=application).one()
 
         if preference_to_save.username != username:
@@ -199,7 +201,7 @@ class CrudPreferenceUsers(Resource):
             db.session.commit()
             if (len(preference_to_save.shares) >  0) :
                 # send task async
-                share_filter_user.delay(str(preference_to_save.uuid), request.origin)
+                share_filter_user.delay(str(preference_to_save.uuid), application)
             return "Success", 200
         except Exception as e:
             logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid}", e)
@@ -215,7 +217,7 @@ class CrudPreferenceUsers(Resource):
         """
         logging.debug(f"Get users prefs {uuid}")
 
-        application = request.origin
+        application = get_origin_referrer(request)
         preference = Preference.query.filter_by(uuid=uuid, application_host=application).one()
 
         schema = PreferenceSchema()
