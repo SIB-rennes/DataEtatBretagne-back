@@ -30,6 +30,8 @@ class Mail:
             smtp.quit()
         except smtplib.SMTPException:
             logging.exception("Erreur envoi de mail")
+        except Exception:
+            logging.exception('Erreur')
 
 
     def _prepare_message(self, subject, recipient, template_html, template_text):

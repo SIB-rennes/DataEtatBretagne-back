@@ -40,7 +40,7 @@ def create_celery_app(_app=None):
             'queue': 'file'
         },
         'share_*': {
-            'queue': 'file'
+            'queue': 'line'
         },
         'import_line_*': {
             'queue': 'line'
