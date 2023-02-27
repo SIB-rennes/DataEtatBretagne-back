@@ -20,7 +20,6 @@ ma = Marshmallow()
 oidc = OpenIDConnect()
 
 from flask_cors import CORS
-# from app.models.financial import Chorus
 
 
 def create_app_migrate():
@@ -29,7 +28,7 @@ def create_app_migrate():
 def create_app_api():
     return create_app_base(init_falsk_migrate=False)
 
-def create_app_base(oidc_enable=True, expose_endpoint=True, init_falsk_migrate=True):
+def create_app_base(oidc_enable=True, expose_endpoint=True, init_falsk_migrate=True, extra_config_settings={}):
     """Create a Flask application.
     """
 
@@ -38,7 +37,7 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_falsk_migrate=T
 
     # Instantiate Flask
     app = Flask(__name__)
-    read_config(app)
+    read_config(app,extra_config_settings)
 
     # Setup Flask-SQLAlchemy
     db.init_app(app)
@@ -74,7 +73,7 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_falsk_migrate=T
         _expose_endpoint(app)
     return app
 
-def read_config(app):
+def read_config(app, extra_config_settings):
     try:
         with open('config/config.yml') as yamlfile:
             config_data = yaml.load(yamlfile, Loader=yaml.FullLoader)
@@ -85,13 +84,14 @@ def read_config(app):
     app.config.from_object('app.settings')
     # Load extra settings from extra_config_settings param
     app.config.update(config_data)
+    # Load extra settings from extra_config_settings param
+    app.config.update(extra_config_settings)
 
     if (app.config['DEBUG'] == True):
         app.config['SQLALCHEMY_ECHO'] = True
         logging.getLogger().setLevel(logging.DEBUG)
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 
 def _expose_endpoint(app: Flask):
     app.wsgi_app = ProxyFix(app.wsgi_app)

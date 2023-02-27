@@ -3,8 +3,8 @@ from app.mailapp.Mail import Mail
 mail = None
 
 def create_mail_app(_app=None):
-    mail_config = _app.config['SMTP']
-
-    mail = Mail(**mail_config)
-
-    return mail
+    if 'SMTP' in _app.config :
+        mail_config = _app.config['SMTP']
+        return Mail(**mail_config)
+    else :
+        return Mail()
