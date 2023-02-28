@@ -10,3 +10,5 @@ class CentreCouts(db.Model):
     code: str = Column(String, unique=True, nullable=False)
     label: str = Column(String)
     description: str = Column(Text)
+    code_postal: str = Column(String)
+    ville: str = Column(String)

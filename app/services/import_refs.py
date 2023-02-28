@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 from typing import List
@@ -44,14 +45,17 @@ Args:
         raise MissingCodeColumns()
 
     model = _get_instance_model_by_name(class_name)
-    df = pandas.read_csv(file, **kwargs)
+    if _is_csv(file):
+        df = pandas.read_csv(file, dtype=str, **kwargs)
+    else:
+        df =  pandas.read_excel(file, dtype=str, **kwargs)
 
     # Renommer les colonnes
     df.columns = columns
     try:
         for index, row in df.iterrows():
-            if index == 10:
-                break
+            if row.isna().code : # si le code est nan ou none, on passe
+                continue
             subtask("import_line_one_ref").delay(class_name, row.to_json())
     except Exception as e:
         print(e)
@@ -88,7 +92,11 @@ def import_line_one_ref(class_name: str, row):
         raise e
 
 
+def _is_csv(filename: str):
+    # Extraire l'extension du nom de fichier
+    file_ext = os.path.splitext(filename)[1]
 
+    return file_ext.lower() != ".xlsx"
 
 def _get_instance_model_by_name(class_name: str):
     """Get the model class object for a given class name.

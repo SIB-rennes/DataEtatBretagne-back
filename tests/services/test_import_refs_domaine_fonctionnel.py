@@ -1,9 +1,7 @@
 import json
 import os
-
 import pytest
 from unittest.mock import patch, call
-
 
 from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
 from app.services import MissingCodeColumns, import_refs, ReferentielNotFound, import_line_one_ref
@@ -25,8 +23,8 @@ def test_import_line_ref_with_referential_not_found(app):
         import_line_one_ref('NotModel', '')
 
 @patch('app.services.import_refs.subtask')
-def test_import_refs(mock_subtask,test_db):
-    import_refs(os.path.abspath(os.getcwd())+'/data/domaine_fonctionnel.xls', 'DomaineFonctionnel', ['code', 'label'], header=9-1, sep="\t",usecols=[1, 2], skiprows=1)
+def test_import_refs_domaine_fonctionnel(mock_subtask,test_db):
+    import_refs(os.path.abspath(os.getcwd())+'/data/domaine_fonctionnel.xls', 'DomaineFonctionnel', ['code', 'label'], sep="\t",usecols=[1, 2], skiprows=8)
     mock_subtask.assert_has_calls([
         call().delay('DomaineFonctionnel', '{"code":"X101","label":"AccesDroitJustice"}'),
         call().delay('DomaineFonctionnel', '{"code":"X0101-01","label":"Aide juridictionnelle"}'),
@@ -41,7 +39,8 @@ def test_import_line_ref_with_attribute_error(app):
     # When
     with pytest.raises(TypeError):
         import_line_one_ref('DomaineFonctionnel', row)
-def test_import_new_line(app):
+
+def test_import_new_line_domaine_fonctionnel(app):
     # Given
     code = '123'
     row = json.dumps({'code': code, 'label': 'Test'})
@@ -54,7 +53,7 @@ def test_import_new_line(app):
         assert d.code == code
         assert d.label == "Test"
 
-def test_import_update_line(app, test_db):
+def test_import_update_domaine_fonctionnel_line(app, test_db):
     #Given
     update_dommaine = DomaineFonctionnel(code="xxx", label="to_update")
     with app.app_context():
@@ -68,8 +67,6 @@ def test_import_update_line(app, test_db):
         assert d_to_update.label == "label_updating"
         d_new = DomaineFonctionnel.query.filter_by(code='yyy').one()
         assert d_new.label == "new_label"
-
-
 
 
 
