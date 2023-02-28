@@ -10,7 +10,7 @@ db_session = None
 celery = None
 
 
-def create_celery_app(_app=None):
+def create_celery_app(_app =None):
     """
     Create a new Celery object and tie together the Celery config to the app's config.
 

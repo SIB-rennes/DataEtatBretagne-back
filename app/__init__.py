@@ -108,5 +108,6 @@ def _expose_endpoint(app: Flask):
     app.register_blueprint(api_ref, url_prefix='/referentiels')
     app.register_blueprint(api_ds, url_prefix='/data_subventions')
 
-    for project in app.config['NOCODB_PROJECT'].items():
-        app.register_blueprint(mount_blueprint(project[0]), url_prefix=f"/nocodb/{project[0]}")
+    if 'NOCODB_PROJECT' in app.config:
+        for project in app.config['NOCODB_PROJECT'].items():
+            app.register_blueprint(mount_blueprint(project[0]), url_prefix=f"/nocodb/{project[0]}")

@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, text
 file_path = os.path.abspath(os.getcwd())+"\database.db"
 
 
-test_app = create_app_base(oidcEnable=False, init_falsk_migrate=False,extra_config_settings=dict(SQLALCHEMY_DATABASE_URI='sqlite:///'+file_path))
+test_app = create_app_base(oidc_enable=False, init_falsk_migrate=False,extra_config_settings=dict(SQLALCHEMY_DATABASE_URI='sqlite:///'+file_path))
 @pytest.fixture(scope="session")
 def app():
     return test_app
