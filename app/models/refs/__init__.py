@@ -10,4 +10,5 @@ from app.models.refs import commune
 from app.models.refs import categorie_juridique
 from app.models.refs import siret
 from app.models.refs import theme
+from app.models.refs import ministere
 from app.models.refs import region
