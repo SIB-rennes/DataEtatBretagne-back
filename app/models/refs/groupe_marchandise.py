@@ -8,3 +8,6 @@ class GroupeMarchandise(db.Model):
     code: str = Column(String, unique=True, nullable=False)
     label: str = Column(String)
     description: str = Column(Text)
+    # mutualisation avec compte_general
+    code_pce: str =  Column(String)
+    label_pce: str = Column(String)

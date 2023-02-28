@@ -29,13 +29,14 @@ class ReferentielNotFound(Exception):
         super().__init__(f'{self.message} {self.name}')
 
 @celery.task(name='import_file_ref')
-def import_refs(file: str, class_name:str, columns: List , **kwargs):
+def import_refs(file: str, class_name:str, columns: List , is_csv=True, **kwargs):
     """Task that imports reference data from a file into the database.
 
 Args:
            file (str): Path to the file containing the reference data.
            class_name (str): Name of the model class for the reference data.
            columns (List): List of column names in the reference data file.
+           is_csv (bool): File is csv or not
            **kwargs: Optional keyword arguments for pandas.read_csv().
 
        Raises:
@@ -45,7 +46,7 @@ Args:
         raise MissingCodeColumns()
 
     model = _get_instance_model_by_name(class_name)
-    if _is_csv(file):
+    if is_csv:
         df = pandas.read_csv(file, dtype=str, **kwargs)
     else:
         df =  pandas.read_excel(file, dtype=str, **kwargs)
@@ -91,12 +92,6 @@ def import_line_one_ref(class_name: str, row):
         LOGGER.exception("[IMPORT][REF] Error sur ajout/maj ref %s dans %s ", model.__tablename__, row)
         raise e
 
-
-def _is_csv(filename: str):
-    # Extraire l'extension du nom de fichier
-    file_ext = os.path.splitext(filename)[1]
-
-    return file_ext.lower() != ".xlsx"
 
 def _get_instance_model_by_name(class_name: str):
     """Get the model class object for a given class name.

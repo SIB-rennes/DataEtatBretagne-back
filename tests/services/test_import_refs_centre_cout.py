@@ -8,7 +8,7 @@ from app.services import import_refs, import_line_one_ref
 
 @patch('app.services.import_refs.subtask')
 def test_import_refs_centre_cout(mock_subtask,test_db):
-    import_refs(os.path.abspath(os.getcwd())+'/data/centre_cout.xlsx', 'CentreCouts', ['code', 'description','label', 'code_postal','ville'], skiprows=6,usecols=[1,2,3,4,5])
+    import_refs(os.path.abspath(os.getcwd())+'/data/centre_cout.xlsx', 'CentreCouts', ['code', 'description','label', 'code_postal','ville'], is_csv=False, skiprows=6,usecols=[1,2,3,4,5])
 
     for in_call in mock_subtask.mock_calls:
         if in_call[0] == '().delay' and in_call[1][1] == '{"code":null,"description":null,"label":null,"code_postal":null,"ville":null}':
