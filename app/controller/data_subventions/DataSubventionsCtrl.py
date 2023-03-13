@@ -37,7 +37,11 @@ class RepresentantLegauxCtrl(Resource):
         }
 
 @api.route('/subventions/<siret>')
-@api.doc(model = action_proposee_model)
+# XXX: Il est nécessaire d'explicitement déclarer la documentation de ces modèles 
+# car action_proposee_model est un composant de subvention_model
+# et lorsque la documentation des entités est déclarée avec du json schema (comme c'est le cas plus haut),
+# les composants ne sont pas inclus. (ie: ne déclarer que subvention_model ométerait la déclaration de '#/definitions/ActionProposee')
+@api.doc(model = action_proposee_model) 
 @api.doc(model = subvention_model)
 class SubventionsCtrl(Resource):
 
