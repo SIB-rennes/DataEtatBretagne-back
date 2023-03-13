@@ -29,7 +29,7 @@ class RepresentantLegauxCtrl(Resource):
     @api.doc(security="Bearer")
     @api.response(200, 'Success', representants_legaux_model)
     def get(self, siret):
-        logging.debug(f"[DATASUBVENTIONS][CTRL] Get representants legaux pour le siret {siret}")
+        logging.info(f"[DATASUBVENTIONS][CTRL] Get representants legaux pour le siret {siret}")
 
         representants_legaux = _get_representants_legaux(siret)
         return {
@@ -48,11 +48,13 @@ class SubventionsCtrl(Resource):
     def get(self, siret):
         args = _get_subventions_req_parser.parse_args()
         ej = args['ej']
-        logging.debug(f"[DATASUBVENTIONS][CTRL] Get subventions pour le siret {siret} et l'EJ {ej}")
+        logging.info(f"[DATASUBVENTIONS][CTRL] Get subventions pour le siret {siret} et l'EJ {ej}")
 
         subvention = _get_subvention(siret, ej)
         if subvention is None:
-            abort(404, f"Aucune subvention pour l'établissement {siret} et l'ej {ej}")
+            msg = f"Aucune subvention pour l'établissement {siret} et l'ej {ej}."
+            logging.error(msg)
+            abort(404, msg)
         return subvention
 
 def _get_subvention(siret: str, ej: str):
@@ -60,7 +62,7 @@ def _get_subvention(siret: str, ej: str):
     subventions = client.get_subventions_pour_etablissement(siret)
     subventions = _avec_ej(subventions, ej)
 
-    assert len(subventions) <=1, "On ne devrait avoir qu'une subvention pour un ej donné"
+    assert len(subventions) <= 1, "On ne devrait avoir qu'une subvention pour un ej donné"
 
     if len(subventions) == 0:
         return None
