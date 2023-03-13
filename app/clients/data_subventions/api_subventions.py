@@ -22,25 +22,23 @@ class ApiSubventions():
         headers = self._auth_headers()
         answer = requests.get(url, headers=headers)
         json = answer.json()
-        return self._raw_to_representants_legaux(json)
+        return self._json_to_representants_legaux(json)
 
     def get_subventions_pour_etablissement(self, siret: str):
         url = f"{self._url}/etablissement/{siret}/subventions"
         headers = self._auth_headers()
         answer = requests.get(url, headers=headers)
         json = answer.json()
-        return self._raw_to_subventions(json)
+        return self._json_to_subventions(json)
     
     def _auth_headers(self):
         return {
             'x-access-token': self._token
         }
     
-    def _raw_to_representants_legaux(self, json_dict) -> list[RepresentantLegal]:
+    def _json_to_representants_legaux(self, json_dict) -> list[RepresentantLegal]:
 
-        raws = _get_nested(json_dict, 'etablissement', 'representants_legaux')
-        representants = []
-        for raw in raws:
+        def map(raw):
             representant = RepresentantLegal(
                 nom = _get_nested(raw, 'value', 'nom'),
                 prenom = _get_nested(raw, 'value', 'prenom'),
@@ -49,15 +47,14 @@ class ApiSubventions():
                 telephone = _get_nested(raw, 'value', 'telephone'),
                 email = _get_nested(raw, 'value', 'email'),
             )
-            representants.append(representant)
-        
-        return representants
-    
-    def _raw_to_subventions(self, json_dict) -> list[Subvention]:
+            return representant
 
-        raws = json_dict['subventions']
-        subventions = []
-        for raw in raws:
+        raws = _get_nested(json_dict, 'etablissement', 'representants_legaux')
+        return [map(x) for x in raws]
+    
+    def _json_to_subventions(self, json_dict) -> list[Subvention]:
+
+        def map(raw):
             subvention = Subvention(
                 ej = _get_nested(raw, 'ej', 'value'),
                 service_instructeur = _get_nested(raw, 'service_instructeur', 'value'),
@@ -68,10 +65,10 @@ class ApiSubventions():
 
                 actions_proposees=[_parse_action_proposee(x) for x in _get_nested(raw, 'actions_proposee')]
             )
-            subventions.append(subvention)
+            return subvention
 
-        return subventions
-    
+        raws = json_dict['subventions']
+        return [map(x) for x in raws]
 
 def _parse_action_proposee(dict) -> ActionProposee:
     return ActionProposee(
@@ -80,6 +77,19 @@ def _parse_action_proposee(dict) -> ActionProposee:
     )
     
 def _get_nested(dict, *keys, default = None):
+    """Récupère les valeurs imbriquées dans un dictionnaire
+
+    Exemple:
+
+    d = { 'a': { 'b': { 'c': 'foo' }  } }
+    nested = _get_nested(d, 'a', 'b', 'c') # nested == 'foo'
+    nested = _get_nested(d, 'does', 'not', 'exist') # nested == None
+
+
+    Args:
+        dict (_type_): Structure à parcourir
+        default (_type_, optional): Valeur par défaut en cas de clef inexistante. Defaults to None.
+    """
 
     v = dict
     for key in keys:
