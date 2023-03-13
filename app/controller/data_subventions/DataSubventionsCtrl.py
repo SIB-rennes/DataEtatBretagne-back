@@ -7,15 +7,15 @@ from app import oidc
 from app.clients.data_subventions import get_or_make_app_api_subventions_client, Subvention, ActionProposee, RepresentantLegal
 
 api = Namespace(name="Data Subventions", path='/',
-                description='Proxy API Data Subventions')
+                description="Proxy API Data Subventions.")
 
 _get_subventions_req_parser = reqparse.RequestParser()
 _get_subventions_req_parser.add_argument('ej', type=str, help="Numéro d'ej", location='args')
 
-action_proposee_model = api.schema_model('ActionProposee', ActionProposee.jsonschema())
-subvention_model = api.schema_model('Subvention', Subvention.jsonschema())
+action_proposee_model = api.schema_model('ActionProposee', ActionProposee.jsonschema)
+subvention_model = api.schema_model('Subvention', Subvention.jsonschema)
 
-reprensentant_legal_model = api.schema_model('RepresentantLegal', RepresentantLegal.jsonschema())
+reprensentant_legal_model = api.schema_model('RepresentantLegal', RepresentantLegal.jsonschema)
 representants_legaux_model = api.model('RepresentantsLegaux',  {
     'representants_legaux': fields.List(fields.Nested(reprensentant_legal_model))
 })
@@ -67,7 +67,7 @@ def _get_subvention(siret: str, ej: str):
     if len(subventions) == 0:
         return None
 
-    raw = Subvention.marshmallow_schemaclass()().dump(subventions[0])
+    raw = Subvention.MarshmallowSchema().dump(subventions[0])
     return raw
 
 def _avec_ej(subventions: list[Subvention], ej: str) -> Subvention:
@@ -78,5 +78,5 @@ def _get_representants_legaux(siret: str):
     client = get_or_make_app_api_subventions_client()
     representants = client.get_representants_legaux_pour_etablissement(siret)
 
-    raw = RepresentantLegal.marshmallow_schemaclass()(many=True).dump(representants)
+    raw = RepresentantLegal.MarshmallowSchema(many=True).dump(representants)
     return raw

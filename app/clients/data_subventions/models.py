@@ -3,8 +3,39 @@ from dataclasses import dataclass
 import marshmallow_dataclass as ma
 from marshmallow_jsonschema import JSONSchema
 
+class _WithSchemaGen(type):
+    """Metaclass qui génère le schema marshmallow et le json schema pour la classe cible.
+
+    Lorsque une dataclass est instanciée avec WithSchemaGen:
+
+    class A(metaclass=WithSchemaGen):
+      pass
+
+    Elle aura deux proprietés de classe:
+
+    - A.MarshmallowSchema: la classe représentant le schema marshmallow. 
+      `schema = A.MarshmallowSchema()`
+    
+    - A.jsonschema: une structure native python serialisable qui représente la structure de donnée
+      sous format json schema.
+      `A.jsonschema`
+    """
+    def __new__(cls, name, bases, dct):
+        return super().__new__(cls, name, bases, dct)
+    
+    def __init__(cls, name, bases, attrs):
+        super().__init__(name, bases, attrs)
+
+        ma_schema_class = ma.class_schema(cls)
+        ma_schema = ma_schema_class()
+        json_schema = JSONSchema().dump(ma_schema)['definitions'][name]
+
+        cls.MarshmallowSchema = ma_schema_class
+        cls.jsonschema = json_schema
+
+
 @dataclass
-class RepresentantLegal:
+class RepresentantLegal(metaclass=_WithSchemaGen):
     nom: str
     prenom: str
     civilite: str
@@ -12,34 +43,13 @@ class RepresentantLegal:
     telephone: str
     email: str
 
-    @staticmethod
-    def marshmallow_schemaclass():
-        return ma.class_schema(RepresentantLegal)
-
-    @staticmethod
-    def jsonschema():
-        ma_schema = RepresentantLegal.marshmallow_schemaclass()()
-        json_schema = JSONSchema().dump(ma_schema)['definitions']['RepresentantLegal']
-        return json_schema
-
-
 @dataclass
-class ActionProposee:
+class ActionProposee(metaclass=_WithSchemaGen):
     intitule: str
     objectifs: str
 
-    @staticmethod
-    def marshmallow_schemaclass():
-        return ma.class_schema(ActionProposee)
-
-    @staticmethod
-    def jsonschema():
-        ma_schema = Subvention.marshmallow_schemaclass()()
-        json_schema = JSONSchema().dump(ma_schema)['definitions']['ActionProposee']
-        return json_schema
-
 @dataclass
-class Subvention:
+class Subvention(metaclass=_WithSchemaGen):
     ej: str
     service_instructeur: str
     dispositif: str
@@ -48,16 +58,3 @@ class Subvention:
     montant_accorde: float
 
     actions_proposees: list[ActionProposee]
-
-    @staticmethod
-    def marshmallow_schemaclass():
-        return ma.class_schema(Subvention)
-
-    @staticmethod
-    def jsonschema():
-        ma_subvention_schema = Subvention.marshmallow_schemaclass()()
-
-        json_schema = JSONSchema()
-        json_schema = json_schema.dump(ma_subvention_schema)
-        obj_json_schema = json_schema['definitions']['Subvention']
-        return obj_json_schema
