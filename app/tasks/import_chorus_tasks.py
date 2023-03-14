@@ -40,36 +40,34 @@ class ChorusException(Exception):
     pass
 
 @celery.task(name='import_file_ae_chorus', bind=True)
-def import_file_ae_chorus(self, fichier, source_region: str):
+def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_update: bool):
     # get file
-    LOGGER.info('[IMPORT][CHORUS] Start')
+    LOGGER.info(f'[IMPORT][CHORUS] Start for region {source_region}, year {annee}')
     try:
         data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=CHORUS_COLUMN_NAME,
                                       dtype={'programme_code': str, 'n_ej': str, 'n_poste_ej': int,
                                              'Fournisseur_code': str,
                                              'siret': 'str'})
-        print(data_chorus)
         # _import_data_chorus(data_chorus)
         for index, chorus_data in data_chorus.iterrows():
             # MAJ des referentiels si necessaire
             if chorus_data['siret'] != '#':
-                subtask("import_line_chorus_ae").delay(chorus_data.to_json(), index, source_region)
+                subtask("import_line_chorus_ae").delay(chorus_data.to_json(), index, source_region, annee, force_update)
 
         LOGGER.info('[IMPORT][CHORUS] End')
         return True
     except Exception as e:
-        LOGGER.error(f"[IMPORT][CHORUS] Error lors de l'import du fichier {fichier} chorus")
+        LOGGER.exception(f"[IMPORT][CHORUS] Error lors de l'import du fichier {fichier} chorus")
         raise e
 
 
 @celery.task(name='import_line_chorus_ae', autoretry_for=(ChorusException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
-def import_line_chorus_ae(data_chorus, index, source_region: str):
+def import_line_chorus_ae(data_chorus, index, source_region: str, annee: int, force_update: bool):
     line = json.loads(data_chorus)
     try :
-        chorus_instance = _check_insert__update_chorus(line, source_region)
+        chorus_instance = _check_insert__update_chorus(line, force_update)
     except sqlalchemy.exc.OperationalError as o:
-        LOGGER.error("[IMPORT][CHORUS] Erreur index %s sur le check ligne chorus", index)
-        LOGGER.error(o)
+        LOGGER.exception(f"[IMPORT][CHORUS] Erreur index {index} sur le check ligne chorus")
         raise ChorusException(o)
 
 
@@ -97,9 +95,9 @@ def import_line_chorus_ae(data_chorus, index, source_region: str):
 
             # CHORUS
             if chorus_instance == True:
-                _insert_chorus(line, source_region)
+                _insert_chorus(line, source_region, annee)
             else:
-                _update_chorus(line, chorus_instance, source_region)
+                _update_chorus(line, chorus_instance, source_region, annee)
         except Exception as e:
             LOGGER.error("[IMPORT][CHORUS] erreur index %s", index)
             LOGGER.error(e)
@@ -162,10 +160,11 @@ def _check_siret(siret):
                 LOGGER.warning("[IMPORT][CHORUS] Error sur ajout Siret %s  ",siret)
 
 
-def _check_insert__update_chorus(chorus_data, source_region: str):
+def _check_insert__update_chorus(chorus_data, force_update: bool):
     '''
 
     :param chorus_data:
+    :param force_update:
     :return: True -> Chorus à créer
              False -> rien à faire
              Instance chorus -> Chorus à maj
@@ -173,11 +172,11 @@ def _check_insert__update_chorus(chorus_data, source_region: str):
     instance = db.session.query(Chorus).filter_by(n_ej=chorus_data['n_ej'],
                                                   n_poste_ej=chorus_data['n_poste_ej']).one_or_none()
     if instance:
+        if force_update:
+            LOGGER.info('[IMPORT][CHORUS] Doublon trouvé, Force Update')
+            return instance
         if datetime.strptime(chorus_data['date_modif'], '%d.%m.%Y') > instance.date_modification_ej:
             LOGGER.info('[IMPORT][CHORUS] Doublon trouvé, MAJ à faire sur la date')
-            return instance
-        if instance.source_region != source_region:
-            LOGGER.info("[IMPORT][CHORUS] La region source a été mis à jour. MAJ sur la region source")
             return instance
         else:
             LOGGER.info('[IMPORT][CHORUS] Doublon trouvé, Pas de maj')
@@ -185,7 +184,7 @@ def _check_insert__update_chorus(chorus_data, source_region: str):
     return True
 
 
-def _insert_chorus(chorus_data, source_region: str):
+def _insert_chorus(chorus_data, source_region: str, annee: int):
     chorus = Chorus(n_ej=chorus_data['n_ej'], n_poste_ej=chorus_data['n_poste_ej'],
                     programme=chorus_data['programme_code'],
                     domaine_fonctionnel=chorus_data['domaine_code'],
@@ -200,7 +199,8 @@ def _insert_chorus(chorus_data, source_region: str):
                     compte_budgetaire=chorus_data['compte_budgetaire'],
                     contrat_etat_region=chorus_data['contrat_etat_region'],
                     montant=float(str(chorus_data['montant']).replace('\U00002013', '-').replace(',', '.')),
-                    source_region=source_region)
+                    source_region=source_region,
+                    annee=annee)
     try:
         db.session.add(chorus)
         LOGGER.info('[IMPORT][CHORUS] Ajout ligne chorus')
@@ -209,7 +209,7 @@ def _insert_chorus(chorus_data, source_region: str):
         LOGGER.error(e)
 
 
-def _update_chorus(chorus_data, chorus_to_update, code_source_region: str):
+def _update_chorus(chorus_data, chorus_to_update, code_source_region: str, annee: int):
     chorus_to_update.programme = chorus_data['programme_code']
     chorus_to_update.domaine_fonctionnel = chorus_data['domaine_code']
     chorus_to_update.centre_couts = chorus_data['centre_cout_code']
@@ -225,6 +225,7 @@ def _update_chorus(chorus_data, chorus_to_update, code_source_region: str):
     chorus_to_update.montant = float(str(chorus_data['montant']).replace('\U00002013', '-').replace(',', '.'))
 
     chorus_to_update.source_region = code_source_region
+    chorus_to_update.annee = annee
 
     try:
         # db.session.update(chorus_to_update)

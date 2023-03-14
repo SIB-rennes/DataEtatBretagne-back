@@ -1,7 +1,9 @@
 from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Float
 from app import db
+from app.models.common.Audit import Audit
 
-class Chorus(db.Model):
+
+class Chorus(Audit, db.Model):
     __tablename__ = 'data_chorus'
     # PK
     n_ej = Column(String, primary_key=True)
@@ -19,11 +21,11 @@ class Chorus(db.Model):
     siret = Column(String, db.ForeignKey('ref_siret.code'), nullable=False)
 
     # autre colonnes
-    date_modification_ej = Column(DateTime, nullable=False)
+    date_modification_ej = Column(DateTime, nullable=False) #date issue du fichier Chorus
     compte_budgetaire = Column(String(255), nullable= False)
     contrat_etat_region = Column(String(255))
     montant = Column(Float)
-
+    annee = Column(Integer) # annee de l'AE chorus
 
 
 
