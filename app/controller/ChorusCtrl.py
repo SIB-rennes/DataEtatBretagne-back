@@ -9,7 +9,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from app import oidc
-from app.controller.Decorator import check_permission
+from app.controller.Decorators import check_permission
 from app.models.enums.ConnectionProfile import ConnectionProfile
 
 api = Namespace(name="chorus", path='/chorus',

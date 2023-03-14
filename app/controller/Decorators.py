@@ -1,5 +1,8 @@
 from flask import g
 from functools import wraps
+
+from requests import RequestException
+
 from app.models.enums.ConnectionProfile import ConnectionProfile
 
 
@@ -34,3 +37,24 @@ def _user_has_permission(permission: ConnectionProfile):
         bool: True if the user has the permission, False otherwise.
     """
     return 'profile' in g.oidc_token_info and g.oidc_token_info['profile'] == permission.value
+
+
+
+def retry_on_exception(max_retry):
+    """
+    A decorator to retry a function call in case of exceptions.
+    :param max_retry: Maximum number of retries.
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            retry_count = 0
+            while retry_count < max_retry:
+                try:
+                    return func(*args, **kwargs)
+                except RequestException as e:
+                    retry_count += 1
+                    if retry_count == max_retry:
+                        raise e
+        return wrapper
+    return decorator

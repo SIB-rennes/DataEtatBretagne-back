@@ -10,7 +10,7 @@ from app import oidc
 from flask_restx import Namespace, Resource, abort, inputs, reqparse
 
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
-from app.controller.Decorator import check_permission
+from app.controller.Decorators import check_permission
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
 from app.models.enums.ConnectionProfile import ConnectionProfile
