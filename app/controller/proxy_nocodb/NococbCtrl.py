@@ -1,6 +1,8 @@
+import functools
 import io
 import logging
 import pandas
+import requests
 from nocodb.infra.requests_client import NocoDBRequestsClient
 
 from app import oidc
@@ -8,6 +10,7 @@ from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
 from nocodb.nocodb import NocoDBProject, APIToken
 
+from app.controller.Decorator import retry_on_exception
 
 args_get = reqparse.RequestParser()
 args_get.add_argument('sort', type=str, required=False, help="Champ à trier")
@@ -20,12 +23,14 @@ args_get.add_argument('offset', type=int, required=False, help="Limit de résult
 api = Namespace(name="nocodb", path='/',
                 description='API passe plats nocodb')
 
+
 @api.route('/<table>/<views>')
 class NocoDb(Resource):
     @api.expect(args_get)
     @api.response(200, 'Success')
     @api.doc(security="Bearer")
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @retry_on_exception(max_retry=3) # Ajout du décorateur ici
     def get(self, table, views):
         # le nom du projet correspond au nom du blueprint
         project = request.blueprint
@@ -33,15 +38,16 @@ class NocoDb(Resource):
 
         params = build_params(args_get.parse_args())
         logging.debug(f'[NOCODB] get {table} {views} where {params}')
-        table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
-
-        if ('msg' in table_rows):
-            logging.error(f'[NOCODB] Erreur sur la réponse {table_rows["msg"]}')
-            return table_rows, 400
-        else :
-            logging.debug('[NOCODB] return response')
-            return table_rows, 200
-
+        try:
+            table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
+            if ('msg' in table_rows):
+                logging.error(f'[NOCODB] Erreur sur la réponse {table_rows["msg"]}')
+                return table_rows, 400
+            else:
+                logging.debug('[NOCODB] return response')
+                return table_rows, 200
+        except requests.exceptions.JSONDecodeError :
+            logging.exception('[NOCODB] Error JSOnDecodeError')
 
 
 @api.route('/<table>/<views>/csv')
@@ -89,6 +95,7 @@ class HealthCheck(Resource):
 
 
 
+@functools.cache
 def build_client(project) -> NocoDBRequestsClient:
     '''
     Construit le client nocodb
