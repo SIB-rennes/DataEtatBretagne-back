@@ -10,7 +10,7 @@ from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
 from nocodb.nocodb import NocoDBProject, APIToken
 
-from app.controller.Decorator import retry_on_exception
+from app.controller.Decorators import retry_on_exception
 
 args_get = reqparse.RequestParser()
 args_get.add_argument('sort', type=str, required=False, help="Champ à trier")
