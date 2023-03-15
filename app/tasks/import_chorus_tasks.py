@@ -111,10 +111,9 @@ def _check_ref(model, **kwargs):
         try:
             db.session.add(instance)
             db.session.commit()
-        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+        except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
             db.session.rollback()
             LOGGER.warning("[IMPORT][CHORUS] Error sur ajout ref %s dans %s ",model.__tablename__, kwargs)
-            LOGGER.warning(e)
 
 
 def __check_commune(code):
@@ -125,10 +124,9 @@ def __check_commune(code):
         try:
             commune = maj_one_commune(commune)
             db.session.add(commune)
-        except Exception as e:
+        except Exception:
             db.session.rollback()
-            LOGGER.warning("[IMPORT][CHORUS] Error sur ajout commune %s ",code)
-            LOGGER.warning(e)
+            LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout commune {code}")
 
 def _check_siret(siret):
     instance = db.session.query(Siret).filter_by(code=str(siret)).one_or_none()
@@ -149,14 +147,14 @@ def _check_siret(siret):
                 siret.latitude = float(info['latitude'])
             # On check que la commune est bien en base
             __check_commune(siret.code_commune)
-            LOGGER.info("[IMPORT][CHORUS] Siret %s ajouté", siret)
-            try:
-                db.session.add(siret)
-                db.session.commit()
-            except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-                db.session.rollback()
-                LOGGER.warning(e)
-                LOGGER.warning("[IMPORT][CHORUS] Error sur ajout Siret %s  ",siret)
+
+        LOGGER.info(f"[IMPORT][CHORUS] Siret {siret} ajouté")
+        try:
+            db.session.add(siret)
+            db.session.commit()
+        except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+            db.session.rollback()
+            LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout Siret {siret} ")
 
 
 def _check_insert__update_chorus(chorus_data, force_update: bool):
