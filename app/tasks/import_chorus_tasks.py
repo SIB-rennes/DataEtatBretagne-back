@@ -99,8 +99,7 @@ def import_line_chorus_ae(data_chorus, index, source_region: str, annee: int, fo
             else:
                 _update_chorus(line, chorus_instance, source_region, annee)
         except Exception as e:
-            LOGGER.error("[IMPORT][CHORUS] erreur index %s", index)
-            LOGGER.error(e)
+            LOGGER.exception(f"[IMPORT][CHORUS] erreur index {index}")
             raise e
 
 
@@ -201,12 +200,10 @@ def _insert_chorus(chorus_data, source_region: str, annee: int):
                     montant=float(str(chorus_data['montant']).replace('\U00002013', '-').replace(',', '.')),
                     source_region=source_region,
                     annee=annee)
-    try:
-        db.session.add(chorus)
-        LOGGER.info('[IMPORT][CHORUS] Ajout ligne chorus')
-        db.session.commit()
-    except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-        LOGGER.error(e)
+
+    db.session.add(chorus)
+    LOGGER.info('[IMPORT][CHORUS] Ajout ligne chorus')
+    db.session.commit()
 
 
 def _update_chorus(chorus_data, chorus_to_update, code_source_region: str, annee: int):
@@ -226,10 +223,5 @@ def _update_chorus(chorus_data, chorus_to_update, code_source_region: str, annee
 
     chorus_to_update.source_region = code_source_region
     chorus_to_update.annee = annee
-
-    try:
-        # db.session.update(chorus_to_update)
-        LOGGER.info('[IMPORT][CHORUS] Update ligne chorus')
-        db.session.commit()
-    except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-        LOGGER.error(e)
+    LOGGER.info('[IMPORT][CHORUS] Update ligne chorus')
+    db.session.commit()
