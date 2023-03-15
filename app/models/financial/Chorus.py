@@ -25,7 +25,7 @@ class Chorus(Audit, db.Model):
     compte_budgetaire = Column(String(255), nullable= False)
     contrat_etat_region = Column(String(255))
     montant = Column(Float)
-    annee = Column(Integer) # annee de l'AE chorus
+    annee = Column(Integer, nullable= False) # annee de l'AE chorus
 
 
 

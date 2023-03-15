@@ -74,12 +74,12 @@ def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=Tr
         app.wsgi_app = ProxyFix(app.wsgi_app)
         CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-        from app.controller import api_v1 # pour éviter les import circulaire avec oidc
+        from app.controller.financial_data import api_financial # pour éviter les import circulaire avec oidc
         from app.controller.user_management import api_management
         from app.controller.ref_controller import api_ref
         from app.controller.data_subventions import api_ds
 
-        app.register_blueprint(api_v1, url_prefix='/')
+        app.register_blueprint(api_financial, url_prefix='/')
         app.register_blueprint(api_management, url_prefix='/management')
         app.register_blueprint(api_ref, url_prefix='/referentiels')
         app.register_blueprint(api_ds, url_prefix='/data_subventions')
