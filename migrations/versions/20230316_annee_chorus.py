@@ -21,6 +21,9 @@ def upgrade():
     op.add_column('data_chorus', sa.Column('annee', sa.Integer(), nullable=False, server_default=text('0')))
     op.add_column('data_chorus', sa.Column('created_at', sa.DateTime(), nullable=True))
     op.add_column('data_chorus', sa.Column('updated_at', sa.DateTime(), nullable=True))
+
+    query_column_email_send = "ALTER TABLE settings.share_preference ADD COLUMN date_email_send timestamptz"
+    op.execute(query_column_email_send)
     # ### end Alembic commands ###
 
 
@@ -29,4 +32,7 @@ def downgrade():
     op.drop_column('data_chorus', 'updated_at')
     op.drop_column('data_chorus', 'created_at')
     op.drop_column('data_chorus', 'annee')
+
+    query_column_email_send = "ALTER TABLE settings.share_preference DROP COLUMN date_email_send"
+    op.execute(query_column_email_send)
     # ### end Alembic commands ###

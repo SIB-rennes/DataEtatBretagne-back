@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from sqlalchemy.orm import lazyload
@@ -55,6 +56,7 @@ def share_filter_user(self, preference_uuid, host_link):
                                 text_template.format(preference.username,subject,link_preference,link_register),
                                 html_template.format(preference.username,subject, link_preference,link_register))
                 share.email_send = True
+                share.date_email_send = datetime.datetime.utcnow()
                 db.session.commit()
                 LOGGER.debug(f'[SHARE][FILTER] Send mail to {share.shared_username_email}')
 
