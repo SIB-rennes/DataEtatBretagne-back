@@ -1,4 +1,3 @@
-from flask import jsonify
 from flask_restx import Namespace, Resource, reqparse
 from sqlalchemy import text, bindparam
 

@@ -43,6 +43,7 @@ class Share(db.Model):
     preference_id = db.Column(Integer, db.ForeignKey('settings.preference_users.id'))
     shared_username_email = db.Column(String, nullable = False)
     email_send = db.Column(Boolean, nullable = False, default = False)
+    date_email_send =  db.Column(DateTime, nullable = True)
 
 class SharesFormSchema(ma.SQLAlchemyAutoSchema):
     class Meta:

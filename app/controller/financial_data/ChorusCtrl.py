@@ -4,7 +4,7 @@ import os
 import requests
 
 from flask import jsonify, current_app
-from flask_restx import Namespace, Resource, reqparse
+from flask_restx import Namespace, Resource, reqparse, inputs
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
@@ -18,6 +18,8 @@ api = Namespace(name="chorus", path='/chorus',
 parser = reqparse.RequestParser()
 parser.add_argument('fichier', type=FileStorage, help="fichier à importer", location='files', required=True)
 parser.add_argument('code_region', type=str, help="Code INSEE de la région émettrice du fichier chorus", required=True)
+parser.add_argument('annee', type=int, help="Année d'engagement du fichier Chorus", required=True)
+parser.add_argument('force_update', type=inputs.boolean, required=False, default=False, help="Force la mise à jours si la ligne existe déjà")
 
 ALLOWED_EXTENSIONS = {'csv'}
 
@@ -44,6 +46,8 @@ class ChorusImport(Resource):
         args = parser.parse_args()
         file_chorus = args['fichier']
         code_source_region = args['code_region']
+        annee = args['annee']
+        force_update = args['force_update']
         from app.tasks.import_chorus_tasks import import_file_ae_chorus
 
         if file_chorus.filename == '':
@@ -55,7 +59,7 @@ class ChorusImport(Resource):
             save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             file_chorus.save(save_path)
             logging.info(f'[IMPORT CHORUS] Récupération du fichier {filename}')
-            task =  import_file_ae_chorus.delay( str(save_path), code_source_region)
+            task =  import_file_ae_chorus.delay( str(save_path), code_source_region, annee, force_update)
             return jsonify({"statut": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
         else:
             logging.error(f'[IMPORT CHORUS] Fichier refusé {file_chorus.filename}')
