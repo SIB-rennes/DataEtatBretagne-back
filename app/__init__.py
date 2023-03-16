@@ -21,16 +21,16 @@ ma = Marshmallow()
 oidc = OpenIDConnect()
 
 from flask_cors import CORS
-from app.models.financial import Chorus
+# from app.models.financial import Chorus
 
 
 def create_app_migrate():
-    return create_app_base(oidcEnable=False, expose_endpoint=False)
+    return create_app_base(oidc_enable=False, expose_endpoint=False)
 
 def create_app_api():
     return create_app_base(init_falsk_migrate=False)
 
-def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=True):
+def create_app_base(oidc_enable=True, expose_endpoint=True, init_falsk_migrate=True):
     """Create a Flask application.
     """
 
@@ -53,7 +53,7 @@ def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=Tr
     mailapp.mail = mail
 
     # init oidc
-    if oidcEnable and exists('config/keycloak.json'):
+    if oidc_enable and exists('config/keycloak.json'):
         app.config.update({
             'OIDC_CLIENT_SECRETS': 'config/keycloak.json',
             'OIDC_ID_TOKEN_COOKIE_SECURE': False,
@@ -72,28 +72,17 @@ def create_app_base(oidcEnable=True, expose_endpoint=True, init_falsk_migrate=Tr
 
     # flask_restx
     if expose_endpoint:
-        app.wsgi_app = ProxyFix(app.wsgi_app)
-        CORS(app, resources={r"/api/*": {"origins": "*"}})
-
-        from app.controller import api_v1 # pour éviter les import circulaire avec oidc
-        from app.controller.user_management import api_management
-        from app.controller.ref_controller import api_ref
-
-        app.register_blueprint(api_v1, url_prefix='/')
-        app.register_blueprint(api_management, url_prefix='/management')
-        app.register_blueprint(api_ref, url_prefix='/referentiels')
-        mount_proxy_endpoint_nocodb(app)
-
+        _expose_endpoint(app)
     return app
 
 def read_config(app):
     try:
         with open('config/config.yml') as yamlfile:
             config_data = yaml.load(yamlfile, Loader=yaml.FullLoader)
-    except:
+    except Exception:
         config_data = {}
 
-        # Load common settings
+    # Load common settings
     app.config.from_object('app.settings')
     # Load extra settings from extra_config_settings param
     app.config.update(config_data)
@@ -104,7 +93,21 @@ def read_config(app):
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-def mount_proxy_endpoint_nocodb(app):
+
+def _expose_endpoint(app: Flask):
+    app.wsgi_app = ProxyFix(app.wsgi_app)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+    from app.controller.financial_data import api_financial  # pour éviter les import circulaire avec oidc
+    from app.controller.user_management import api_management
+    from app.controller.ref_controller import api_ref
+    from app.controller.data_subventions import api_ds
     from app.controller.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
+
+    app.register_blueprint(api_financial, url_prefix='/')
+    app.register_blueprint(api_management, url_prefix='/management')
+    app.register_blueprint(api_ref, url_prefix='/referentiels')
+    app.register_blueprint(api_ds, url_prefix='/data_subventions')
+
     for project in app.config['NOCODB_PROJECT'].items():
         app.register_blueprint(mount_blueprint(project[0]), url_prefix=f"/nocodb/{project[0]}")
