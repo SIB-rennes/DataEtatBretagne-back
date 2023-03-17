@@ -19,7 +19,6 @@ class Chorus(Audit, db.Model):
     referentiel_programmation: str = Column(String, db.ForeignKey('ref_programmation.code'), nullable=False)
     localisation_interministerielle: str = Column(String, db.ForeignKey('ref_localisation_interministerielle.code'), nullable=False)
     groupe_marchandise: str = Column(String, db.ForeignKey('ref_groupe_marchandise.code'), nullable=False)
-    compte_general: str = Column(String, db.ForeignKey('ref_compte_general.code'), nullable=False)
     fournisseur_titulaire: str = Column(String, db.ForeignKey('ref_fournisseur_titulaire.code'), nullable=False)
     siret: str = Column(String, db.ForeignKey('ref_siret.code'), nullable=False)
 

@@ -2,7 +2,6 @@ import json
 import os
 from unittest.mock import patch, call
 
-from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
 from app.services import import_refs, import_line_one_ref
 
