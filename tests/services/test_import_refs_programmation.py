@@ -7,14 +7,13 @@ from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.services import import_refs, import_line_one_ref
 
 
-
-
 @patch('app.services.import_refs.subtask')
 def test_import_refs_programme_financement(mock_subtask,test_db):
-    import_refs(os.path.abspath(os.getcwd())+'/data/programme_financement.xls', 'ReferentielProgrammation', ['code', 'label', 'description'], skiprows=8, sep="\t",usecols=[1,2,3])
+    import_refs(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'ReferentielProgrammation',  ['code','label'], is_csv=False, usecols=[9,10],
+                sheet_name="08 - Activités (OS,OP,OB,ACT)", skiprows=8)
     mock_subtask.assert_has_calls([
-        call().delay('ReferentielProgrammation', '{"code":"010101010103","label":"R#trib AJ CCass","description":"r#tribuer avocats CC auxil.missions AJ"}'),
-        call().delay('ReferentielProgrammation', '{"code":"010101010105","label":"AJ EXPERTS","description":"RETRIBUER EXPERTS MISSIONS AJ"}'),
+        call().delay('ReferentielProgrammation', '{"code":"010101010101","label":"DOTATIONS CARPA AJ ET AUTRES INTERVENTIONS"}'),
+        call().delay('ReferentielProgrammation', '{"code":"010101010106","label":"RETRIBUER AVOCATS CE CCASS MISSIONS AJ"}'),
         call('import_line_one_ref'),
     ], any_order=True)
 

@@ -24,10 +24,12 @@ def test_import_line_ref_with_referential_not_found(app):
 
 @patch('app.services.import_refs.subtask')
 def test_import_refs_domaine_fonctionnel(mock_subtask,test_db):
-    import_refs(os.path.abspath(os.getcwd())+'/data/domaine_fonctionnel.xls', 'DomaineFonctionnel', ['code', 'label'], sep="\t",usecols=[1, 2], skiprows=8)
+    import_refs(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'DomaineFonctionnel',
+                ['code', 'label'], is_csv=False, usecols=[4,5],
+                sheet_name="07 - Domaines Fonct. (DF)", skiprows=8)
     mock_subtask.assert_has_calls([
-        call().delay('DomaineFonctionnel', '{"code":"X101","label":"AccesDroitJustice"}'),
-        call().delay('DomaineFonctionnel', '{"code":"X0101-01","label":"Aide juridictionnelle"}'),
+        call().delay('DomaineFonctionnel', '{"code":"0104-12-08","label":"TEST"}'),
+        call().delay('DomaineFonctionnel', '{"code":"0104-12-15","label":"Actions R\\u00e9fugi\\u00e9s"}'),
         call('import_line_one_ref'),
     ], any_order=True)
 
@@ -61,12 +63,12 @@ def test_import_update_domaine_fonctionnel_line(app, test_db):
 
     # When
     import_line_one_ref('DomaineFonctionnel', json.dumps({'code': 'xxx', 'label': 'label_updating'}))
-    import_line_one_ref('DomaineFonctionnel', json.dumps({'code': 'yyy', 'label': 'new_label'}))
+    import_line_one_ref('DomaineFonctionnel', json.dumps({'code': 'yyy', 'label': 'Actions R\\u00e9fugi\\u00e9s'}))
     with app.app_context():
         d_to_update = DomaineFonctionnel.query.filter_by(code='xxx').one()
         assert d_to_update.label == "label_updating"
         d_new = DomaineFonctionnel.query.filter_by(code='yyy').one()
-        assert d_new.label == "new_label"
+        assert d_new.label == "Actions Réfugiés"
 
 
 

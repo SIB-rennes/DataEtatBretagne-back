@@ -1,3 +1,4 @@
+import codecs
 import os
 import re
 import sys
@@ -63,7 +64,7 @@ Args:
 
 
 @celery.task(name='import_line_one_ref')
-def import_line_one_ref(class_name: str, row):
+def import_line_one_ref(class_name: str, row: str):
     """Task that imports a single line of reference data into the database.
 
         Args:
@@ -71,7 +72,7 @@ def import_line_one_ref(class_name: str, row):
             row: A JSON string representing a single row of reference data.
     """
     model = _get_instance_model_by_name(class_name)
-    row = json.loads(row)
+    row = json.loads(codecs.decode(row,'unicode_escape'))
     instance = db.session.query(model).filter_by(code=row['code']).one_or_none()
     if not instance:
         instance = model(**row)
