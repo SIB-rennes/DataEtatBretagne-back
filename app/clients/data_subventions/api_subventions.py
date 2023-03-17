@@ -55,6 +55,8 @@ class ApiSubventions():
     def _json_to_subventions(self, json_dict) -> list[Subvention]:
 
         def map(raw):
+            raw_actions_proposee = _get_nested(raw, 'actions_proposee', default=[])
+
             subvention = Subvention(
                 ej = _get_nested(raw, 'ej', 'value'),
                 service_instructeur = _get_nested(raw, 'service_instructeur', 'value'),
@@ -63,7 +65,7 @@ class ApiSubventions():
                 montant_demande = _get_nested(raw, 'montants', 'demande', 'value'),
                 montant_accorde = _get_nested(raw, 'montants', 'accorde', 'value'),
 
-                actions_proposees=[_parse_action_proposee(x) for x in _get_nested(raw, 'actions_proposee')]
+                actions_proposees=[_parse_action_proposee(x) for x in raw_actions_proposee]
             )
             return subvention
 
@@ -94,7 +96,7 @@ def _get_nested(dict, *keys, default = None):
     v = dict
     for key in keys:
         try:
-            v = v.get(key)
+            v = v.get(key, default)
         except AttributeError:
             v = default
             break
