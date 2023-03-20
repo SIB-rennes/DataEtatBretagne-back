@@ -15,22 +15,27 @@ from app import celeryapp, mailapp
 
 
 db = SQLAlchemy()
-migrate = Migrate()
 ma = Marshmallow()
-oidc = OpenIDConnect()
+oidc = None
 
 from flask_cors import CORS
 
 
 def create_app_migrate():
-    return create_app_base(oidc_enable=False, expose_endpoint=False)
+    app = create_app_base(oidc_enable=False, expose_endpoint=False)
+    migrate = Migrate()
+    migrate.init_app(app, db)
+    return app
 
 def create_app_api():
-    return create_app_base(init_falsk_migrate=False)
+    return create_app_base()
 
-def create_app_base(oidc_enable=True, expose_endpoint=True, init_falsk_migrate=True, extra_config_settings={}):
+def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery = True, extra_config_settings=None) -> Flask:
     """Create a Flask application.
     """
+
+    if extra_config_settings is None:
+        extra_config_settings = {}
 
     logging.basicConfig(format='%(asctime)s.%(msecs)03d : %(levelname)s : %(message)s', datefmt='%Y-%m-%d %H:%M:%S', )
     logging.getLogger().setLevel(logging.INFO)
@@ -44,14 +49,16 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_falsk_migrate=T
     ma.init_app(app)
 
     # Celery
-    celery = celeryapp.create_celery_app(app)
-    celeryapp.celery = celery
+    if (init_celery) :
+        celery = celeryapp.create_celery_app(app)
+        celeryapp.celery = celery
 
-    mail = mailapp.create_mail_app(app)
-    mailapp.mail = mail
+        mail = mailapp.create_mail_app(app)
+        mailapp.mail = mail
 
     # init oidc
     if oidc_enable and exists('config/keycloak.json'):
+        oidc = OpenIDConnect()
         app.config.update({
             'OIDC_CLIENT_SECRETS': 'config/keycloak.json',
             'OIDC_ID_TOKEN_COOKIE_SECURE': False,
@@ -62,11 +69,6 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_falsk_migrate=T
             'OIDC_INTROSPECTION_AUTH_METHOD': 'client_secret_post'
         })
         oidc.init_app(app)
-
-    # Setup Flask-Migrate
-    if init_falsk_migrate :
-        migrate.init_app(app, db)
-
 
     # flask_restx
     if expose_endpoint:
