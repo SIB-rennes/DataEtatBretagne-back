@@ -2,7 +2,7 @@ import os
 
 import pytest
 from app import create_app_base, db
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
 file_path = os.path.abspath(os.getcwd())+"\database.db"
 
