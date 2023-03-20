@@ -3,17 +3,19 @@ import logging
 import os
 
 from flask import request, current_app, jsonify
-from flask_restx import Namespace, Resource, reqparse, fields, inputs
+from flask_restx import Namespace, Resource, reqparse, inputs
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
-from app import celeryapp, oidc
+from app import celeryapp
 from app.models.enums.ConnectionProfile import ConnectionProfile
 from app.controller.Decorators import check_permission
 from app.services.import_refs import _get_instance_model_by_name, ReferentielNotFound
 
 api = Namespace(name="task", path='/',
                 description='Gestion des task asynchrone')
+oidc = current_app.extensions['oidc']
+
 
 @api.route('/status/<task_id>')
 class TaskStatus(Resource):

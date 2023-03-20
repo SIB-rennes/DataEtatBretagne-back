@@ -8,7 +8,7 @@ Use "python manage.py runserver --help" for a list of runserver options.
 from app import create_app_base
 
 
-app_flask = create_app_base(init_falsk_migrate=False)
+app_flask = create_app_base()
 
 if __name__ == "__main__":
     app_flask.run()

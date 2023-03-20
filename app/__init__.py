@@ -13,13 +13,11 @@ from flask_sqlalchemy import SQLAlchemy
 
 from app import celeryapp, mailapp
 
+from flask_cors import CORS
+
 
 db = SQLAlchemy()
 ma = Marshmallow()
-oidc = None
-
-from flask_cors import CORS
-
 
 def create_app_migrate():
     app = create_app_base(oidc_enable=False, expose_endpoint=False)
@@ -30,7 +28,7 @@ def create_app_migrate():
 def create_app_api():
     return create_app_base()
 
-def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery = True, extra_config_settings=None) -> Flask:
+def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery=True, extra_config_settings=None) -> Flask:
     """Create a Flask application.
     """
 
@@ -58,7 +56,6 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery = True, 
 
     # init oidc
     if oidc_enable and exists('config/keycloak.json'):
-        oidc = OpenIDConnect()
         app.config.update({
             'OIDC_CLIENT_SECRETS': 'config/keycloak.json',
             'OIDC_ID_TOKEN_COOKIE_SECURE': False,
@@ -68,7 +65,8 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery = True, 
             'OIDC_SCOPES': ['openid', 'email', 'profile'],
             'OIDC_INTROSPECTION_AUTH_METHOD': 'client_secret_post'
         })
-        oidc.init_app(app)
+        oidc = OpenIDConnect(app)
+        app.extensions["oidc"] = oidc
 
     # flask_restx
     if expose_endpoint:
@@ -96,22 +94,23 @@ def read_config(app, extra_config_settings):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 def _expose_endpoint(app: Flask):
-    app.wsgi_app = ProxyFix(app.wsgi_app)
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    with app.app_context():
+        app.wsgi_app = ProxyFix(app.wsgi_app)
+        CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-    from app.controller.financial_data import api_financial  # pour éviter les import circulaire avec oidc
-    from app.controller.user_management import api_management
-    from app.controller.ref_controller import api_ref
-    from app.controller.data_subventions import api_ds
-    from app.controller.task_management import api_task
-    from app.controller.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
+        from app.controller.financial_data import api_financial  # pour éviter les import circulaire avec oidc
+        from app.controller.user_management import api_management
+        from app.controller.ref_controller import api_ref
+        from app.controller.data_subventions import api_ds
+        from app.controller.task_management import api_task
+        from app.controller.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
 
-    app.register_blueprint(api_financial, url_prefix='/')
-    app.register_blueprint(api_management, url_prefix='/management')
-    app.register_blueprint(api_ref, url_prefix='/referentiels')
-    app.register_blueprint(api_ds, url_prefix='/data_subventions')
-    app.register_blueprint(api_task, url_prefix='/task_management')
+        app.register_blueprint(api_financial, url_prefix='/')
+        app.register_blueprint(api_management, url_prefix='/management')
+        app.register_blueprint(api_ref, url_prefix='/referentiels')
+        app.register_blueprint(api_ds, url_prefix='/data_subventions')
+        app.register_blueprint(api_task, url_prefix='/task_management')
 
-    if 'NOCODB_PROJECT' in app.config:
-        for project in app.config['NOCODB_PROJECT'].items():
-            app.register_blueprint(mount_blueprint(project[0]), url_prefix=f"/nocodb/{project[0]}")
+        if 'NOCODB_PROJECT' in app.config:
+            for project in app.config['NOCODB_PROJECT'].items():
+                app.register_blueprint(mount_blueprint(project[0]), url_prefix=f"/nocodb/{project[0]}")

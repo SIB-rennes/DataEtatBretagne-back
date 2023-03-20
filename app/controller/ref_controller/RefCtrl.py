@@ -1,7 +1,8 @@
+from flask import current_app
 from flask_restx import Namespace, Resource, reqparse
 from sqlalchemy import text, bindparam
 
-from app import oidc, db
+from app import db
 
 api = Namespace(name="referentiel", path='/',
                 description='API referentiels')
@@ -9,6 +10,9 @@ parser_crte = reqparse.RequestParser()
 parser_crte.add_argument("nom", type=str, required=False, help="Search on name")
 parser_crte.add_argument("departement", type=str, required=False, help="Search on departement")
 parser_crte.add_argument("limit", type=int, required=False, default=500, help="Number of results")
+
+oidc = current_app.extensions['oidc']
+
 
 @api.route('/crte')
 class RefCrte(Resource):

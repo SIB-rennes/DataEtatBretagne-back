@@ -8,7 +8,6 @@ from flask_restx import Namespace, Resource, reqparse, inputs
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
-from app import oidc
 from app.controller.Decorators import check_permission
 from app.models.enums.ConnectionProfile import ConnectionProfile
 
@@ -23,6 +22,7 @@ parser.add_argument('force_update', type=inputs.boolean, required=False, default
 
 ALLOWED_EXTENSIONS = {'csv'}
 
+oidc = current_app.extensions['oidc']
 
 @api.route('/update/commune')
 class CommuneRef(Resource):

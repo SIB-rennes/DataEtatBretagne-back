@@ -1,8 +1,6 @@
 import logging
 from flask_restx import Namespace, Resource, reqparse, fields
-from flask import abort
-
-from app import oidc
+from flask import abort, current_app
 
 from app.clients.data_subventions import get_or_make_app_api_subventions_client, Subvention, ActionProposee, RepresentantLegal
 
@@ -19,6 +17,7 @@ reprensentant_legal_model = api.schema_model('RepresentantLegal', RepresentantLe
 representants_legaux_model = api.model('RepresentantsLegaux',  {
     'representants_legaux': fields.List(fields.Nested(reprensentant_legal_model))
 })
+oidc = current_app.extensions['oidc']
 
 
 @api.route('/representants_legaux/<siret>')

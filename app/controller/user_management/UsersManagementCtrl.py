@@ -1,12 +1,10 @@
 import logging
 
-from flask import make_response
+from flask import make_response, current_app
 from flask_restx._http import HTTPStatus
 from keycloak import KeycloakAdmin
 from flask import g
 
-
-from app import oidc
 from flask_restx import Namespace, Resource, abort, inputs, reqparse
 
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
@@ -20,6 +18,7 @@ api = Namespace(name="users", path='/users',
 parser_get = get_pagination_parser()
 parser_get.add_argument("only_disable", type=inputs.boolean, required=False, default=False, help="Only disable user or not")
 
+oidc = current_app.extensions['oidc']
 
 @api.route('')
 class UsersManagement(Resource):
