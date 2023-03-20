@@ -29,8 +29,8 @@ class ReferentielNotFound(Exception):
         self.name = name
         super().__init__(f'{self.message} {self.name}')
 
-@celery.task(name='import_file_ref')
-def import_refs(file: str, class_name:str, columns: List , is_csv=True, **kwargs):
+@celery.task(name='import_file_ref', bind=True)
+def import_refs(self, file: str, class_name:str, columns: List , is_csv=True, **kwargs):
     """Task that imports reference data from a file into the database.
 
 Args:

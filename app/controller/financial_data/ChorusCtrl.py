@@ -60,10 +60,10 @@ class ChorusImport(Resource):
             file_chorus.save(save_path)
             logging.info(f'[IMPORT CHORUS] Récupération du fichier {filename}')
             task =  import_file_ae_chorus.delay( str(save_path), code_source_region, annee, force_update)
-            return jsonify({"statut": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
+            return jsonify({"status": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
         else:
             logging.error(f'[IMPORT CHORUS] Fichier refusé {file_chorus.filename}')
-            return {"statut": 'le fichier n\'est pas un csv'}, 400
+            return {"status": 'le fichier n\'est pas un csv'}, 400
 
 
 
