@@ -15,5 +15,3 @@ class Siret(db.Model):
 
     denomination = Column(String)
     adresse = Column(String)
-    longitude= Column(db.Float)
-    latitude = Column(db.Float)

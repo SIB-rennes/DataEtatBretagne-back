@@ -1,14 +1,12 @@
 import json
 import logging
 
-import requests
 import pandas
 
 from datetime import datetime
 
 import sqlalchemy.exc
 from celery import subtask
-from flask import current_app
 
 from app import db, celeryapp
 from app.models.financial.Chorus import Chorus
@@ -22,6 +20,8 @@ from app.models.refs.localisation_interministerielle import LocalisationIntermin
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.models.refs.siret import Siret
 from app.tasks import maj_one_commune
+
+from app.clients.entreprise import make_or_get_api_entreprise, LimitHitError
 
 CHORUS_COLUMN_NAME = ['programme_code', 'domaine_code', 'domaine_label', 'centre_cout_code', 'centre_cout_label',
                       'ref_programmation_code', 'ref_programmation_label', 'n_ej', 'n_poste_ej', 'date_modif',
@@ -38,7 +38,7 @@ celery = celeryapp.celery
 class ChorusException(Exception):
     pass
 
-@celery.task(name='import_file_ae_chorus', bind=True)
+@celery.task(bind=True, name='import_file_ae_chorus')
 def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_update: bool):
     # get file
     LOGGER.info(f'[IMPORT][CHORUS] Start for region {source_region}, year {annee}')
@@ -60,8 +60,8 @@ def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_u
         raise e
 
 
-@celery.task(name='import_line_chorus_ae', autoretry_for=(ChorusException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
-def import_line_chorus_ae(data_chorus, index, source_region: str, annee: int, force_update: bool):
+@celery.task(bind=True, name='import_line_chorus_ae', autoretry_for=(ChorusException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
+def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: int, force_update: bool):
     line = json.loads(data_chorus)
     try :
         chorus_instance = _check_insert__update_chorus(line, force_update)
@@ -97,6 +97,18 @@ def import_line_chorus_ae(data_chorus, index, source_region: str, annee: int, fo
                 _insert_chorus(line, source_region, annee)
             else:
                 _update_chorus(line, chorus_instance, source_region, annee)
+
+        except LimitHitError as e:
+            delay = (e.delay) + 5
+            LOGGER.info(
+                f"[IMPORT][CHORUS] Limite d'appel à l'API entreprise atteinte pour l'index {str(index)}. " 
+                f"Ré essai de la tâche dans {str(delay)} secondes"
+            )
+            # XXX: max_retries=None ne désactive pas le mécanisme 
+            # de retry max contrairement à ce que stipule la doc !
+            # on met donc un grand nombre.
+            self.retry(countdown=delay, max_retries=1000, retry_jitter=True)
+
         except Exception as e:
             LOGGER.exception(f"[IMPORT][CHORUS] erreur index {index}")
             raise e
@@ -128,23 +140,32 @@ def __check_commune(code):
             LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout commune {code}")
 
 def _check_siret(siret):
+    """Rempli les informations du siret via l'API entreprise
+
+    Raises:
+        LimitHitError: Si le ratelimiter de l'API entreprise est déclenché
+    """
     instance = db.session.query(Siret).filter_by(code=str(siret)).one_or_none()
+
     if not instance:
-        resp = requests.get(url=current_app.config['api_siren'] + siret)
         siret = Siret(code=str(siret))
-        if resp.status_code != 200:
+
+        etablissement = _donnees_etab(siret)
+
+        if etablissement is None:
             LOGGER.warning("[IMPORT][CHORUS] Siret %s non trouvé via l'api", siret)
         else:
-            data = resp.json()
-            info = data['etablissement']
-            siret.categorie_juridique = info['unite_legale']['categorie_juridique']
-            siret.code_commune = info['code_commune']
-            siret.denomination = info['unite_legale']['denomination']
-            siret.adresse = info['geo_adresse']
-            if info['longitude'] is not None and info['latitude'] is not None:
-                siret.longitude = float(info['longitude'])
-                siret.latitude = float(info['latitude'])
-            # On check que la commune est bien en base
+            #
+            categorie_juridique = etablissement.unite_legale.forme_juridique.code
+            code_commune = etablissement.adresse.code_commune
+            raison_sociale = etablissement.unite_legale.personne_morale_attributs.raison_sociale
+            adresse = etablissement.adresse_postale_legere
+
+            siret.categorie_juridique = categorie_juridique
+            siret.code_commune = code_commune
+            siret.raison_sociale = raison_sociale
+            siret.adresse = adresse
+
             __check_commune(siret.code_commune)
 
         LOGGER.info(f"[IMPORT][CHORUS] Siret {siret} ajouté")
@@ -155,6 +176,10 @@ def _check_siret(siret):
             db.session.rollback()
             LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout Siret {siret} ")
 
+def _donnees_etab(siret: str):
+    client_api_entreprise = make_or_get_api_entreprise()
+    etablissement = client_api_entreprise.donnees_etablissement(siret)
+    return etablissement
 
 def _check_insert__update_chorus(chorus_data, force_update: bool):
     '''

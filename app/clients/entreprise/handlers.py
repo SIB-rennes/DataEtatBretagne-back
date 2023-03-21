@@ -28,7 +28,6 @@ def _handle_response_429(response: Response, api_entreprise):
         f"{remaining}/{limit} - reset: {reset}. retry after: {retry_after}. "
         f"Quant à lui, notre ratelimiter a un volume de {volume}"
     )
-    logger.warning(f"Quant à lui, notre ratelimiter a un volume de {volume}")
     raise Http429Error(retry_after)
 
 def _handle_httperr_429_ex(f):
@@ -47,6 +46,7 @@ def _handle_httperr_429_ex(f):
     return inner
 
 def _handle_bucketfull_ex(f):
+    """Décorateur qui gère l'erreur BucketFullException renvoyé par le ratelimite de pyratelimiter"""
     @functools.wraps(f)
     def inner(*args, **kwargs):
         try:
