@@ -1,24 +1,30 @@
 from flask import current_app
-from flask_restx import Namespace, Resource, reqparse
+from flask_restx import Namespace, Resource, reqparse, fields
 from sqlalchemy import text, bindparam
 
 from app import db
 
-api = Namespace(name="referentiel", path='/',
-                description='API referentiels')
+api = Namespace(name="CRTE", path='/crte',
+                description='API referentiels des CRTE')
 parser_crte = reqparse.RequestParser()
-parser_crte.add_argument("nom", type=str, required=False, help="Search on name")
-parser_crte.add_argument("departement", type=str, required=False, help="Search on departement")
-parser_crte.add_argument("limit", type=int, required=False, default=500, help="Number of results")
+parser_crte.add_argument("nom", type=str, required=False, help="Recherche sur le nom du CRTE")
+parser_crte.add_argument("departement", type=str, required=False, help="Recherche sur le numéro du département")
+parser_crte.add_argument("limit", type=int, required=False, default=500, help="Nombre de résultat")
 
 oidc = current_app.extensions['oidc']
 
+crte_model = api.model('crte',model=  {
+    'code': fields.String(),
+    'nom': fields.String()
+})
 
-@api.route('/crte')
+@api.route('')
+@api.doc(model=crte_model)
 class RefCrte(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    # @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.expect(parser_crte)
+    @api.response(200, 'Success', fields.List(fields.Nested(crte_model)))
     def get(self):
         p_args = parser_crte.parse_args()
         name = f'%{p_args.get("nom")}%' if p_args.get("nom") is not None else None
@@ -26,8 +32,8 @@ class RefCrte(Resource):
         limit = p_args.get("limit")
         sql_select = "SELECT DISTINCT label_crte, code_crte FROM ref_commune"
         if name is None and dept is None :
-            sql_execute = text(f"{sql_select} ORDER BY label_crte LIMIT :limit")
-            sql_execute.bindparams(limit=limit)
+            sql_execute = text(f"{sql_select} ORDER BY label_crte LIMIT :limit").\
+                bindparams(bindparam('limit', value=limit))
         else :
             where_clause = []
             params = (bindparam('limit', value=limit), )
