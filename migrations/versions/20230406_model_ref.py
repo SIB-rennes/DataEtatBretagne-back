@@ -50,11 +50,10 @@ def downgrade():
     sa.UniqueConstraint('code', name='ref_compte_general_code_key')
     )
 
-    op.add_column('data_chorus', sa.Column('compte_general', sa.VARCHAR(), autoincrement=False, nullable=False))
+    op.add_column('data_chorus', sa.Column('compte_general', sa.VARCHAR(), autoincrement=False, nullable=True))
     op.create_foreign_key('data_chorus_compte_general_fkey', 'data_chorus', 'ref_compte_general', ['compte_general'],
                           ['code'])
 
-    op.drop_table('ref_region')
     op.drop_table('ref_ministere')
     # ### end Alembic commands ###
 
