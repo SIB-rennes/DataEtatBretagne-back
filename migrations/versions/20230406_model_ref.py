@@ -55,6 +55,9 @@ def downgrade():
                           ['code'])
 
     op.drop_table('ref_ministere')
+
+    op.add_column('ref_siret', sa.Column('longitude', sa.DOUBLE_PRECISION(precision=53), autoincrement=False, nullable=True))
+    op.add_column('ref_siret', sa.Column('latitude', sa.DOUBLE_PRECISION(precision=53), autoincrement=False, nullable=True))
     # ### end Alembic commands ###
 
 
@@ -119,3 +122,7 @@ def _upgrade_tables():
     op.add_column('ref_localisation_interministerielle', sa.Column('code_departement', sa.String(), nullable=True))
     op.add_column('ref_localisation_interministerielle', sa.Column('commune', sa.String(), nullable=True))
     op.add_column('ref_localisation_interministerielle', sa.Column('site', sa.String(), nullable=True))
+
+    # DROP Colonnes longitude/latitude pour siret
+    op.drop_column('ref_siret', 'latitude')
+    op.drop_column('ref_siret', 'longitude')
