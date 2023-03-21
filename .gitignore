@@ -3,3 +3,6 @@
 /config/config.yml
 /migrations/data/ref_crte*.csv
 /config/keycloak.json
+/tests/database.db
+/tests/services/database.db
+/test.py

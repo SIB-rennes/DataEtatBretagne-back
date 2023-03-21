@@ -10,18 +10,18 @@ import logging
 from http import HTTPStatus
 
 from flask_restx import Namespace, Resource, fields, abort, reqparse
-from flask import request, g
+from flask import request, g, current_app
 from marshmallow import ValidationError
 from sqlalchemy.orm import lazyload
 
-from app import db, oidc
+from app import db
 from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
 from app.controller.utils.ControllerUtils import get_origin_referrer
 from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema, Share
 
 api = Namespace(name="preferences", path='/users/preferences',
                 description='API for managing users preference')
-
+oidc = current_app.extensions['oidc']
 
 preference = api.model('CreateUpdatePreference', {
     'name': fields.String(required=True, description='Name of the preference'),

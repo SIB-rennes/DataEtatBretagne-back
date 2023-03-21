@@ -5,7 +5,6 @@ import pandas
 import requests
 from nocodb.infra.requests_client import NocoDBRequestsClient
 
-from app import oidc
 from flask_restx import Namespace, Resource, abort, reqparse
 from flask import current_app, make_response, request
 from nocodb.nocodb import NocoDBProject, APIToken
@@ -23,6 +22,7 @@ args_get.add_argument('offset', type=int, required=False, help="Limit de résult
 api = Namespace(name="nocodb", path='/',
                 description='API passe plats nocodb')
 
+oidc = current_app.extensions['oidc']
 
 @api.route('/<table>/<views>')
 class NocoDb(Resource):

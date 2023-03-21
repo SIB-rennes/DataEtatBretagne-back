@@ -15,7 +15,6 @@ from app.models.financial.Chorus import Chorus
 from app.models.refs.centre_couts import CentreCouts
 from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.commune import Commune
-from app.models.refs.compte_general import CompteGeneral
 from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
 from app.models.refs.fournisseur_titulaire import FournisseurTitulaire
 from app.models.refs.groupe_marchandise import GroupeMarchandise
@@ -76,14 +75,14 @@ def import_line_chorus_ae(data_chorus, index, source_region: str, annee: int, fo
             _check_ref(CodeProgramme, **{'code': line['programme_code']})
             _check_ref(CentreCouts, **{'code': line['centre_cout_code'],
                                        'label': line['centre_cout_label']})
-            _check_ref(CompteGeneral,
-                       **{'code': line['compte_code'], 'label': line['compte_label']})
             _check_ref(DomaineFonctionnel,
                        **{'code': line['domaine_code'], 'label': line['domaine_label']})
             _check_ref(FournisseurTitulaire, **{'code': line['Fournisseur_code'],
                                                 'label': line['Fournisseur_label']})
             _check_ref(GroupeMarchandise, **{'code': line['groupe_marchandise_code'],
-                                             'label': line['groupe_marchandise_label']})
+                                             'label': line['groupe_marchandise_label'],
+                                             'code_pce': line['compte_code'],
+                                             'label_pce': line['compte_label']})
             _check_ref(LocalisationInterministerielle,
                        **{'code': line['localisation_interministerielle_code'],
                           'label': line['localisation_interministerielle_label']})
@@ -189,7 +188,6 @@ def _insert_chorus(chorus_data, source_region: str, annee: int):
                     referentiel_programmation=chorus_data['ref_programmation_code'],
                     localisation_interministerielle=chorus_data['localisation_interministerielle_code'],
                     groupe_marchandise=chorus_data['groupe_marchandise_code'],
-                    compte_general=chorus_data['compte_code'],
                     fournisseur_titulaire=chorus_data['Fournisseur_code'],
                     siret=str(chorus_data['siret']),
                     date_modification_ej=datetime.strptime(chorus_data['date_modif'], '%d.%m.%Y'),
@@ -211,7 +209,6 @@ def _update_chorus(chorus_data, chorus_to_update, code_source_region: str, annee
     chorus_to_update.referentiel_programmation = chorus_data['ref_programmation_code']
     chorus_to_update.localisation_interministerielle = chorus_data['localisation_interministerielle_code']
     chorus_to_update.groupe_marchandise = chorus_data['groupe_marchandise_code']
-    chorus_to_update.compte_general = chorus_data['compte_code']
     chorus_to_update.fournisseur_titulaire = chorus_data['Fournisseur_code']
     chorus_to_update.siret = str(chorus_data['siret'])
     chorus_to_update.date_modification_ej = datetime.strptime(chorus_data['date_modif'], '%d.%m.%Y')
