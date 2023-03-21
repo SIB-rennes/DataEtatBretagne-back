@@ -148,7 +148,7 @@ def _check_siret(siret):
     instance = db.session.query(Siret).filter_by(code=str(siret)).one_or_none()
 
     if not instance:
-        siret = Siret(code=str(siret))
+        siret_entity = Siret(code=str(siret))
 
         etablissement = _donnees_etab(siret)
 
@@ -161,16 +161,16 @@ def _check_siret(siret):
             raison_sociale = etablissement.unite_legale.personne_morale_attributs.raison_sociale
             adresse = etablissement.adresse_postale_legere
 
-            siret.categorie_juridique = categorie_juridique
-            siret.code_commune = code_commune
-            siret.raison_sociale = raison_sociale
-            siret.adresse = adresse
+            siret_entity.categorie_juridique = categorie_juridique
+            siret_entity.code_commune = code_commune
+            siret_entity.denomination = raison_sociale
+            siret_entity.adresse = adresse
 
-            __check_commune(siret.code_commune)
+            __check_commune(siret_entity.code_commune)
 
         LOGGER.info(f"[IMPORT][CHORUS] Siret {siret} ajouté")
         try:
-            db.session.add(siret)
+            db.session.add(siret_entity)
             db.session.commit()
         except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
             db.session.rollback()
