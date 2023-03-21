@@ -1,15 +1,13 @@
-class Pagination:
-    def __init__(self, total_rows: int, page: int, page_size: int):
-        """Initializes a pagination instance.
+import dataclasses
 
-        Args:
-            total_rows (int): The total number of rows.
-            page (int): The current page number.
-            page_size (int): The number of rows per page.
-        """
-        self.total_rows = total_rows
-        self.page = page
-        self.page_size = page_size
+from app.models.utils import _AddMarshmallowAndJsonSchema
+
+
+@dataclasses.dataclass
+class Pagination(metaclass=_AddMarshmallowAndJsonSchema):
+    total_rows: int
+    page: int
+    page_size:int
 
     def to_json(self):
         """Returns a JSON  representation of the pagination object.
