@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from ..utils import _AddMarshmallowAndJsonSchema
+from app.models.utils import _AddMarshmallowAndJsonSchema
+
 
 @dataclass
 class RepresentantLegal(metaclass=_AddMarshmallowAndJsonSchema):
