@@ -1,6 +1,9 @@
 from sqlalchemy import Column, String, Text
+from sqlalchemy.orm import relationship
+from marshmallow import fields
 
-from app import db
+from app import db, ma
+from app.models.refs.ministere import MinistereSchema
 
 
 class CodeProgramme(db.Model):
@@ -13,6 +16,8 @@ class CodeProgramme(db.Model):
 
     label: str = Column(String)
     description: str = Column(Text)
+
+    ministere = relationship('Ministere')
 
     def __setattr__(self, key, value):
         """
@@ -36,3 +41,10 @@ class CodeProgramme(db.Model):
         if key == "code" and isinstance(value, str) and value.startswith("0"):
             value = value[1:]  # Remove the first character
         super().__setattr__(key, value)
+
+class CodeProgrammeSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = CodeProgramme
+        exclude = ('id',)
+
+    ministere = fields.Nested(MinistereSchema)

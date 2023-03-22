@@ -2,7 +2,6 @@ import datetime
 import uuid as uuid
 from marshmallow import fields
 from sqlalchemy import Column, String, Integer, JSON, DateTime, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app import db, ma
 
