@@ -1,7 +1,7 @@
 import os
 from unittest.mock import patch, call
 
-from app.services import import_refs, import_line_one_ref
+from app.services import import_refs
 
 @patch('app.services.import_refs.subtask')
 def test_import_refs_groupe_marchandise_pce(mock_subtask,test_db):

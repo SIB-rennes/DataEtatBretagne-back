@@ -1,4 +1,4 @@
-from flask import current_app, jsonify, abort
+from flask import current_app
 from flask_restx import Namespace, Resource, fields
 from marshmallow_jsonschema import JSONSchema
 from sqlalchemy.exc import NoResultFound
@@ -9,11 +9,11 @@ from app.models.common.Pagination import Pagination
 from app.models.refs.centre_couts import CentreCoutsSchema, CentreCouts
 
 oidc = current_app.extensions['oidc']
-api = Namespace(name="Centre couts", path='/centre_couts',
+api = Namespace(name="Centre couts Controller", path='/centre_couts',
                 description='API referentiels des Centre de couts')
 
 parser_get_cc = get_pagination_parser()
-parser_get_cc.add_argument('code_postal', type=str, required=False, help="Code postal du centre de couts")
+parser_get_cc.add_argument('query', type=str, required=False, help="Recherche sur le label, code ou code_postal")
 
 
 
@@ -33,7 +33,7 @@ pagination_centre_cout_model = api.model('CentreCoutsPagination', {
 @api.doc(model=pagination_centre_cout_model)
 class RefCentreCouts(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @api.doc(security="Bearer")
+    @api.doc(security="Bearer", description="Récupération des Centre de Couts")
     @api.expect(parser_get_cc)
     @api.response(200, 'Success', pagination_centre_cout_model)
     @api.response(204, 'No Result')
@@ -41,10 +41,14 @@ class RefCentreCouts(Resource):
         p_args = parser_get_cc.parse_args()
         page_number = p_args.get("pageNumber")
         limit = p_args.get("limit")
-        code_postal = p_args.get("code_postal") if p_args.get("code_postal") is not None else None
+        query = p_args.get("query") if p_args.get("query") is not None else None
 
-        if code_postal is not None:
-            stmt = db.select(CentreCouts).where(CentreCouts.code_postal == code_postal).order_by(CentreCouts.code)
+        if query is not None:
+            like_query = f'%{query}%'
+            stmt =  db.select(CentreCouts).where( (CentreCouts.code_postal == query)
+                                                  | (CentreCouts.code.ilike(like_query))
+                                                  | (CentreCouts.label.ilike(like_query) ))\
+                .order_by(CentreCouts.code)
         else :
             stmt = db.select(CentreCouts).order_by(CentreCouts.code)
 
@@ -61,7 +65,7 @@ class RefCentreCouts(Resource):
 @api.doc(model=centre_cout_model)
 class CentreCoutByCode(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @api.doc(security="Bearer")
+    @api.doc(security="Bearer", description="Remonte les informations d'un centre de couts")
     @api.response(200, 'Success', centre_cout_model)
     def get(self, code):
         try:

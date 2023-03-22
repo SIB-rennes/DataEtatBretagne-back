@@ -4,7 +4,7 @@ from sqlalchemy import text, bindparam
 
 from app import db
 
-api = Namespace(name="CRTE", path='/crte',
+api = Namespace(name="CRTE Controller", path='/crte',
                 description='API referentiels des CRTE')
 parser_crte = reqparse.RequestParser()
 parser_crte.add_argument("nom", type=str, required=False, help="Recherche sur le nom du CRTE")

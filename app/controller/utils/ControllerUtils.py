@@ -31,6 +31,6 @@ def get_pagination_parser(default_page_number = 1, default_limit = 100):
            RequestParser: The pagination request parser.
     """
     pagination_parser = reqparse.RequestParser()
-    pagination_parser.add_argument("pageNumber", type=positive(), required=True, default=default_page_number, help="Page number of the results.")
-    pagination_parser.add_argument("limit", type=positive(), required=True, default=default_limit, help="Number of results per page.")
+    pagination_parser.add_argument("pageNumber", type=positive(), required=False, default=default_page_number, help="Numéro de la page de resultat")
+    pagination_parser.add_argument("limit", type=positive(), required=False, default=default_limit, help="Nombre de résultat par page")
     return  pagination_parser

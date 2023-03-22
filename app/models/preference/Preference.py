@@ -10,11 +10,11 @@ from app import db, ma
 class Preference(db.Model):
     __tablename__ = 'preference_users'
     __table_args__ = {'schema': 'settings'}
+    __bind_key__ = "settings"
     # PK
     id = Column(Integer, primary_key=True, nullable = False)
 
     # uuid
-    # uuid = Column(UUID(as_uuid=True), nullable=False, default=uuid.uuid4)
     uuid = Column( Text(length=36) , nullable=False, default=uuid.uuid4)
     # user
     username = Column(String, nullable = False)
@@ -36,6 +36,7 @@ class Preference(db.Model):
 class Share(db.Model):
     __tablename__ = 'share_preference'
     __table_args__ = {'schema': 'settings'}
+    __bind_key__ = "settings"
     # PK
     id = Column(Integer, primary_key=True, nullable = False)
 
