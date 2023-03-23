@@ -1,9 +1,9 @@
+from marshmallow_sqlalchemy import auto_field
 from sqlalchemy import Column, String, Text
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
-from marshmallow import fields
 
 from app import db, ma
-from app.models.refs.ministere import MinistereSchema
 
 
 class CodeProgramme(db.Model):
@@ -11,13 +11,15 @@ class CodeProgramme(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code: str = Column(String, unique=True, nullable=False)
     # FK
-    code_ministere = Column(String, db.ForeignKey('ref_ministere.code'), nullable=True)
-    theme = Column(db.Integer, db.ForeignKey('ref_theme.id'), nullable=True)
+    code_ministere: str = Column(String, db.ForeignKey('ref_ministere.code'), nullable=True)
+    theme: int = Column(db.Integer, db.ForeignKey('ref_theme.id'), nullable=True)
 
     label: str = Column(String)
     description: str = Column(Text)
 
-    ministere = relationship('Ministere')
+    theme_r = relationship("Theme",uselist=False, lazy="select")
+    # permet de remonter uniquement le label
+    label_theme = association_proxy('theme_r', 'label')
 
     def __setattr__(self, key, value):
         """
@@ -45,6 +47,7 @@ class CodeProgramme(db.Model):
 class CodeProgrammeSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CodeProgramme
-        exclude = ('id',)
+        include_fk = True
+        exclude = ('id','theme',)
 
-    ministere = fields.Nested(MinistereSchema)
+    label_theme = auto_field()

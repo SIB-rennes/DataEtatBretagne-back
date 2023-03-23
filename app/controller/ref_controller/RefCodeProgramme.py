@@ -6,6 +6,7 @@ from sqlalchemy.exc import NoResultFound
 from app import db
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
+from app.models.common.QueryParam import QueryParam
 from app.models.refs.code_programme import CodeProgrammeSchema, CodeProgramme
 
 oidc = current_app.extensions['oidc']
@@ -14,7 +15,6 @@ api = Namespace(name="Bop Controller", path='/bop',
 
 parser_get_bop = get_pagination_parser()
 parser_get_bop.add_argument('query', type=str, required=False, help="Recherche sur le label ou code")
-
 
 
 code_programme_schema = CodeProgrammeSchema(many=True)
@@ -35,26 +35,22 @@ pagination_bop_model = api.model('BopPagination', {
 @api.route('')
 @api.doc(model=pagination_bop_model)
 class RefBop(Resource):
-    # @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer", description="Récupération des Bops")
     @api.expect(parser_get_bop)
     @api.response(200, 'Success', pagination_bop_model)
     @api.response(204, 'No Result')
     def get(self):
-        p_args = parser_get_bop.parse_args()
-        page_number = p_args.get("pageNumber")
-        limit = p_args.get("limit")
-        query = p_args.get("query") if p_args.get("query") is not None else None
-
-        if query is not None:
-            like_query = f'%{query}%'
-            stmt = db.select(CodeProgramme).where((CodeProgramme.code == query)
+        query_param = QueryParam(parser_get_bop)
+        if query_param.is_query_search():
+            like_query = query_param.get_search_like_param()
+            stmt = db.select(CodeProgramme).where((CodeProgramme.code == query_param.query_search)
                                                 | (CodeProgramme.label.ilike(like_query))) \
                 .order_by(CodeProgramme.code)
         else:
             stmt = db.select(CodeProgramme).order_by(CodeProgramme.code)
 
-        page_result = db.paginate(stmt, per_page=limit, page=page_number, error_out=False)
+        page_result = db.paginate(stmt, per_page=query_param.limit, page=query_param.page_number, error_out=False)
 
         if page_result.items == []:
             return "", 204
@@ -69,7 +65,7 @@ class RefBop(Resource):
 @api.route('/<code>')
 @api.doc(model=bop_model)
 class CodeProgrammeByCode(Resource):
-    #@oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer", description="Remonte les informations d'un BOP")
     @api.response(200, 'Success', bop_model)
     def get(self, code):

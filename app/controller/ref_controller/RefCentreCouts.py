@@ -6,6 +6,7 @@ from sqlalchemy.exc import NoResultFound
 from app import db
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
+from app.models.common.QueryParam import QueryParam
 from app.models.refs.centre_couts import CentreCoutsSchema, CentreCouts
 
 oidc = current_app.extensions['oidc']
@@ -32,27 +33,23 @@ pagination_centre_cout_model = api.model('CentreCoutsPagination', {
 @api.route('')
 @api.doc(model=pagination_centre_cout_model)
 class RefCentreCouts(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    # @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer", description="Récupération des Centre de Couts")
     @api.expect(parser_get_cc)
     @api.response(200, 'Success', pagination_centre_cout_model)
     @api.response(204, 'No Result')
     def get(self):
-        p_args = parser_get_cc.parse_args()
-        page_number = p_args.get("pageNumber")
-        limit = p_args.get("limit")
-        query = p_args.get("query") if p_args.get("query") is not None else None
-
-        if query is not None:
-            like_query = f'%{query}%'
-            stmt =  db.select(CentreCouts).where( (CentreCouts.code_postal == query)
-                                                  | (CentreCouts.code.ilike(like_query))
-                                                  | (CentreCouts.label.ilike(like_query) ))\
+        query_param = QueryParam(parser_get_cc)
+        if query_param.is_query_search():
+            like = query_param.get_search_like_param()
+            stmt =  db.select(CentreCouts).where( (CentreCouts.code_postal == query_param.query_search)
+                                                  | (CentreCouts.code.ilike(like))
+                                                  | (CentreCouts.label.ilike(like) ))\
                 .order_by(CentreCouts.code)
         else :
             stmt = db.select(CentreCouts).order_by(CentreCouts.code)
 
-        page_result = db.paginate(stmt, per_page= limit, page=page_number,error_out=False)
+        page_result = db.paginate(stmt, per_page= query_param.limit, page=query_param.page_number,error_out=False)
 
         if page_result.items == [] :
             return "",204
