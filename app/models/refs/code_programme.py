@@ -1,4 +1,4 @@
-from marshmallow_sqlalchemy import auto_field
+from marshmallow import fields
 from sqlalchemy import Column, String, Text
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
@@ -50,4 +50,7 @@ class CodeProgrammeSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
         exclude = ('id','theme',)
 
-    label_theme = auto_field()
+    label_theme = fields.String()
+    label = fields.String()
+    code_ministere = fields.String()
+    description = fields.String()

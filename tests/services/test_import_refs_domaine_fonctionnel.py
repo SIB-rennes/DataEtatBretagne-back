@@ -57,16 +57,17 @@ def test_import_new_line_domaine_fonctionnel(app):
 
 def test_import_update_domaine_fonctionnel_line(app, test_db):
     #Given
-    update_dommaine = DomaineFonctionnel(code="xxx", label="to_update")
+    update_dommaine = DomaineFonctionnel(code="0102-03", label="to_update")
     with app.app_context():
         test_db.session.add(update_dommaine)
 
     # When
-    import_line_one_ref('DomaineFonctionnel', json.dumps({'code': 'xxx', 'label': 'label_updating'}))
+    import_line_one_ref('DomaineFonctionnel', json.dumps({'code': '0102-03', 'label': 'label_updating'}))
     import_line_one_ref('DomaineFonctionnel', json.dumps({'code': 'yyy', 'label': 'Actions R\\u00e9fugi\\u00e9s'}))
     with app.app_context():
-        d_to_update = DomaineFonctionnel.query.filter_by(code='xxx').one()
+        d_to_update = DomaineFonctionnel.query.filter_by(code='0102-03').one()
         assert d_to_update.label == "label_updating"
+        assert d_to_update.code_programme == "102"
         d_new = DomaineFonctionnel.query.filter_by(code='yyy').one()
         assert d_new.label == "Actions Réfugiés"
 

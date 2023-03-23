@@ -10,7 +10,7 @@ from app.models.common.QueryParam import QueryParam
 from app.models.refs.centre_couts import CentreCoutsSchema, CentreCouts
 
 oidc = current_app.extensions['oidc']
-api = Namespace(name="Centre couts Controller", path='/centre_couts',
+api = Namespace(name="Centre couts Controller", path='/centre-couts',
                 description='API referentiels des Centre de couts')
 
 parser_get_cc = get_pagination_parser()
@@ -33,7 +33,7 @@ pagination_centre_cout_model = api.model('CentreCoutsPagination', {
 @api.route('')
 @api.doc(model=pagination_centre_cout_model)
 class RefCentreCouts(Resource):
-    # @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer", description="Récupération des Centre de Couts")
     @api.expect(parser_get_cc)
     @api.response(200, 'Success', pagination_centre_cout_model)

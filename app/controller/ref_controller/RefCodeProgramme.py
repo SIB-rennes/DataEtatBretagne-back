@@ -10,8 +10,8 @@ from app.models.common.QueryParam import QueryParam
 from app.models.refs.code_programme import CodeProgrammeSchema, CodeProgramme
 
 oidc = current_app.extensions['oidc']
-api = Namespace(name="Bop Controller", path='/bop',
-                description='API referentiels des BOP')
+api = Namespace(name="Programme Controller", path='/programme',
+                description='API referentiels des Programmes')
 
 parser_get_bop = get_pagination_parser()
 parser_get_bop.add_argument('query', type=str, required=False, help="Recherche sur le label ou code")
