@@ -33,6 +33,8 @@ def downgrade():
     op.drop_column('ref_localisation_interministerielle', 'site')
     op.drop_column('ref_localisation_interministerielle', 'commune')
     op.drop_column('ref_localisation_interministerielle', 'code_departement')
+    op.drop_column('ref_localisation_interministerielle', 'niveau')
+    op.drop_column('ref_localisation_interministerielle','code_parent')
 
     op.drop_column('ref_groupe_marchandise', 'label_pce')
     op.drop_column('ref_groupe_marchandise', 'code_pce')
@@ -122,6 +124,8 @@ def _upgrade_tables():
     op.add_column('ref_localisation_interministerielle', sa.Column('code_departement', sa.String(), nullable=True))
     op.add_column('ref_localisation_interministerielle', sa.Column('commune', sa.String(), nullable=True))
     op.add_column('ref_localisation_interministerielle', sa.Column('site', sa.String(), nullable=True))
+    op.add_column('ref_localisation_interministerielle', sa.Column('niveau', sa.String(), nullable=True))
+    op.add_column('ref_localisation_interministerielle', sa.Column('code_parent', sa.String(), nullable=True))
 
     # DROP Colonnes longitude/latitude pour siret
     op.drop_column('ref_siret', 'latitude')

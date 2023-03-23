@@ -1,6 +1,9 @@
+from marshmallow import fields
 from sqlalchemy import Column, String, Text
 
-from app import db
+
+
+from app import db, ma
 
 class LocalisationInterministerielle(db.Model):
     __tablename__ = 'ref_localisation_interministerielle'
@@ -11,3 +14,18 @@ class LocalisationInterministerielle(db.Model):
     commune: str = Column(String)
     site: str = Column(String)
     description: str = Column(Text)
+    niveau: str = Column(String)
+    code_parent = Column(String)
+
+class LocalisationInterministerielleSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = LocalisationInterministerielle
+        exclude = ('id',)
+
+    label = fields.String()
+    code_departement = fields.String()
+    commune = fields.String()
+    site = fields.String()
+    description = fields.String()
+    niveau =  fields.String()
+    code_parent = fields.String()

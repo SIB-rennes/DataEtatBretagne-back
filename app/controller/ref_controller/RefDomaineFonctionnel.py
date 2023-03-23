@@ -39,7 +39,7 @@ class RefDomaineFonctionnels(Resource):
         query_param = QueryParam(parser_get_cc)
         if query_param.is_query_search():
             like = query_param.get_search_like_param()
-            stmt =  db.select(DomaineFonctionnel).where((DomaineFonctionnel.code.ilike(like))
+            stmt =  db.select(DomaineFonctionnel).where((DomaineFonctionnel.code ==  query_param.query_search)
                                                   | (DomaineFonctionnel.label.ilike(like) ))\
                 .order_by(DomaineFonctionnel.code)
         else :
