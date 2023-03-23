@@ -13,7 +13,7 @@ def add_data(test_db):
             "code": f"code{i + 1}",
             "label": f"Test code{i * 10}",
             "description": "description du code",
-            "code_postal": f'3540{i + 1}',
+            "code_postal": f'354{i + 1}',
             "ville": f"Rennes {i + 1}"
         }
         test_db.session.add(CentreCouts(**cc))
@@ -80,3 +80,11 @@ def test_search_centre_cout_bycode(test_client, add_data):
     assert page1_return['pageInfo'] == {'totalRows': 13, 'page': 1, 'pageSize': 5}
     assert page2_return['pageInfo'] == {'totalRows': 13, 'page': 2, 'pageSize': 5}
 
+
+def test_search_centre_cout_by_code_postal(test_client, add_data):
+    test = "35411"
+    resp = test_client.get('/referentiels/api/v1/centre-couts?query=' + test + '&limit=5&pageNumber=0')
+    assert resp.status_code == 200
+    page_return = json.loads(resp.data.decode())
+    assert page_return['items'].__len__() == 1
+    assert add_data[10] in page_return['items']  # code11
