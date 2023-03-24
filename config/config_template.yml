@@ -11,9 +11,19 @@ SECRET_KEY: "OIDC"
 UPLOAD_FOLDER: "c:\\toWatch"
 
 
-KEYCLOAK_ADMIN_URL: "url"
-KEYCLOAK_ADMIN_SECRET_KEY: "<secret key>"
-KEYCLOAK_ADMIN_REALM: "realm"
+
+
+KEYCLOAK_ADMIN:
+  URL: <url>
+  SECRET_KEY: "<secret key>"
+  REALM: <realm>
+
+KEYCLOAK_OPENID:
+  URL: <url>
+  SECRET_KEY: "<secret key>"
+  REALM: <realm>
+  CLIENT_ID: "client_id"
+
 
 NOCODB_URL : "<url>"
 NOCODB_TECH_LOGIN: 'USER'
