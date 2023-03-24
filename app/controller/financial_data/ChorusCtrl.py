@@ -8,6 +8,7 @@ from flask_restx import Namespace, Resource, reqparse, inputs
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
+from app.clients.entreprise import make_or_get_api_entreprise
 from app.controller.Decorators import check_permission
 from app.models.enums.ConnectionProfile import ConnectionProfile
 
@@ -88,9 +89,11 @@ class LineImport(Resource):
 @api.route('/siret/<siret>')
 class TestSiret(Resource):
     @api.response(200, 'Success')
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self, siret):
-        resp = requests.get(url=current_app.config['api_siren'] + siret)
-        return resp.json()
+        client = make_or_get_api_entreprise()
+        resp = client.donnees_etablissement(siret)
+        return jsonify(resp)
 
 def allowed_file(filename):
     return '.' in filename and \

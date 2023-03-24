@@ -1,6 +1,7 @@
 from dataclasses import dataclass,field
 
-from ...utils import _AddMarshmallowSchema
+from app.models.utils import _AddMarshmallowSchema
+
 
 ## Unité légale
 @dataclass
