@@ -58,7 +58,3 @@ def test_search_ref_prog_bycode_label(test_client, add_data):
     assert page_return['items'][1]['code_programme'] == "101"
 
     assert page_return['pageInfo'] == {'totalRows': 2, 'page': 1, 'pageSize': 100}
-
-
-
-

@@ -9,6 +9,7 @@ from app.models.refs.centre_couts import CentreCouts
 from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
 from app.models.refs.groupe_marchandise import GroupeMarchandise
+from app.models.refs.ministere import Ministere
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 
 api_ref = Blueprint('api_ref', __name__)
@@ -46,6 +47,12 @@ api_ref_programmation = build_ref_controller(ReferentielProgrammation,
                                          description='API referentiels des referentiel de programmation')
                                )
 
+api_ref_ministere = build_ref_controller(Ministere,
+                               Namespace(name="Ministere Controler", path='/ministere',
+                                         description='API referentiels des ministères')
+                               )
+
+
 api.add_namespace(crte_api)
 api.add_namespace(api_domaine)
 api.add_namespace(api_centre_cout)
@@ -53,3 +60,4 @@ api.add_namespace(api_groupe_marchandise)
 api.add_namespace(api_bop)
 api.add_namespace(api_loc_interministerielle)
 api.add_namespace(api_ref_programmation)
+api.add_namespace(api_ref_ministere)

@@ -80,7 +80,3 @@ def test_search_bop_bycode_label(test_client, add_data):
     page_return = json.loads(resp.data.decode())
     assert page_return['items'].__len__() == 2
     assert page_return['pageInfo'] == {'totalRows': 2, 'page': 1, 'pageSize': 100}
-
-
-
-
