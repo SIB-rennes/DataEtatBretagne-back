@@ -6,7 +6,6 @@ def mock_accept_token(*args, **kwargs):
     def wrapper(view_func):
         @wraps(view_func)
         def decorated(*args, **kwargs):
-            print('ici')
             return view_func(*args, **kwargs)
 
         return decorated

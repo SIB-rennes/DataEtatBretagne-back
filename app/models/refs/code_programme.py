@@ -48,7 +48,7 @@ class CodeProgrammeSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CodeProgramme
         include_fk = True
-        exclude = ('id','theme',)
+        exclude = ('id','theme','theme_r',)
 
     label_theme = fields.String()
     label = fields.String()

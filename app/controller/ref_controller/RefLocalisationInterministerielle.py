@@ -12,10 +12,10 @@ from app.models.refs.localisation_interministerielle import LocalisationIntermin
 oidc = current_app.extensions['oidc']
 
 api = build_ref_controller(LocalisationInterministerielle,
-                                  Namespace(name="Localisation interministerielle Controller", path='/loc-interministerielle',
-                                            ddescription='API referentiels des localisations interministerielles'),
+                           Namespace(name="Localisation interministerielle Controller", path='/loc-interministerielle',
+                                     ddescription='API referentiels des localisations interministerielles'),
                            cond_opt=(LocalisationInterministerielle.site,)
-                                  )
+                           )
 
 parser_get_loc_child = get_pagination_parser()
 
@@ -28,9 +28,8 @@ class RefLocalisationByCodeParent(Resource):
     @api.expect(parser_get_loc_child)
     @api.response(200, 'Success', api.models['LocalisationInterministeriellePagination'])
     def get(self, code):
-
         query_param = QueryParam(parser_get_loc_child)
-        stmt = db.select(LocalisationInterministerielle).where(LocalisationInterministerielle.code_parent == code)\
+        stmt = db.select(LocalisationInterministerielle).where(LocalisationInterministerielle.code_parent == code) \
             .order_by(LocalisationInterministerielle.code)
 
         page_result = db.paginate(stmt, per_page=query_param.limit, page=query_param.page_number, error_out=False)

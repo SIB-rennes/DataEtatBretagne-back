@@ -5,7 +5,7 @@ from app import create_app_base, db
 file_path = os.path.abspath(os.getcwd())+"\database.db"
 
 extra_config = {
-    'SQLALCHEMY_DATABASE_URI': 'sqlite:///C:\\Users\\jolivetspresta\\Documents\\projects\\SIBSGAR\\data-transform\\tests\\database.db',
+    'SQLALCHEMY_DATABASE_URI': 'sqlite:///'+file_path,
     'SECRET_KEY': "secret",
     'OIDC_CLIENT_SECRETS': "ser",
     'TESTING': True,
