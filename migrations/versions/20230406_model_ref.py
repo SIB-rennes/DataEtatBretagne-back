@@ -22,8 +22,8 @@ def upgrade():
     _update_code_programmation()
     _update_code_centre_couts()
 
-    _add_columns_audit()
     _upgrade_tables()
+    _add_columns_audit()
 
     # ### end Alembic commands ###
 
@@ -98,7 +98,6 @@ def _update_code_centre_couts():
 
 
 def _add_columns_audit():
-    op.add_column('data_chorus', sa.Column('source_region', sa.String(), nullable=True))
     op.add_column('ref_categorie_juridique', sa.Column('created_at', sa.DateTime(), nullable=True))
     op.add_column('ref_categorie_juridique', sa.Column('updated_at', sa.DateTime(), nullable=True))
     op.add_column('ref_code_programme', sa.Column('created_at', sa.DateTime(), nullable=True))
@@ -119,6 +118,8 @@ def _add_columns_audit():
     op.add_column('ref_programmation', sa.Column('updated_at', sa.DateTime(), nullable=True))
     op.add_column('ref_siret', sa.Column('created_at', sa.DateTime(), nullable=True))
     op.add_column('ref_siret', sa.Column('updated_at', sa.DateTime(), nullable=True))
+    op.add_column('ref_theme', sa.Column('created_at', sa.DateTime(), nullable=True))
+    op.add_column('ref_theme', sa.Column('updated_at', sa.DateTime(), nullable=True))
 
 def _upgrade_tables():
     # REF MINISTERE
