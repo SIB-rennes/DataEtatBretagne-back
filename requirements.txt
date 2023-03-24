@@ -1,3 +1,4 @@
+--extra-index-url https://repository.csm.ovh/repository/pypi-group/simple
 flask==2.2.2
 openpyxl==3.0.10
 psycopg2-binary==2.9.5
@@ -27,3 +28,4 @@ uuid==1.30
 pytest==7.2.1
 xlrd==2.0.1
 odfpy==1.4.1
+api-entreprise>=3.0.7

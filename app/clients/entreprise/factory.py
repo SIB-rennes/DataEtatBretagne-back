@@ -1,9 +1,9 @@
 import functools
 from flask import current_app
 
-from .api import ApiEntreprise
-from .models import ContextInfo
-from .models.config import Config, RedisConfig, RateLimiterConfig
+from api_entreprise import ApiEntreprise, ContextInfo, Config
+
+from .ratelimiter import _make_rate_limiter
 
 def make_api_entreprise() -> ApiEntreprise:
     """Fabrique un client API pour l'api entreprise
@@ -11,33 +11,28 @@ def make_api_entreprise() -> ApiEntreprise:
     Utilise la configuration `API_ENTREPRISE` de l'application
     """
 
-    config = current_app.config['API_ENTREPRISE']
+    config = current_app.config["API_ENTREPRISE"]
 
-    url = config['URL']
-    token = config['TOKEN']
+    url = config["URL"]
+    token = config["TOKEN"]
 
-    context = config['CONTEXT']
-    recipient = config['RECIPIENT']
-    object = config['OBJECT']
-
-    ratelimiter = config['RATELIMITER']
-    ratelimiter_redis = ratelimiter['REDIS']
+    context = config["CONTEXT"]
+    recipient = config["RECIPIENT"]
+    object = config["OBJECT"]
 
     api_entreprise_config = Config(
-        url, token,
+        url,
+        token,
         ContextInfo(
             context=context,
             recipient=recipient,
             object=object,
         ),
-        RateLimiterConfig(
-            limit=ratelimiter['LIMIT'],
-            duration=ratelimiter['DURATION'],
-            redis=RedisConfig(ratelimiter_redis['HOST'], ratelimiter_redis['PORT'], ratelimiter_redis['DB'])
-        )
+        _make_rate_limiter(),
     )
-        
+
     return ApiEntreprise(api_entreprise_config)
+
 
 @functools.cache
 def make_or_get_api_entreprise() -> ApiEntreprise:
