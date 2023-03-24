@@ -4,8 +4,10 @@ from sqlalchemy import Column, String, Text
 
 
 from app import db, ma
+from app.models.common.Audit import Audit
 
-class LocalisationInterministerielle(db.Model):
+
+class LocalisationInterministerielle(Audit,db.Model):
     __tablename__ = 'ref_localisation_interministerielle'
     id = db.Column(db.Integer, primary_key=True)
     code: str = Column(String, unique=True, nullable=False)
@@ -20,7 +22,7 @@ class LocalisationInterministerielle(db.Model):
 class LocalisationInterministerielleSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = LocalisationInterministerielle
-        exclude = ('id',)
+        exclude = ('id',) + LocalisationInterministerielle.exclude_schema()
 
     label = fields.String()
     code_departement = fields.String()

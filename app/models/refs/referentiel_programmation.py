@@ -5,8 +5,10 @@ from marshmallow import fields
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from app import db, ma
+from app.models.common.Audit import Audit
 
-class ReferentielProgrammation(db.Model):
+
+class ReferentielProgrammation(Audit,db.Model):
     __tablename__ = 'ref_programmation'
     id = db.Column(db.Integer, primary_key=True)
     code: str = Column(String, unique=True, nullable=False)
@@ -29,7 +31,7 @@ class ReferentielProgrammation(db.Model):
 class ReferentielProgrammationSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = ReferentielProgrammation
-        exclude = ('id',)
+        exclude = ('id',) + ReferentielProgrammation.exclude_schema()
 
     label = fields.String()
     description = fields.String()

@@ -1,8 +1,11 @@
-from sqlalchemy import Column, String, Text
+from sqlalchemy import String, Text
 
 from app import db, ma
+from sqlalchemy import Column
 
-class CentreCouts(db.Model):
+from app.models.common.Audit import Audit
+
+class CentreCouts(Audit, db.Model):
     __table_args__ = {'extend_existing': True}
     __tablename__ = 'ref_centre_couts'
     id: int = db.Column(db.Integer, primary_key=True)
@@ -15,4 +18,4 @@ class CentreCouts(db.Model):
 class CentreCoutsSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CentreCouts
-        exclude = ('id',)
+        exclude = ('id',) + CentreCouts.exclude_schema()

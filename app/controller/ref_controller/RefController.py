@@ -4,6 +4,7 @@ from flask import current_app
 from flask_restx import Namespace, Resource, fields
 from marshmallow_jsonschema import JSONSchema
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import defer
 
 from app import db
 from app.controller.utils.ControllerUtils import get_pagination_parser

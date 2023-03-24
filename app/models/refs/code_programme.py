@@ -4,9 +4,10 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
 
 from app import db, ma
+from app.models.common.Audit import Audit
 
 
-class CodeProgramme(db.Model):
+class CodeProgramme(Audit,db.Model):
     __tablename__ = 'ref_code_programme'
     id = db.Column(db.Integer, primary_key=True)
     code: str = Column(String, unique=True, nullable=False)
@@ -48,7 +49,7 @@ class CodeProgrammeSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CodeProgramme
         include_fk = True
-        exclude = ('id','theme','theme_r',)
+        exclude = ('id','theme','theme_r',) + CodeProgramme.exclude_schema()
 
     label_theme = fields.String()
     label = fields.String()
