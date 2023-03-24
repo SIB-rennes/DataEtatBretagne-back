@@ -7,9 +7,11 @@ from marshmallow import fields
 
 
 from app import db, ma
+from app.models.common.Audit import Audit
+
 
 @dataclasses.dataclass
-class DomaineFonctionnel(db.Model):
+class DomaineFonctionnel(Audit, db.Model):
     __tablename__ = 'ref_domaine_fonctionnel'
     id = db.Column(db.Integer, primary_key=True)
     code: str = Column(String, unique=True, nullable=False)
@@ -32,7 +34,7 @@ class DomaineFonctionnel(db.Model):
 class DomaineFonctionnelSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = DomaineFonctionnel
-        exclude = ('id',)
+        exclude = ('id',) + DomaineFonctionnel.exclude_schema()
 
     code_programme = fields.String()
     label = fields.String()

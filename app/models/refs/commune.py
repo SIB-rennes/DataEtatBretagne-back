@@ -1,8 +1,10 @@
 from sqlalchemy import Column, String
 
 from app import db
+from app.models.common.Audit import Audit
 
-class Commune(db.Model):
+
+class Commune(Audit, db.Model):
     __tablename__ = 'ref_commune'
     id = db.Column(db.Integer, primary_key=True)
     code_commune: str = Column(String, unique=True, nullable=False)

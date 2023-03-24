@@ -2,8 +2,10 @@ from marshmallow import fields
 from sqlalchemy import Column, String, Text
 
 from app import db,ma
+from app.models.common.Audit import Audit
 
-class GroupeMarchandise(db.Model):
+
+class GroupeMarchandise(Audit, db.Model):
     __tablename__ = 'ref_groupe_marchandise'
     id = db.Column(db.Integer, primary_key=True)
     code: str = Column(String, unique=True, nullable=False)
@@ -20,7 +22,7 @@ class GroupeMarchandise(db.Model):
 class GroupeMarchandiseSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = GroupeMarchandise
-        exclude = ('id',)
+        exclude = ('id',) + GroupeMarchandise.exclude_schema()
 
     label = fields.String()
     code = fields.String()
