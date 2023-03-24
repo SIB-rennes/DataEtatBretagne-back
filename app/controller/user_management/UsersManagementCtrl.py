@@ -5,9 +5,9 @@ from flask_restx._http import HTTPStatus
 from keycloak import KeycloakAdmin
 from flask import g
 
-from flask_restx import Namespace, Resource, abort, inputs, reqparse
+from flask_restx import Namespace, Resource, abort, inputs
 
-from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
+from app.clients.keycloack.factory import make_or_get_keycloack_admin, KeycloakConfigurationException
 from app.controller.Decorators import check_permission
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
@@ -46,15 +46,15 @@ class UsersManagement(Resource):
 
         logging.debug(f'[USERS] Call users get with limit {limit}, page {page_number}, only_disable {only_disable}')
         try:
-            keycloak_admin = build_admin_client()
+            keycloak_admin = make_or_get_keycloack_admin()
             query = {'briefRepresentation': True, 'max': limit, 'first': (page_number-1) * limit}
             if only_disable :
                 query['enabled'] = False
             count_users = keycloak_admin.users_count(query)
             users = keycloak_admin.get_users(query)
             return { 'users' : users , 'pageInfo': Pagination(count_users, page_number, users.__len__()).to_json()}, 200
-        except KeycloakAdminException as admin_exception:
-            return admin_exception.message, 400
+        except KeycloakConfigurationException as admin_exception:
+            return abort(message=admin_exception.message, code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @api.route('/disable/<uuid>')
@@ -73,12 +73,12 @@ class UsersDisable(Resource):
         logging.debug(f'[USERS] Call disable users {uuid}')
 
         if 'sub' in g.oidc_token_info and g.oidc_token_info['sub'] == uuid:
-             return abort(message= "Vous ne pouvez désactiver votre utilisateur", code=HTTPStatus.BAD_REQUEST)
+             return abort(message= "Vous ne pouvez désactiver votre utilisateur", code=HTTPStatus.FORBIDDEN)
         try:
-            _update_enable_user(build_admin_client(), uuid, False)
+            _update_enable_user(make_or_get_keycloack_admin(), uuid, False)
             return make_response("", 200)
-        except KeycloakAdminException as admin_exception:
-            return abort(message= admin_exception.message, code=HTTPStatus.BAD_REQUEST)
+        except KeycloakConfigurationException as admin_exception:
+            return abort(message= admin_exception.message, code=HTTPStatus.INTERNAL_SERVER_ERROR)
 @api.route('/enable/<uuid>')
 class UsersEnable(Resource):
     """
@@ -94,10 +94,10 @@ class UsersEnable(Resource):
         """
         logging.debug(f'[USERS] Call enable users {uuid}')
         try:
-            _update_enable_user(build_admin_client(), uuid,True)
+            _update_enable_user(make_or_get_keycloack_admin(), uuid,True)
             return make_response("", 200)
-        except KeycloakAdminException as admin_exception:
-            return abort(message= admin_exception.message, code=HTTPStatus.BAD_REQUEST)
+        except KeycloakConfigurationException as admin_exception:
+            return abort(message= admin_exception.message, code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 def _update_enable_user(keycloak_admin: KeycloakAdmin, user_uuid: str, enable: bool):
     """

@@ -15,7 +15,7 @@ from marshmallow import ValidationError
 from sqlalchemy.orm import lazyload
 
 from app import db
-from app.clients.keycloack.admin_client import build_admin_client, KeycloakAdminException
+from app.clients.keycloack.factory import make_or_get_keycloack_admin, KeycloakConfigurationException
 from app.controller.utils.ControllerUtils import get_origin_referrer
 from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema, Share
 
@@ -234,6 +234,9 @@ class CrudPreferenceUsers(Resource):
 
 parser_search =  reqparse.RequestParser()
 parser_search.add_argument("username", type=str, required=True, help="Username")
+
+
+
 @api.route('/search-user')
 class UsersSearch(Resource):
 
@@ -251,10 +254,10 @@ class UsersSearch(Resource):
         if search_username is None or len(search_username)  < 4:
             return {'users': []}, 200
         try:
-            keycloak_admin = build_admin_client()
+            keycloak_admin = make_or_get_keycloack_admin()
             query = {'briefRepresentation': True, 'enabled':True, 'search': search_username}
             users = keycloak_admin.get_users(query)
 
             return [{'username': user['username']} for user in users], 200
-        except KeycloakAdminException as admin_exception:
+        except KeycloakConfigurationException as admin_exception:
             return admin_exception.message, 400

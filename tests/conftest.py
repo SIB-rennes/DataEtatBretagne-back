@@ -1,31 +1,37 @@
 import os
-
 import pytest
+from flask_oidc import OpenIDConnect
 from app import create_app_base, db
-from sqlalchemy import text
-
 file_path = os.path.abspath(os.getcwd())+"\database.db"
 
+extra_config = {
+    'SQLALCHEMY_DATABASE_URI': 'sqlite:///'+file_path,
+    'SECRET_KEY': "secret",
+    'OIDC_CLIENT_SECRETS': "ser",
+    'TESTING': True,
+    "SERVER_NAME": "localhost"
+}
 
-test_app = create_app_base(expose_endpoint=False, extra_config_settings=dict(SQLALCHEMY_DATABASE_URI='sqlite:///'+file_path))
+
+test_app = create_app_base(extra_config_settings=extra_config, oidc=OpenIDConnect())
+
 @pytest.fixture(scope="session")
 def app():
+    test_app.app_context().push()
     return test_app
 
-@pytest.fixture(scope="function")
-def client(app):
+@pytest.fixture(scope="session")
+def test_client(app):
     return app.test_client()
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def test_db(app, request):
     with app.app_context():
-        with db.engine.connect() as conn:
-            conn.execute(text("ATTACH DATABASE 'database.db' AS settings")) # nécessaire pour le schema settings
-        db.create_all()
+        db.create_all(bind_key=[None])
     def teardown():
         with app.app_context():
             # Supprimer toutes les tables après les tests
-            db.drop_all()
+            db.drop_all(bind_key=[None])
 
     request.addfinalizer(teardown)
     return db

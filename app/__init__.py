@@ -28,7 +28,7 @@ def create_app_migrate():
 def create_app_api():
     return create_app_base()
 
-def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery=True, extra_config_settings=None) -> Flask:
+def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery=True, extra_config_settings=None, **kwargs) -> Flask:
     """Create a Flask application.
     """
 
@@ -55,18 +55,25 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery=True, ex
         mailapp.mail = mail
 
     # init oidc
-    if oidc_enable and exists('config/keycloak.json'):
-        app.config.update({
-            'OIDC_CLIENT_SECRETS': 'config/keycloak.json',
-            'OIDC_ID_TOKEN_COOKIE_SECURE': False,
-            'OIDC_REQUIRE_VERIFIED_EMAIL': False,
-            'OIDC_USER_INFO_ENABLED': True,
-            'OIDC_OPENID_REALM': 'nocode',
-            'OIDC_SCOPES': ['openid', 'email', 'profile'],
-            'OIDC_INTROSPECTION_AUTH_METHOD': 'client_secret_post'
-        })
-        oidc = OpenIDConnect(app)
-        app.extensions["oidc"] = oidc
+    if oidc_enable:
+        if exists('config/keycloak.json'):
+            app.config.update({
+                'OIDC_CLIENT_SECRETS': 'config/keycloak.json',
+                'OIDC_ID_TOKEN_COOKIE_SECURE': False,
+                'OIDC_REQUIRE_VERIFIED_EMAIL': False,
+                'OIDC_USER_INFO_ENABLED': True,
+                'OIDC_OPENID_REALM': 'nocode',
+                'OIDC_SCOPES': ['openid', 'email', 'profile'],
+                'OIDC_INTROSPECTION_AUTH_METHOD': 'client_secret_post'
+            })
+            oidc = OpenIDConnect(app)
+            app.extensions["oidc"] = oidc
+        elif 'oidc' in kwargs:
+
+            # oidc.init_app(app)
+            app.extensions["oidc"] = kwargs.get('oidc')
+
+
 
     # flask_restx
     if expose_endpoint:

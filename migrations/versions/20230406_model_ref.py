@@ -33,9 +33,13 @@ def downgrade():
     op.drop_column('ref_localisation_interministerielle', 'site')
     op.drop_column('ref_localisation_interministerielle', 'commune')
     op.drop_column('ref_localisation_interministerielle', 'code_departement')
+    op.drop_column('ref_localisation_interministerielle', 'niveau')
+    op.drop_column('ref_localisation_interministerielle','code_parent')
 
     op.drop_column('ref_groupe_marchandise', 'label_pce')
     op.drop_column('ref_groupe_marchandise', 'code_pce')
+    op.drop_column('ref_groupe_marchandise', 'domaine')
+    op.drop_column('ref_groupe_marchandise', 'segment')
 
     op.drop_column('ref_code_programme', 'code_ministere')
     op.drop_column('ref_centre_couts', 'ville')
@@ -117,11 +121,15 @@ def _upgrade_tables():
     # UPDATE groupe marchandise
     op.add_column('ref_groupe_marchandise', sa.Column('code_pce', sa.String(), nullable=True))
     op.add_column('ref_groupe_marchandise', sa.Column('label_pce', sa.String(), nullable=True))
+    op.add_column('ref_groupe_marchandise', sa.Column('domaine', sa.String(), nullable=True))
+    op.add_column('ref_groupe_marchandise', sa.Column('segment', sa.String(), nullable=True))
 
     # UPDATE localisation interministerielle
     op.add_column('ref_localisation_interministerielle', sa.Column('code_departement', sa.String(), nullable=True))
     op.add_column('ref_localisation_interministerielle', sa.Column('commune', sa.String(), nullable=True))
     op.add_column('ref_localisation_interministerielle', sa.Column('site', sa.String(), nullable=True))
+    op.add_column('ref_localisation_interministerielle', sa.Column('niveau', sa.String(), nullable=True))
+    op.add_column('ref_localisation_interministerielle', sa.Column('code_parent', sa.String(), nullable=True))
 
     # DROP Colonnes longitude/latitude pour siret
     op.drop_column('ref_siret', 'latitude')
