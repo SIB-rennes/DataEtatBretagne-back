@@ -22,34 +22,34 @@ api = Api(api_ref, doc='/doc', prefix="/api/v1", description="API de récupérat
           authorizations=authorizations)
 
 api_domaine = build_ref_controller(DomaineFonctionnel,
-                                   Namespace(name="Domaine Fonctionnel Controler", path='/domaine-fonct',
-                                             description='API referentiels des Domaine fonctionnels'),
+                                   Namespace(name="Domaine Fonctionnel", path='/domaine-fonct',
+                                             description='API referentiels des Domaine'),
                                    )
 
 api_centre_cout = build_ref_controller(CentreCouts,
-                                       Namespace(name="Centre couts Controler", path='/centre-couts',
+                                       Namespace(name="Centre couts", path='/centre-couts',
                                                  description='API referentiels des Centre de couts'),
                                        cond_opt=(CentreCouts.code_postal,)
                                        )
 
 api_groupe_marchandise = build_ref_controller(GroupeMarchandise,
-                                  Namespace(name="Groupe Marchandise Controler", path='/groupe-marchandise',
+                                  Namespace(name="Groupe Marchandise", path='/groupe-marchandise',
                                             description='API referentiels des groupes de marchandises'),
                                   cond_opt=(GroupeMarchandise.domaine, GroupeMarchandise.segment,)
                                   )
 
 api_bop = build_ref_controller(CodeProgramme,
-                               Namespace(name="Code Programme Controler", path='/programme',
+                               Namespace(name="Code Programme", path='/programme',
                                          description='API referentiels des codes programmes')
                                )
 
 api_ref_programmation = build_ref_controller(ReferentielProgrammation,
-                               Namespace(name="Referentiel Programmation Controler", path='/ref-programmation',
+                               Namespace(name="Referentiel Programmation", path='/ref-programmation',
                                          description='API referentiels des referentiel de programmation')
                                )
 
 api_ref_ministere = build_ref_controller(Ministere,
-                               Namespace(name="Ministere Controler", path='/ministere',
+                               Namespace(name="Ministere", path='/ministere',
                                          description='API referentiels des ministères')
                                )
 

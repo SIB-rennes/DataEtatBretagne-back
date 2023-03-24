@@ -13,7 +13,7 @@ oidc = current_app.extensions['oidc']
 
 api = build_ref_controller(LocalisationInterministerielle,
                            Namespace(name="Localisation interministerielle Controller", path='/loc-interministerielle',
-                                     ddescription='API referentiels des localisations interministerielles'),
+                                     description='API referentiels des localisations interministerielles'),
                            cond_opt=(LocalisationInterministerielle.site,)
                            )
 
