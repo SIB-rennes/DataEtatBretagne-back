@@ -3,12 +3,12 @@ import os
 from unittest.mock import patch, call
 
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
-from app.services import import_refs, import_line_one_ref
+from app.tasks.import_refs_tasks import import_refs_task, import_line_one_ref
 
 
-@patch('app.services.import_refs.subtask')
+@patch('app.tasks.import_refs_tasks.subtask')
 def test_import_refs_localisation_interministerielle(mock_subtask,test_db):
-    import_refs(os.path.abspath(os.getcwd()) + '/data/LOC_INTERMIN_20230126.csv', 'LocalisationInterministerielle',
+    import_refs_task(os.path.abspath(os.getcwd()) + '/data/LOC_INTERMIN_20230126.csv', 'LocalisationInterministerielle',
                 ['code','niveau','code_departement','commune','site','code_parent','label'], usecols=[0,1,3,5,6,9,10], sep=";")
 
     mock_subtask.assert_has_calls([

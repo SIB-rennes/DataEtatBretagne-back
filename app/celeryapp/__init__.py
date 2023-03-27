@@ -3,7 +3,7 @@ from kombu import Queue
 
 CELERY_TASK_LIST = [
     'app.tasks',
-    'app.services'
+    'app.tasks'
 ]
 
 db_session = None

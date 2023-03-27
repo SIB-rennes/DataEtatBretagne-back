@@ -4,12 +4,12 @@ import pytest
 from unittest.mock import patch, call
 
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
-from app.services import import_refs, import_line_one_ref
+from app.tasks.import_refs_tasks import import_line_one_ref, import_refs_task
 
 
-@patch('app.services.import_refs.subtask')
+@patch('app.tasks.import_refs_tasks.subtask')
 def test_import_refs_programme_financement(mock_subtask,test_db):
-    import_refs(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'ReferentielProgrammation',  ['code','label'], is_csv=False, usecols=[9,10],
+    import_refs_task(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'ReferentielProgrammation',  ['code','label'], is_csv=False, usecols=[9,10],
                 sheet_name="08 - Activités (OS,OP,OB,ACT)", skiprows=8)
     mock_subtask.assert_has_calls([
         call().delay('ReferentielProgrammation', '{"code":"010101010101","label":"DOTATIONS CARPA AJ ET AUTRES INTERVENTIONS"}'),
