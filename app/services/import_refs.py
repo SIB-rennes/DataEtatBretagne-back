@@ -1,9 +1,9 @@
+import os
 import json
 import logging
 import re
 import sys
 
-from coverage.annotate import os
 from flask import current_app
 from werkzeug.utils import secure_filename
 
@@ -52,7 +52,10 @@ def import_refs(file, data):
         file.save(save_path)
 
         logging.info(
-            f'[IMPORT REF] Maj referentiel {cls_name}, columns {columns}, is_csv {is_csv}, kwargs {other_args}, fichier {filename}')
+            f'[IMPORT REF] Maj referentiel {cls_name}, '
+            'columns {columns}, is_csv {is_csv}, '
+            'kwargs {other_args}, fichier {filename}'
+        )
         from app.tasks.import_refs_tasks import import_refs_task
 
         return  import_refs_task.delay(str(save_path), cls_name, columns, is_csv, **other_args)

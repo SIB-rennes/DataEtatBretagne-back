@@ -17,7 +17,7 @@ class CentreCouts(Audit, db.Model):
 
     def __setattr__(self, key, value):
         if key == "code" and isinstance(value, str) and value.startswith("BG00/"):
-            value = value[5:]  # Remove the first character
+            value = value[5:]
         super().__setattr__(key, value)
 
 class CentreCoutsSchema(ma.SQLAlchemyAutoSchema):

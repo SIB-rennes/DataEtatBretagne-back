@@ -37,8 +37,8 @@ parser.add_argument('other', type=str, help="parametre technique format json", l
 
 @api.route('/run/import_ref')
 class TaskRunImportRef(Resource):
-    #@oidc.accept_token(require_token=True, scopes_required=['openid'])
-    #@check_permission(ConnectionProfile.ADMIN)
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @check_permission(ConnectionProfile.ADMIN)
     @api.doc(security="Bearer")
     @api.expect(parser)
     def post(self):
