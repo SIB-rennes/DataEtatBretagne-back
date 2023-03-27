@@ -68,8 +68,10 @@ def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: i
 
     if chorus_instance != False:
         try:
+            _fixed_code(line)
+
             _check_ref(CodeProgramme, line['programme_code'])
-            _check_ref(CentreCouts,line['centre_cout_code'])
+            _check_ref(CentreCouts, line['centre_cout_code'])
             _check_ref(DomaineFonctionnel,line['domaine_code'])
             _check_ref(FournisseurTitulaire, line['Fournisseur_code'])
             _check_ref(GroupeMarchandise, line['groupe_marchandise_code'])
@@ -99,6 +101,17 @@ def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: i
         except Exception as e:
             LOGGER.exception(f"[IMPORT][CHORUS] erreur index {index}")
             raise e
+
+def _fixed_code(data):
+    """
+    Corrige les code du fichier chorus
+    :param data:
+    :return:
+    """
+    data['centre_cout_code'] = data['centre_cout_code'][5:] if data['centre_cout_code'].startswith('BG00/') else data['centre_cout_code']
+    data['ref_programmation_code'] = data['ref_programmation_code'][5:] if data['ref_programmation_code'].startswith('BG00/') else data[
+        'ref_programmation_code']
+
 
 
 def _check_ref(model, code):

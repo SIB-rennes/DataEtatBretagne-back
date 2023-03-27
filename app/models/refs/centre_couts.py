@@ -15,6 +15,11 @@ class CentreCouts(Audit, db.Model):
     code_postal: str = Column(String)
     ville: str = Column(String)
 
+    def __setattr__(self, key, value):
+        if key == "code" and isinstance(value, str) and value.startswith("BG00/"):
+            value = value[5:]  # Remove the first character
+        super().__setattr__(key, value)
+
 class CentreCoutsSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = CentreCouts
