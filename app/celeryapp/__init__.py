@@ -45,7 +45,10 @@ def create_celery_app(_app =None):
         },
         'import_line_*': {
             'queue': 'line'
-        }
+        },
+        'update_siret_*': {
+            'queue': 'line'
+        },
     }]
 
     TaskBase = celery.Task
