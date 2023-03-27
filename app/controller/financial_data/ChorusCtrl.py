@@ -25,6 +25,19 @@ ALLOWED_EXTENSIONS = {'csv'}
 
 oidc = current_app.extensions['oidc']
 
+@api.route('/update/siret')
+class SiretRef(Resource):
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @check_permission(ConnectionProfile.ADMIN)
+    @api.doc(security="Bearer")
+    def post(self):
+        from app.tasks.siret import update_all_siret_task
+
+        task = update_all_siret_task.delay()
+        return jsonify({
+            'status': f"Demande de mise à jour des siret faite. (Tâche asynchrone id {task.id})"
+        })
+
 @api.route('/update/commune')
 class CommuneRef(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])

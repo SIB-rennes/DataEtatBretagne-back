@@ -18,10 +18,9 @@ from app.models.refs.fournisseur_titulaire import FournisseurTitulaire
 from app.models.refs.groupe_marchandise import GroupeMarchandise
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
-from app.models.refs.siret import Siret
 from app.tasks import maj_one_commune
 
-from app.clients.entreprise import make_or_get_api_entreprise, LimitHitError
+from app.services.siret import update_siret_from_api_entreprise, LimitHitError
 
 CHORUS_COLUMN_NAME = ['programme_code', 'domaine_code', 'domaine_label', 'centre_cout_code', 'centre_cout_label',
                       'ref_programmation_code', 'ref_programmation_label', 'n_ej', 'n_poste_ej', 'date_modif',
@@ -145,41 +144,17 @@ def _check_siret(siret):
     Raises:
         LimitHitError: Si le ratelimiter de l'API entreprise est déclenché
     """
-    instance = db.session.query(Siret).filter_by(code=str(siret)).one_or_none()
+    siret_entity = update_siret_from_api_entreprise(siret, insert_only=True)
+    __check_commune(siret_entity.code_commune)
 
-    if not instance:
-        siret_entity = Siret(code=str(siret))
+    try:
+        db.session.add(siret_entity)
+        db.session.commit()
+    except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+        db.session.rollback()
+        LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout Siret {siret}")
 
-        etablissement = _donnees_etab(siret)
-
-        if etablissement is None:
-            LOGGER.warning("[IMPORT][CHORUS] Siret %s non trouvé via l'api", siret)
-        else:
-            #
-            categorie_juridique = etablissement.unite_legale.forme_juridique.code
-            code_commune = etablissement.adresse.code_commune
-            raison_sociale = etablissement.unite_legale.personne_morale_attributs.raison_sociale
-            adresse = etablissement.adresse_postale_legere
-
-            siret_entity.categorie_juridique = categorie_juridique
-            siret_entity.code_commune = code_commune
-            siret_entity.denomination = raison_sociale
-            siret_entity.adresse = adresse
-
-            __check_commune(siret_entity.code_commune)
-
-        LOGGER.info(f"[IMPORT][CHORUS] Siret {siret} ajouté")
-        try:
-            db.session.add(siret_entity)
-            db.session.commit()
-        except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-            db.session.rollback()
-            LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout Siret {siret} ")
-
-def _donnees_etab(siret: str):
-    client_api_entreprise = make_or_get_api_entreprise()
-    etablissement = client_api_entreprise.donnees_etablissement(siret)
-    return etablissement
+    LOGGER.info(f"[IMPORT][CHORUS] Siret {siret} ajouté")
 
 def _check_insert__update_chorus(chorus_data, force_update: bool):
     '''
