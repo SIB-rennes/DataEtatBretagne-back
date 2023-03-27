@@ -4,6 +4,7 @@ from unittest.mock import patch, call
 
 from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.ministere import Ministere
+from app.models.refs.theme import Theme
 from app.services import import_refs, import_line_one_ref
 
 
@@ -47,3 +48,25 @@ def test_import_insert_code_programme_line(app, test_db):
 
         d_to_update = CodeProgramme.query.filter_by(code='151').one()
         assert d_to_update.label == "TEST"
+
+
+def test_update_code_programme(app, test_db):
+    #GIVEN
+    bop = {
+        "code": "754",
+    }
+    ministere = {
+        "code": "MIN09",
+        "label": "label MIN09"
+    }
+    test_db.session.add(Ministere(**ministere))
+    test_db.session.add(CodeProgramme(**bop))
+    test_db.session.commit()
+
+    #DO
+    import_line_one_ref('CodeProgramme', '{"code_ministere":"MIN09","code":"0754","label":"Contribution collectivites territoriales"}')
+
+    with app.app_context():
+        d_to_update = CodeProgramme.query.filter_by(code='754').one()
+        assert d_to_update.code_ministere == "MIN09"
+        assert d_to_update.label == "Contribution collectivites territoriales"

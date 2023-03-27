@@ -73,7 +73,8 @@ def import_line_one_ref(class_name: str, row: str):
     """
     model = _get_instance_model_by_name(class_name)
     row = json.loads(codecs.decode(row,'unicode_escape'))
-    instance = db.session.query(model).filter_by(code=row['code']).one_or_none()
+    check_model = model(**row)
+    instance = db.session.query(model).filter_by(code=check_model.code).one_or_none()
     if not instance:
         instance = model(**row)
         LOGGER.info('[IMPORT][REF] Ajout ref %s dans %s', model.__tablename__, row)
