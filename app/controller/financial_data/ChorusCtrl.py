@@ -1,13 +1,13 @@
-import logging
 
-from flask import jsonify, current_app
+from flask import jsonify, current_app, request, abort
 from flask_restx import Namespace, Resource, reqparse, inputs
 from werkzeug.datastructures import FileStorage
 
 from app.clients.entreprise import make_or_get_api_entreprise
 from app.controller.Decorators import check_permission
+from app.controller.utils.Error import ErrorController
+from app.exceptions.exceptions import BadRequestDataRegateNum, DataRegatException
 from app.models.enums.ConnectionProfile import ConnectionProfile
-from app.services import FileNotAllowedException
 from app.services.financial_data import import_ae
 
 api = Namespace(name="chorus", path='/chorus',
@@ -15,11 +15,16 @@ api = Namespace(name="chorus", path='/chorus',
 
 parser = reqparse.RequestParser()
 parser.add_argument('fichier', type=FileStorage, help="fichier à importer", location='files', required=True)
-parser.add_argument('code_region', type=str, help="Code INSEE de la région émettrice du fichier chorus", required=True)
-parser.add_argument('annee', type=int, help="Année d'engagement du fichier Chorus", required=True)
-parser.add_argument('force_update', type=inputs.boolean, required=False, default=False, help="Force la mise à jours si la ligne existe déjà")
+parser.add_argument('code_region', type=str, help="Code INSEE de la région émettrice du fichier chorus",location='files', required=True)
+parser.add_argument('annee', type=int, help="Année d'engagement du fichier Chorus",location='files', required=True)
+parser.add_argument('force_update', type=inputs.boolean, required=False, default=False,location='files', help="Force la mise à jours si la ligne existe déjà")
 
 oidc = current_app.extensions['oidc']
+
+@api.errorhandler(DataRegatException)
+def handle_exception(e):
+    return ErrorController(e.message).to_json(), 400
+
 
 @api.route('/update/siret')
 class SiretRef(Resource):
@@ -53,20 +58,23 @@ class ChorusImport(Resource):
     @check_permission(ConnectionProfile.ADMIN)
     @api.doc(security="Bearer")
     def post(self):
-        args = parser.parse_args()
-        file_chorus = args['fichier']
-        code_source_region = args['code_region']
-        annee = args['annee']
-        force_update = args['force_update']
+        data = request.form
 
-        if file_chorus.filename == '':
-            logging.info('Pas de fichier')
-            return {"statut": 'Aucun fichier importé'}, 400
-        try :
-            task = import_ae(file_chorus,code_source_region,annee,force_update )
-            return jsonify({"status": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
-        except FileNotAllowedException as e:
-            return {"status": e.message}, 400
+        if 'fichier' not in  request.files :
+            raise BadRequestDataRegateNum("Missing File")
+        if 'code_region' not in data or 'annee' not in data:
+            raise BadRequestDataRegateNum("Missing Argument code_region or annee")
+
+        if not isinstance(int(data['annee']), int):
+            raise BadRequestDataRegateNum("Missing Argument code_region or annee")
+        file_chorus = request.files['fichier']
+        force_update = False
+        if 'force_update' in data and data['force_update'] == 'true':
+            force_update = True
+
+        task = import_ae(file_chorus,data['code_region'],int(data['annee']),force_update)
+        return jsonify({"status": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
+
 
 
 parser_line = reqparse.RequestParser()

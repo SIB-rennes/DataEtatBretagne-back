@@ -9,6 +9,7 @@ import sqlalchemy.exc
 from celery import subtask
 
 from app import db, celeryapp
+from app.exceptions.exceptions import ChorusException
 from app.models.financial.Chorus import Chorus
 from app.models.refs.centre_couts import CentreCouts
 from app.models.refs.code_programme import CodeProgramme
@@ -26,9 +27,6 @@ from app.services.siret import update_siret_from_api_entreprise, LimitHitError
 LOGGER = logging.getLogger()
 
 celery = celeryapp.celery
-
-class ChorusException(Exception):
-    pass
 
 @celery.task(bind=True, name='import_file_ae_chorus')
 def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_update: bool):
@@ -49,6 +47,7 @@ def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_u
     except Exception as e:
         LOGGER.exception(f"[IMPORT][CHORUS] Error lors de l'import du fichier {fichier} chorus")
         raise e
+
 
 
 @celery.task(bind=True, name='import_line_chorus_ae', autoretry_for=(ChorusException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
@@ -94,17 +93,6 @@ def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: i
         except Exception as e:
             LOGGER.exception(f"[IMPORT][CHORUS] erreur index {index}")
             raise e
-
-def _fixed_code(data):
-    """
-    Corrige les code du fichier chorus
-    :param data:
-    :return:
-    """
-    data['centre_couts'] = data['centre_couts'][5:] if data['centre_couts'].startswith('BG00/') else data['centre_couts']
-    data['ref_programmation_code'] = data['ref_programmation_code'][5:] if data['ref_programmation_code'].startswith('BG00/') else data[
-        'ref_programmation_code']
-
 
 
 def _check_ref(model, code):
@@ -184,18 +172,6 @@ def _insert_chorus(chorus_data, source_region: str, annee: int):
 
 def _update_chorus(chorus_data, chorus_to_update, code_source_region: str, annee: int):
     chorus_to_update.update_attribute(chorus_data)
-    # chorus_to_update.programme = chorus_data['programme_code']
-    # chorus_to_update.domaine_fonctionnel = chorus_data['domaine_code']
-    # chorus_to_update.centre_couts = chorus_data['centre_cout_code']
-    # chorus_to_update.referentiel_programmation = chorus_data['ref_programmation_code']
-    # chorus_to_update.localisation_interministerielle = chorus_data['localisation_interministerielle_code']
-    # chorus_to_update.groupe_marchandise = chorus_data['groupe_marchandise_code']
-    # chorus_to_update.fournisseur_titulaire = chorus_data['Fournisseur_code']
-    # chorus_to_update.siret = str(chorus_data['siret'])
-    # chorus_to_update.date_modification_ej = datetime.strptime(chorus_data['date_modif'], '%d.%m.%Y')
-    # chorus_to_update.compte_budgetaire = chorus_data['compte_budgetaire']
-    # chorus_to_update.contrat_etat_region = chorus_data['contrat_etat_region']
-    # chorus_to_update.montant = float(str(chorus_data['montant']).replace('\U00002013', '-').replace(',', '.'))
 
     chorus_to_update.source_region = code_source_region
     chorus_to_update.annee = annee

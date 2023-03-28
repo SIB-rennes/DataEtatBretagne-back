@@ -7,7 +7,8 @@ import sys
 from flask import current_app
 from werkzeug.utils import secure_filename
 
-from app.services.file_service import allowed_file, FileNotAllowedException
+from app.exceptions.exceptions import FileNotAllowedException
+from app.services.file_service import allowed_file
 
 
 class MissingCodeColumns(Exception):

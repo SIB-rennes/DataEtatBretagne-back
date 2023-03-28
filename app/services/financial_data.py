@@ -1,5 +1,3 @@
-import csv
-import json
 import logging
 import os
 
@@ -7,20 +5,14 @@ import pandas
 from flask import current_app
 from werkzeug.utils import secure_filename
 
+from app.exceptions.exceptions import InvalidFile
 from app.models.financial.Chorus import Chorus
 from app.services import allowed_file, FileNotAllowedException
-from app.services.file_service import InvalidFile
 
-CHORUS_COLUMN_NAME = ['programme_code', 'domaine_code', 'centre_cout_code',
-                      'ref_programmation_code', 'n_ej', 'n_poste_ej', 'date_modif',
-                      'Fournisseur_code', 'Fournisseur_label', 'siret', 'compte_code',
-                      'compte_budgetaire', 'groupe_marchandise_code', 'contrat_etat_region', 'contrat_etat_region_2',
-                      'localisation_interministerielle_code', 'montant']
 def import_ae(file_chorus, source_region:str ,annee: int, force_update: bool):
 
     if file_chorus.filename == '':
-        logging.info('Pas de fichier')
-        return {"statut": 'Aucun fichier importé'}, 400
+        raise InvalidFile(message="Pas de fichier")
 
     if file_chorus and allowed_file(file_chorus.filename):
 
@@ -51,6 +43,6 @@ def check_file(fichier):
         raise FileNotAllowedException(message="Erreur de lecture du fichier")
 
     if data_chorus.isnull().values.any():
-        raise InvalidFile("le fichier contient des valeurs vides")
+        raise InvalidFile(message="Le fichier contient des valeurs vides")
 
 
