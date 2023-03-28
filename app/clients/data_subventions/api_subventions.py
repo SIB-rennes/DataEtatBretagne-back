@@ -2,33 +2,32 @@ import logging
 import requests
 
 from .models import Subvention, ActionProposee, RepresentantLegal
+from .handlers import _handle_response_in_error
 
 from ..utils import _dict_get_nested
 
 LOGGER = logging.getLogger()
-
-class ApiDataSubventionsException(Exception):
-    def __init__(self, message) -> None:
-        self.message = message
-        super().__init__(self.message)
-
 
 class ApiSubventions():
     def __init__(self, token, url) -> None:
         self._token = token
         self._url = url
 
+    @_handle_response_in_error
     def get_representants_legaux_pour_etablissement(self, siret: str):
         url = f"{self._url}/etablissement/{siret}"
         headers = self._auth_headers()
         answer = requests.get(url, headers=headers)
+        answer.raise_for_status()
         json = answer.json()
         return self._json_to_representants_legaux(json)
 
+    @_handle_response_in_error
     def get_subventions_pour_etablissement(self, siret: str):
         url = f"{self._url}/etablissement/{siret}/subventions"
         headers = self._auth_headers()
         answer = requests.get(url, headers=headers)
+        answer.raise_for_status()
         json = answer.json()
         return self._json_to_subventions(json)
     
