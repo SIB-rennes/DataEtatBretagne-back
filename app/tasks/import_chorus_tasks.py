@@ -22,13 +22,11 @@ from app.tasks import maj_one_commune
 
 from app.services.siret import update_siret_from_api_entreprise, LimitHitError
 
-CHORUS_COLUMN_NAME = ['programme_code', 'domaine_code', 'domaine_label', 'centre_cout_code', 'centre_cout_label',
-                      'ref_programmation_code', 'ref_programmation_label', 'n_ej', 'n_poste_ej', 'date_modif',
-                      'Fournisseur_code', 'Fournisseur_label', 'siret', 'compte_code', 'compte_label',
-                      'compte_budgetaire',
-                      'groupe_marchandise_code', 'groupe_marchandise_label',
-                      'contrat_etat_region', 'contrat_etat_region_2', 'localisation_interministerielle_code',
-                      'localisation_interministerielle_label', 'montant']
+CHORUS_COLUMN_NAME = ['programme_code', 'domaine_code', 'centre_cout_code',
+                      'ref_programmation_code', 'n_ej', 'n_poste_ej', 'date_modif',
+                      'Fournisseur_code', 'Fournisseur_label', 'siret', 'compte_code',
+                      'compte_budgetaire', 'groupe_marchandise_code', 'contrat_etat_region', 'contrat_etat_region_2',
+                      'localisation_interministerielle_code', 'montant']
 
 LOGGER = logging.getLogger()
 
@@ -46,7 +44,6 @@ def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_u
                                       dtype={'programme_code': str, 'n_ej': str, 'n_poste_ej': int,
                                              'Fournisseur_code': str,
                                              'siret': 'str'})
-        # _import_data_chorus(data_chorus)
         for index, chorus_data in data_chorus.iterrows():
             # MAJ des referentiels si necessaire
             if chorus_data['siret'] != '#':
@@ -71,22 +68,15 @@ def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: i
 
     if chorus_instance != False:
         try:
-            _check_ref(CodeProgramme, **{'code': line['programme_code']})
-            _check_ref(CentreCouts, **{'code': line['centre_cout_code'],
-                                       'label': line['centre_cout_label']})
-            _check_ref(DomaineFonctionnel,
-                       **{'code': line['domaine_code'], 'label': line['domaine_label']})
-            _check_ref(FournisseurTitulaire, **{'code': line['Fournisseur_code'],
-                                                'label': line['Fournisseur_label']})
-            _check_ref(GroupeMarchandise, **{'code': line['groupe_marchandise_code'],
-                                             'label': line['groupe_marchandise_label'],
-                                             'code_pce': line['compte_code'],
-                                             'label_pce': line['compte_label']})
-            _check_ref(LocalisationInterministerielle,
-                       **{'code': line['localisation_interministerielle_code'],
-                          'label': line['localisation_interministerielle_label']})
-            _check_ref(ReferentielProgrammation, **{'code': line['ref_programmation_code'],
-                                                    'label': line['ref_programmation_label']})
+            _fixed_code(line)
+
+            _check_ref(CodeProgramme, line['programme_code'])
+            _check_ref(CentreCouts, line['centre_cout_code'])
+            _check_ref(DomaineFonctionnel,line['domaine_code'])
+            _check_ref(FournisseurTitulaire, line['Fournisseur_code'])
+            _check_ref(GroupeMarchandise, line['groupe_marchandise_code'])
+            _check_ref(LocalisationInterministerielle,line['localisation_interministerielle_code'])
+            _check_ref(ReferentielProgrammation, line['ref_programmation_code'])
 
             # SIRET
             _check_siret(line['siret'])
@@ -112,18 +102,29 @@ def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: i
             LOGGER.exception(f"[IMPORT][CHORUS] erreur index {index}")
             raise e
 
+def _fixed_code(data):
+    """
+    Corrige les code du fichier chorus
+    :param data:
+    :return:
+    """
+    data['centre_cout_code'] = data['centre_cout_code'][5:] if data['centre_cout_code'].startswith('BG00/') else data['centre_cout_code']
+    data['ref_programmation_code'] = data['ref_programmation_code'][5:] if data['ref_programmation_code'].startswith('BG00/') else data[
+        'ref_programmation_code']
 
-def _check_ref(model, **kwargs):
-    instance = db.session.query(model).filter_by(code=kwargs.get('code')).one_or_none()
+
+
+def _check_ref(model, code):
+    instance = db.session.query(model).filter_by(code=code).one_or_none()
     if not instance:
-        instance = model(**kwargs)
-        LOGGER.info('[IMPORT][CHORUS] Ajout ref %s dans %s', model.__tablename__, kwargs)
+        instance = model(**{'code':code})
+        LOGGER.info(f'[IMPORT][CHORUS] Ajout ref {model.__tablename__} code {code}')
         try:
             db.session.add(instance)
             db.session.commit()
         except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
             db.session.rollback()
-            LOGGER.warning("[IMPORT][CHORUS] Error sur ajout ref %s dans %s ",model.__tablename__, kwargs)
+            LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout ref {model.__tablename__} code {code}")
 
 
 def __check_commune(code):

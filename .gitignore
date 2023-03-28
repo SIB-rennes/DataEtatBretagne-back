@@ -4,5 +4,5 @@
 /migrations/data/ref_*.csv
 /config/keycloak.json
 /tests/database.db
-/tests/services/database.db
+/tests/tasks/database.db
 /test.py

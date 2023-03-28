@@ -4,27 +4,28 @@ import pytest
 from unittest.mock import patch, call
 
 from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
-from app.services import MissingCodeColumns, import_refs, ReferentielNotFound, import_line_one_ref
+from app.tasks.import_refs_tasks import import_line_one_ref, import_refs_task
+from app.services import MissingCodeColumns, ReferentielNotFound
 
 
 def test_import_refs_with_missing_code_column(app):
     """Test that import_refs raises MissingCodeColumns exception when 'Code' column is missing."""
     with pytest.raises(MissingCodeColumns):
-        import_refs('tests/data/domaine_fonctionnel.xls', 'MyModel', ['Name', 'Description', 'Value'])
+        import_refs_task('tests/data/domaine_fonctionnel.xls', 'MyModel', ['Name', 'Description', 'Value'])
 
 def test_import_refs_with_referential_not_found(app):
     """Test that import_refs raises ReferentielNotFound exception when the referential file is not found."""
     with pytest.raises(ReferentielNotFound):
-        import_refs('tests/data/non_existing.csv', 'MyModel', ['code', 'Name', 'Description', 'Value'])
+        import_refs_task('tests/data/non_existing.csv', 'MyModel', ['code', 'Name', 'Description', 'Value'])
 
 def test_import_line_ref_with_referential_not_found(app):
     """Test that import_refs raises ReferentielNotFound exception when the referential file is not found."""
     with pytest.raises(ReferentielNotFound):
         import_line_one_ref('NotModel', '')
 
-@patch('app.services.import_refs.subtask')
+@patch('app.tasks.import_refs_tasks.subtask')
 def test_import_refs_domaine_fonctionnel(mock_subtask,test_db):
-    import_refs(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'DomaineFonctionnel',
+    import_refs_task(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'DomaineFonctionnel',
                 ['code', 'label'], is_csv=False, usecols=[4,5],
                 sheet_name="07 - Domaines Fonct. (DF)", skiprows=8)
     mock_subtask.assert_has_calls([

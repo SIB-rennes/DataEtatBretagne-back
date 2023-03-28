@@ -10,7 +10,7 @@ class Chorus(Audit, db.Model):
     __tablename__ = 'data_chorus'
     # PK
     n_ej: str = Column(String, primary_key=True)
-    n_poste_ej: str = Column(Integer, primary_key=True)
+    n_poste_ej: int = Column(Integer, primary_key=True)
     # liens vers les référentiels
     source_region: str = Column(String, ForeignKey('ref_region.code'), nullable=True)
     programme: str  = Column(String, ForeignKey('ref_code_programme.code'), nullable=False)

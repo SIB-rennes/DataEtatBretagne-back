@@ -4,14 +4,13 @@ from unittest.mock import patch, call
 
 from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.ministere import Ministere
-from app.models.refs.theme import Theme
-from app.services import import_refs, import_line_one_ref
+from app.tasks.import_refs_tasks import import_refs_task, import_line_one_ref
 
 
-@patch('app.services.import_refs.subtask')
+@patch('app.tasks.import_refs_tasks.subtask')
 def test_import_refs_code_programme(mock_subtask):
     # DO
-    import_refs(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'CodeProgramme',  ['code_ministere','code','label'], is_csv=False, usecols=[0,2,3],
+    import_refs_task(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'CodeProgramme',  ['code_ministere','code','label'], is_csv=False, usecols=[0,2,3],
                 sheet_name="03 - Programmes", skiprows=8)
 
     mock_subtask.assert_has_calls([
@@ -25,9 +24,9 @@ def test_import_refs_code_programme(mock_subtask):
     ], any_order=True)
 
 
-@patch('app.services.import_refs.subtask')
+@patch('app.tasks.import_refs_tasks.subtask')
 def test_import_refs_ministere(mock_subtask,app):
-    import_refs(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'Ministere', ['code', 'sigle_ministere','label'], is_csv=False, usecols=[0,1,2],
+    import_refs_task(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'Ministere', ['code', 'sigle_ministere','label'], is_csv=False, usecols=[0,1,2],
                 sheet_name="02 - Ministères" ,skiprows=8)
 
 
