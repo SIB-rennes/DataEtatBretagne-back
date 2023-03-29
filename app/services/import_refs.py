@@ -7,7 +7,10 @@ import sys
 from flask import current_app
 from werkzeug.utils import secure_filename
 
+from app import db
 from app.exceptions.exceptions import FileNotAllowedException
+from app.models.audit.AuditUpdateData import AuditUpdateData
+from app.models.enums.DataType import DataType
 from app.services.file_service import allowed_file
 
 
@@ -25,7 +28,7 @@ class ReferentielNotFound(Exception):
         super().__init__(f'{self.message} {self.name}')
 
 
-def import_refs(file, data):
+def import_refs(file, data, username=""):
     try:
         _get_instance_model_by_name(data['class_name'])
     except ReferentielNotFound as exception:
@@ -45,13 +48,18 @@ def import_refs(file, data):
         file.save(save_path)
 
         logging.info(
-            f'[IMPORT REF] Maj referentiel {cls_name}, '
-            'columns {columns}, is_csv {is_csv}, '
-            'kwargs {other_args}, fichier {filename}'
+            f'[IMPORT REF] Maj referentiel {cls_name},columns {columns}, is_csv {is_csv},kwargs {other_args}, fichier {filename}'
         )
         from app.tasks.import_refs_tasks import import_refs_task
 
-        return  import_refs_task.delay(str(save_path), cls_name, columns, is_csv, **other_args)
+        task = import_refs_task.delay(str(save_path), cls_name, columns, is_csv, **other_args)
+        try:
+            db.session.add(
+                AuditUpdateData(username=username, filename=file.filename, data_type=DataType.REFERENTIEL))
+            db.session.commit()
+        except Exception:
+            logging.exception('[IMPORT REF] Erreur saving AuditUpdateData')
+        return task
     else:
         logging.error(f'[IMPORT REF] Fichier refusé {file.filename}')
         raise  FileNotAllowedException()

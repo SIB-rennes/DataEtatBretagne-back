@@ -29,7 +29,6 @@ class Login(Resource):
         try:
             client = make_or_get_keycloack_openid()
             token =  client.token(param['email'],param['password'])
-            print(token)
             return f"{token['token_type']} {token['access_token']}", 200
         except KeycloakConfigurationException as admin_exception:
             return abort(message=admin_exception.message, code=HTTPStatus.INTERNAL_SERVER_ERROR)

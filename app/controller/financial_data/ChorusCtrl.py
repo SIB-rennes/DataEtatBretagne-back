@@ -1,5 +1,5 @@
 
-from flask import jsonify, current_app, request, abort
+from flask import jsonify, current_app, request, g
 from flask_restx import Namespace, Resource, reqparse, inputs
 from werkzeug.datastructures import FileStorage
 
@@ -72,7 +72,8 @@ class ChorusImport(Resource):
         if 'force_update' in data and data['force_update'] == 'true':
             force_update = True
 
-        task = import_ae(file_chorus,data['code_region'],int(data['annee']),force_update)
+        username = g.oidc_token_info['username'] if hasattr(g,'oidc_token_info') and 'username' in g.oidc_token_info else ''
+        task = import_ae(file_chorus,data['code_region'],int(data['annee']), force_update, username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
 
 

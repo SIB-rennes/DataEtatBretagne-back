@@ -1,5 +1,5 @@
 
-from flask import request, current_app, jsonify
+from flask import request, current_app, jsonify, g
 from flask_restx import Namespace, Resource, reqparse, inputs
 from werkzeug.datastructures import FileStorage
 
@@ -48,8 +48,9 @@ class TaskRunImportRef(Resource):
         if 'class_name' not in data or 'columns' not in data:
             return {"status":"Le modèle n'existe pas ou les colonnes sont manquantes"}, 400
 
+        username = g.oidc_token_info['username'] if hasattr(g,'oidc_token_info') and 'username' in g.oidc_token_info else ''
         try :
-            task = import_refs(file, data)
+            task = import_refs(file, data, username)
             return jsonify(
                 {"status": f'Fichier récupéré. Demande d`import du referentiel (taches asynchrone id = {task.id}'})
         except ReferentielNotFound:

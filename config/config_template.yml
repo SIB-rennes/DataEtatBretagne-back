@@ -1,7 +1,10 @@
 DEBUG: true
 
 SQLALCHEMY_DATABASE_URI : "postgresql://postgres:password@localhost:5432/CHORUS"
-
+SQLALCHEMY_BINDS : {
+      'settings': "postgresql://postgres:password@localhost:5432/CHORUS",
+      'audit': "postgresql://postgres:password@localhost:5432/CHORUS"
+}
 
 CELERY_BROKER_URL: 'redis://localhost:6379/1'
 result_backend: "postgresql://postgres:password@localhost:5432/tasks"
