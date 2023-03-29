@@ -7,7 +7,9 @@ import sys
 from flask import current_app
 from werkzeug.utils import secure_filename
 
-ALLOWED_EXTENSIONS = {'csv','ods','xls','xlsx'}
+from app.exceptions.exceptions import FileNotAllowedException
+from app.services.file_service import allowed_file
+
 
 class MissingCodeColumns(Exception):
     """Exception raised when the 'Code' column is missing from the list of columns."""
@@ -18,15 +20,6 @@ class MissingCodeColumns(Exception):
 class ReferentielNotFound(Exception):
     """Exception raised when a referential file does not exist."""
     def __init__(self, name="", message="The referential file does not exist:"):
-        self.message = message
-        self.name = name
-        super().__init__(f'{self.message} {self.name}')
-
-
-class FileNotAllowedException(Exception):
-    """Exception raised when file not allowed."""
-
-    def __init__(self, name="FileNotAllowedException", message="le fichier n\'est pas un fichier lissible"):
         self.message = message
         self.name = name
         super().__init__(f'{self.message} {self.name}')
@@ -45,7 +38,7 @@ def import_refs(file, data):
         is_csv = False
     other_args = json.loads(data['other']) if 'other' in data else {}
 
-    if file and allowed_file(file.filename):
+    if file and allowed_file(file.filename, {'csv','ods','xls','xlsx'}):
         # save du fichier
         filename = secure_filename(file.filename)
         save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
@@ -63,9 +56,6 @@ def import_refs(file, data):
         logging.error(f'[IMPORT REF] Fichier refusé {file.filename}')
         raise  FileNotAllowedException()
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def _get_instance_model_by_name(class_name: str):
     """Get the model class object for a given class name.

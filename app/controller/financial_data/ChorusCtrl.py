@@ -1,29 +1,30 @@
-import logging
-import os
 
-import requests
-
-from flask import jsonify, current_app
+from flask import jsonify, current_app, request, abort
 from flask_restx import Namespace, Resource, reqparse, inputs
 from werkzeug.datastructures import FileStorage
-from werkzeug.utils import secure_filename
 
 from app.clients.entreprise import make_or_get_api_entreprise
 from app.controller.Decorators import check_permission
+from app.controller.utils.Error import ErrorController
+from app.exceptions.exceptions import BadRequestDataRegateNum, DataRegatException
 from app.models.enums.ConnectionProfile import ConnectionProfile
+from app.services.financial_data import import_ae
 
 api = Namespace(name="chorus", path='/chorus',
                 description='Api de délenchements des taks chorus')
 
 parser = reqparse.RequestParser()
 parser.add_argument('fichier', type=FileStorage, help="fichier à importer", location='files', required=True)
-parser.add_argument('code_region', type=str, help="Code INSEE de la région émettrice du fichier chorus", required=True)
-parser.add_argument('annee', type=int, help="Année d'engagement du fichier Chorus", required=True)
-parser.add_argument('force_update', type=inputs.boolean, required=False, default=False, help="Force la mise à jours si la ligne existe déjà")
-
-ALLOWED_EXTENSIONS = {'csv'}
+parser.add_argument('code_region', type=str, help="Code INSEE de la région émettrice du fichier chorus",location='files', required=True)
+parser.add_argument('annee', type=int, help="Année d'engagement du fichier Chorus",location='files', required=True)
+parser.add_argument('force_update', type=inputs.boolean, required=False, default=False,location='files', help="Force la mise à jours si la ligne existe déjà")
 
 oidc = current_app.extensions['oidc']
+
+@api.errorhandler(DataRegatException)
+def handle_exception(e):
+    return ErrorController(e.message).to_json(), 400
+
 
 @api.route('/update/siret')
 class SiretRef(Resource):
@@ -57,27 +58,22 @@ class ChorusImport(Resource):
     @check_permission(ConnectionProfile.ADMIN)
     @api.doc(security="Bearer")
     def post(self):
-        args = parser.parse_args()
-        file_chorus = args['fichier']
-        code_source_region = args['code_region']
-        annee = args['annee']
-        force_update = args['force_update']
-        from app.tasks.import_chorus_tasks import import_file_ae_chorus
+        data = request.form
 
-        if file_chorus.filename == '':
-            logging.info('Pas de fichier')
-            return {"statut": 'Aucun fichier importé'}, 400
+        if 'fichier' not in  request.files :
+            raise BadRequestDataRegateNum("Missing File")
+        if 'code_region' not in data or 'annee' not in data:
+            raise BadRequestDataRegateNum("Missing Argument code_region or annee")
 
-        if file_chorus and allowed_file(file_chorus.filename):
-            filename = secure_filename(file_chorus.filename)
-            save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-            file_chorus.save(save_path)
-            logging.info(f'[IMPORT CHORUS] Récupération du fichier {filename}')
-            task =  import_file_ae_chorus.delay( str(save_path), code_source_region, annee, force_update)
-            return jsonify({"status": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
-        else:
-            logging.error(f'[IMPORT CHORUS] Fichier refusé {file_chorus.filename}')
-            return {"status": 'le fichier n\'est pas un csv'}, 400
+        if not isinstance(int(data['annee']), int):
+            raise BadRequestDataRegateNum("Missing Argument code_region or annee")
+        file_chorus = request.files['fichier']
+        force_update = False
+        if 'force_update' in data and data['force_update'] == 'true':
+            force_update = True
+
+        task = import_ae(file_chorus,data['code_region'],int(data['annee']),force_update)
+        return jsonify({"status": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
 
 
 
@@ -107,7 +103,3 @@ class TestSiret(Resource):
         client = make_or_get_api_entreprise()
         resp = client.donnees_etablissement(siret)
         return jsonify(resp)
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

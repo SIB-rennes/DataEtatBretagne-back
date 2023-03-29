@@ -46,14 +46,14 @@ class TaskRunImportRef(Resource):
         file = request.files['file']
 
         if 'class_name' not in data or 'columns' not in data:
-            return "Le modèle n'existe pas ou les colonnes sont manquantes", 400
+            return {"status":"Le modèle n'existe pas ou les colonnes sont manquantes"}, 400
 
         try :
             task = import_refs(file, data)
             return jsonify(
                 {"status": f'Fichier récupéré. Demande d`import du referentiel (taches asynchrone id = {task.id}'})
         except ReferentielNotFound:
-            return "Referentiel n'existe pas", 400
-        except FileNotAllowedException:
-            return {"status": 'le fichier n\'est pas un fichier lissible'}, 400
+            return  {"status": "Referentiel n'existe pas"}, 400
+        except FileNotAllowedException as e:
+            return {"status": e.message}, 400
 
