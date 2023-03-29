@@ -100,6 +100,8 @@ def _update_code_centre_couts():
 def _add_columns_audit():
     op.add_column('ref_categorie_juridique', sa.Column('created_at', sa.DateTime(), nullable=True))
     op.add_column('ref_categorie_juridique', sa.Column('updated_at', sa.DateTime(), nullable=True))
+    op.add_column('ref_centre_couts', sa.Column('created_at', sa.DateTime(), nullable=True))
+    op.add_column('ref_centre_couts', sa.Column('updated_at', sa.DateTime(), nullable=True))
     op.add_column('ref_code_programme', sa.Column('created_at', sa.DateTime(), nullable=True))
     op.add_column('ref_code_programme', sa.Column('updated_at', sa.DateTime(), nullable=True))
     op.add_column('ref_commune', sa.Column('created_at', sa.DateTime(), nullable=True))
@@ -120,6 +122,7 @@ def _add_columns_audit():
     op.add_column('ref_siret', sa.Column('updated_at', sa.DateTime(), nullable=True))
     op.add_column('ref_theme', sa.Column('created_at', sa.DateTime(), nullable=True))
     op.add_column('ref_theme', sa.Column('updated_at', sa.DateTime(), nullable=True))
+
 
 def _upgrade_tables():
     # REF MINISTERE
@@ -184,5 +187,7 @@ def _drop_columns_audit():
     op.drop_column('ref_commune', 'created_at')
     op.drop_column('ref_code_programme', 'updated_at')
     op.drop_column('ref_code_programme', 'created_at')
+    op.drop_column('ref_centre_couts', 'updated_at')
+    op.drop_column('ref_centre_couts', 'created_at')
     op.drop_column('ref_categorie_juridique', 'updated_at')
     op.drop_column('ref_categorie_juridique', 'created_at')
