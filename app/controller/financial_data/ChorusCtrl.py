@@ -3,7 +3,6 @@ from flask import jsonify, current_app, request, g
 from flask_restx import Namespace, Resource, reqparse, inputs
 from werkzeug.datastructures import FileStorage
 
-from app.clients.entreprise import make_or_get_api_entreprise
 from app.controller.Decorators import check_permission
 from app.controller.utils.Error import ErrorController
 from app.exceptions.exceptions import BadRequestDataRegateNum, DataRegatException
@@ -25,30 +24,6 @@ oidc = current_app.extensions['oidc']
 def handle_exception(e):
     return ErrorController(e.message).to_json(), 400
 
-
-@api.route('/update/siret')
-class SiretRef(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
-    @api.doc(security="Bearer")
-    def post(self):
-        from app.tasks.siret import update_all_siret_task
-
-        task = update_all_siret_task.delay()
-        return jsonify({
-            'status': f"Demande de mise à jour des siret faite. (Tâche asynchrone id {task.id})"
-        })
-
-@api.route('/update/commune')
-class CommuneRef(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
-    @api.doc(security="Bearer")
-    def post(self):
-        from app.tasks import maj_all_communes_tasks
-        task = maj_all_communes_tasks.delay()
-        return jsonify({
-                           "statut": f'Demande de mise à jours des communes faites (taches asynchrone id = {task.id}'})
 
 @api.route('/import/ae')
 class ChorusImport(Resource):
@@ -94,13 +69,3 @@ class LineImport(Resource):
         task = import_line_chorus_ae.delay(str(json_line),-1)
         return jsonify({
             "statut": f'Ligne récupéré. Demande d`import d\'une ligne chorus AE en cours (taches asynchrone id = {task.id}'})
-
-
-@api.route('/siret/<siret>')
-class TestSiret(Resource):
-    @api.response(200, 'Success')
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    def get(self, siret):
-        client = make_or_get_api_entreprise()
-        resp = client.donnees_etablissement(siret)
-        return jsonify(resp)

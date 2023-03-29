@@ -35,7 +35,7 @@ parser.add_argument('is_csv', type=inputs.boolean, location='files', default=Tru
 parser.add_argument('other', type=str, help="parametre technique format json", location='files', required=False)
 
 
-@api.route('/run/import_ref')
+@api.route('/run/import-ref')
 class TaskRunImportRef(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @check_permission(ConnectionProfile.ADMIN)
@@ -58,3 +58,26 @@ class TaskRunImportRef(Resource):
         except FileNotAllowedException as e:
             return {"status": e.message}, 400
 
+@api.route('/run/update-siret')
+class SiretRef(Resource):
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @check_permission(ConnectionProfile.ADMIN)
+    @api.doc(security="Bearer")
+    def post(self):
+        from app.tasks.siret import update_all_siret_task
+
+        task = update_all_siret_task.delay()
+        return jsonify({
+            'status': f"Demande de mise à jour des siret faite. (Tâche asynchrone id {task.id})"
+        })
+
+@api.route('/run/update-commune')
+class CommuneRef(Resource):
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @check_permission(ConnectionProfile.ADMIN)
+    @api.doc(security="Bearer")
+    def post(self):
+        from app.tasks import maj_all_communes_tasks
+        task = maj_all_communes_tasks.delay()
+        return jsonify({
+                           "statut": f'Demande de mise à jours des communes faites (taches asynchrone id = {task.id}'})
