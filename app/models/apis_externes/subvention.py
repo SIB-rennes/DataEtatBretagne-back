@@ -8,5 +8,5 @@ from app.clients.data_subventions.models import Subvention, RepresentantLegal
 class InfoApiSubvention(metaclass=_InstrumentForFlaskRestx):
     """Informations qui proviennent de l'API subvention"""
 
-    subvention: Subvention
+    subventions: list[Subvention]
     contacts: list[RepresentantLegal]
