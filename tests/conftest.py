@@ -14,10 +14,9 @@ extra_config = {
 
 
 test_app = create_app_base(extra_config_settings=extra_config, oidc=OpenIDConnect())
-
+test_app.app_context().push()
 @pytest.fixture(scope="session")
 def app():
-    test_app.app_context().push()
     return test_app
 
 @pytest.fixture(scope="session")
