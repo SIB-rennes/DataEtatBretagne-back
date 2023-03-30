@@ -65,7 +65,6 @@ class LastImport(Resource):
         try:
             stmt = db.select(sqlalchemy.sql.functions.max(AuditUpdateData.date)).where(
                 AuditUpdateData.data_type == DataType.FINANCIAL_DATA.name)
-            #result = db.select(sqlalchemy.sql.functions.max(AuditUpdateData.date)).where(AuditUpdateData.data_type == DataType.FINANCIAL_DATA).scalar_one()
             result = db.session.execute(stmt).scalar_one()
 
             return {"date": result.isoformat() }, 200
