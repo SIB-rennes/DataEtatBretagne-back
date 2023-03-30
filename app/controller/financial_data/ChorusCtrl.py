@@ -1,13 +1,16 @@
-
-from flask import jsonify, current_app, request, abort
+import sqlalchemy
+from flask import jsonify, current_app, request, g
 from flask_restx import Namespace, Resource, reqparse, inputs
+from sqlalchemy.exc import NoResultFound
 from werkzeug.datastructures import FileStorage
 
-from app.clients.entreprise import make_or_get_api_entreprise
+from app import db
 from app.controller.Decorators import check_permission
 from app.controller.utils.Error import ErrorController
 from app.exceptions.exceptions import BadRequestDataRegateNum, DataRegatException
+from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.ConnectionProfile import ConnectionProfile
+from app.models.enums.DataType import DataType
 from app.services.financial_data import import_ae
 
 api = Namespace(name="chorus", path='/chorus',
@@ -25,30 +28,6 @@ oidc = current_app.extensions['oidc']
 def handle_exception(e):
     return ErrorController(e.message).to_json(), 400
 
-
-@api.route('/update/siret')
-class SiretRef(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
-    @api.doc(security="Bearer")
-    def post(self):
-        from app.tasks.siret import update_all_siret_task
-
-        task = update_all_siret_task.delay()
-        return jsonify({
-            'status': f"Demande de mise à jour des siret faite. (Tâche asynchrone id {task.id})"
-        })
-
-@api.route('/update/commune')
-class CommuneRef(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
-    @api.doc(security="Bearer")
-    def post(self):
-        from app.tasks import maj_all_communes_tasks
-        task = maj_all_communes_tasks.delay()
-        return jsonify({
-                           "statut": f'Demande de mise à jours des communes faites (taches asynchrone id = {task.id}'})
 
 @api.route('/import/ae')
 class ChorusImport(Resource):
@@ -72,8 +51,25 @@ class ChorusImport(Resource):
         if 'force_update' in data and data['force_update'] == 'true':
             force_update = True
 
-        task = import_ae(file_chorus,data['code_region'],int(data['annee']),force_update)
+        username = g.oidc_token_info['username'] if hasattr(g,'oidc_token_info') and 'username' in g.oidc_token_info else ''
+        task = import_ae(file_chorus,data['code_region'],int(data['annee']), force_update, username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
+
+@api.route('/')
+class LastImport(Resource):
+
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @check_permission(ConnectionProfile.ADMIN)
+    @api.doc(security="Bearer")
+    def get(self):
+        try:
+            stmt = db.select(sqlalchemy.sql.functions.max(AuditUpdateData.date)).where(
+                AuditUpdateData.data_type == DataType.FINANCIAL_DATA.name)
+            result = db.session.execute(stmt).scalar_one()
+
+            return {"date": result.isoformat() }, 200
+        except NoResultFound:
+            return "", 404
 
 
 
@@ -93,13 +89,3 @@ class LineImport(Resource):
         task = import_line_chorus_ae.delay(str(json_line),-1)
         return jsonify({
             "statut": f'Ligne récupéré. Demande d`import d\'une ligne chorus AE en cours (taches asynchrone id = {task.id}'})
-
-
-@api.route('/siret/<siret>')
-class TestSiret(Resource):
-    @api.response(200, 'Success')
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    def get(self, siret):
-        client = make_or_get_api_entreprise()
-        resp = client.donnees_etablissement(siret)
-        return jsonify(resp)

@@ -1,8 +1,6 @@
 import datetime
 from sqlalchemy import DateTime, Column
-from sqlalchemy.orm import mapped_column, deferred, declared_attr
-
-from app import ma
+from sqlalchemy.orm import deferred, declared_attr
 
 
 class Audit(object):
