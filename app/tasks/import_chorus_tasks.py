@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 import pandas
 
@@ -31,7 +32,7 @@ celery = celeryapp.celery
 @celery.task(bind=True, name='import_file_ae_chorus')
 def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_update: bool):
     # get file
-    LOGGER.info(f'[IMPORT][CHORUS] Start for region {source_region}, year {annee}')
+    LOGGER.info(f'[IMPORT][CHORUS] Start for region {source_region}, year {annee}, file {fichier}')
     try:
         data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=Chorus.get_columns_files_ae(),
                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': int,
@@ -41,7 +42,10 @@ def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_u
             # MAJ des referentiels si necessaire
             if chorus_data['siret'] != '#':
                 subtask("import_line_chorus_ae").delay(chorus_data.to_json(), index, source_region, annee, force_update)
+            else:
+                logging.info(f"[IMPORT][CHORUS] Siret #  sur ligne {index}")
 
+        os.remove(fichier)
         LOGGER.info('[IMPORT][CHORUS] End')
         return True
     except Exception as e:
