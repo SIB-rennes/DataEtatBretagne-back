@@ -18,7 +18,7 @@ class ApisExternesService:
         subventions = self.api_subvention.get_subventions_pour_etablissement(siret)
         contacts = self.api_subvention.get_representants_legaux_pour_etablissement(siret)
 
-        return InfoApiSubvention(subvention=subventions, contacts=contacts)
+        return InfoApiSubvention(subventions=subventions, contacts=contacts)
     
     def entreprise(self, siret: str) -> InfoApiEntreprise:
 
