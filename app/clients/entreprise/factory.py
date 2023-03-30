@@ -35,5 +35,5 @@ def make_api_entreprise() -> ApiEntreprise:
 
 
 @functools.cache
-def make_or_get_api_entreprise() -> ApiEntreprise:
+def get_or_make_api_entreprise() -> ApiEntreprise:
     return make_api_entreprise()

@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from app.models.utils import _AddMarshmallowAndJsonSchema
+from app.models.utils import _InstrumentForFlaskRestx
 
 
 @dataclass
-class RepresentantLegal(metaclass=_AddMarshmallowAndJsonSchema):
+class RepresentantLegal(metaclass=_InstrumentForFlaskRestx):
     nom: str
     prenom: str
     civilite: str
@@ -12,13 +12,15 @@ class RepresentantLegal(metaclass=_AddMarshmallowAndJsonSchema):
     telephone: str
     email: str
 
+
 @dataclass
-class ActionProposee(metaclass=_AddMarshmallowAndJsonSchema):
+class ActionProposee(metaclass=_InstrumentForFlaskRestx):
     intitule: str
     objectifs: str
 
+
 @dataclass
-class Subvention(metaclass=_AddMarshmallowAndJsonSchema):
+class Subvention(metaclass=_InstrumentForFlaskRestx):
     ej: str
     service_instructeur: str
     dispositif: str

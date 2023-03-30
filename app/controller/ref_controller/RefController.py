@@ -41,7 +41,7 @@ def build_ref_controller(cls, namespace: Namespace, help_query="Recherche sur le
 
     model_json = JSONSchema().dump(schema_many)['definitions'][schema.__name__]
     model_single_api = api.schema_model(cls.__name__, model_json)
-    pagination_model = api.schema_model('Pagination',Pagination.jsonschema)
+    pagination_model = api.schema_model('Pagination',Pagination.definition_jsonschema)
 
     pagination_with_model = api.model(f'{cls.__name__}Pagination', {
         'items': fields.List(fields.Nested(model_single_api)),

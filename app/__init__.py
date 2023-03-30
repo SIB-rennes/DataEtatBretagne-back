@@ -42,7 +42,6 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery=True, ex
     app = Flask(__name__)
     read_config(app,extra_config_settings)
 
-    # Setup Flask-SQLAlchemy
     db.init_app(app)
     ma.init_app(app)
 
@@ -76,6 +75,7 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery=True, ex
 
 
     # flask_restx
+    app.config.update({ 'RESTX_INCLUDE_ALL_MODELS': True })
     if expose_endpoint:
         _expose_endpoint(app)
     return app
@@ -114,14 +114,14 @@ def _expose_endpoint(app: Flask):
         from app.controller.financial_data import api_financial  # pour éviter les import circulaire avec oidc
         from app.controller.user_management import api_management
         from app.controller.ref_controller import api_ref
-        from app.controller.data_subventions import api_ds
+        from app.controller.apis_externes import api_apis_externes
         from app.controller.task_management import api_task
         from app.controller.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
 
         app.register_blueprint(api_financial, url_prefix='/financial-data')
         app.register_blueprint(api_management, url_prefix='/management')
         app.register_blueprint(api_ref, url_prefix='/referentiels')
-        app.register_blueprint(api_ds, url_prefix='/data_subventions')
+        app.register_blueprint(api_apis_externes, url_prefix='/apis_externes')
         app.register_blueprint(api_task, url_prefix='/task_management')
 
         if 'NOCODB_PROJECT' in app.config:
