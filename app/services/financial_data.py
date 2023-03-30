@@ -19,7 +19,7 @@ def import_ae(file_chorus, source_region:str ,annee: int, force_update: bool,use
 
     if file_chorus and allowed_file(file_chorus.filename):
 
-        check_file(file_chorus.filename)
+        check_file(file_chorus)
 
         from app.tasks.import_chorus_tasks import import_file_ae_chorus
         filename = secure_filename(file_chorus.filename)
@@ -48,7 +48,8 @@ def check_file(fichier):
                                       dtype={'programme_code': str, 'n_ej': str, 'n_poste_ej': int,
                                              'Fournisseur_code': str,
                                              'siret': 'str'})
-    except Exception:
+    except Exception as e:
+        logging.exception(message="[CHECK FILE]Erreur de lecture du fichier")
         raise FileNotAllowedException(message="Erreur de lecture du fichier")
 
     if data_chorus.isnull().values.any():
