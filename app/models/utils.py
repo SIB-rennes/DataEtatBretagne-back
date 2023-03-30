@@ -1,7 +1,10 @@
+import logging
 from flask_restx import Namespace
 import marshmallow
 import marshmallow_dataclass as ma
 from marshmallow_jsonschema import JSONSchema
+
+from flask import current_app
 
 
 class _BaseSchemaExcludingUnknown(marshmallow.Schema):
@@ -49,6 +52,15 @@ class _InstrumentForFlaskRestx(_AddMarshmallowSchema):
             return api.schema_model(name, definition_jsonschema)
 
         def _register_schemamodels(api: Namespace):
+            option_name = "RESTX_INCLUDE_ALL_MODELS"
+            conf = current_app.config.get(option_name, None)
+            if conf is None or conf == False:
+                logging.warning(
+                    f"Ajout du modèle {name} au swagger. "
+                    f"L'option {option_name} n'est pas active. "
+                    "La définition swagger sera probablement incomplète."
+                )
+
             models = {
                 name: api.schema_model(name, json_schema)
                 for name, json_schema in definitions_json_schemas.items()

@@ -1,4 +1,5 @@
 import functools
+import logging
 from flask import current_app
 
 from api_entreprise import ApiEntreprise, ContextInfo, Config
@@ -11,14 +12,18 @@ def make_api_entreprise() -> ApiEntreprise:
     Utilise la configuration `API_ENTREPRISE` de l'application
     """
 
-    config = current_app.config["API_ENTREPRISE"]
+    try:
+        config = current_app.config["API_ENTREPRISE"]
 
-    url = config["URL"]
-    token = config["TOKEN"]
+        url = config["URL"]
+        token = config["TOKEN"]
 
-    context = config["CONTEXT"]
-    recipient = config["RECIPIENT"]
-    object = config["OBJECT"]
+        context = config["CONTEXT"]
+        recipient = config["RECIPIENT"]
+        object = config["OBJECT"]
+    except KeyError as e:
+        logging.warning("Impossible de trouver la configuration de l'API entreprise.", exc_info=e)
+        return None
 
     api_entreprise_config = Config(
         url,
