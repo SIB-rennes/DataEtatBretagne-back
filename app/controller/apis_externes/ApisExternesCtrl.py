@@ -45,9 +45,8 @@ def _document_error_responses(api: Namespace):
 
 @api.route("/info_subvention/<siret>")
 class InfoSubventionCtrl(Resource):
-    # TODO: put back
-    # @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    # @api.doc(security="Bearer")
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @api.doc(security="Bearer")
     @api.response(200, "Success", model=InfoApiSubvention.schema_model(api))
     @_document_error_responses(api)
     def get(self, siret: str):
@@ -60,9 +59,8 @@ class InfoSubventionCtrl(Resource):
 
 @api.route("/info_entreprise/<siret>")
 class InfoEntrepriseCtrl(Resource):
-    # TODO: put back
-    # @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    # @api.doc(security="Bearer")
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @api.doc(security="Bearer")
     @api.response(
         200,
         "Informations de l'API entreprise",
