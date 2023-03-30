@@ -1,7 +1,7 @@
 import logging
 
 from app import db
-from app.clients.entreprise import make_or_get_api_entreprise, DonneesEtablissement, LimitHitError
+from app.clients.entreprise import get_or_make_api_entreprise, DonneesEtablissement, LimitHitError
 from app.models.refs.siret import Siret
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ def _map(siret: Siret, etablissement: DonneesEtablissement):
     siret.adresse = adresse
 
 def _api():
-    return make_or_get_api_entreprise()
+    return get_or_make_api_entreprise()
 
 def update_siret_from_api_entreprise(code: str, insert_only = False):
     """Met à jour le siret donné via une requête à l'API entreprise

@@ -1,10 +1,10 @@
 import dataclasses
 
-from app.models.utils import _AddMarshmallowAndJsonSchema
+from app.models.utils import _InstrumentForFlaskRestx
 
 
 @dataclasses.dataclass
-class Pagination(metaclass=_AddMarshmallowAndJsonSchema):
+class Pagination(metaclass=_InstrumentForFlaskRestx):
     total_rows: int
     page: int
     page_size:int
