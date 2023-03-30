@@ -12,12 +12,13 @@ class ApiSubventions():
     def __init__(self, token, url) -> None:
         self._token = token
         self._url = url
+        self._timeout=10
 
     @_handle_response_in_error
     def get_representants_legaux_pour_etablissement(self, siret: str):
         url = f"{self._url}/etablissement/{siret}"
-        headers = self._auth_headers()
-        answer = requests.get(url, headers=headers)
+        auth_params = self._auth_params()
+        answer = requests.get(url, params=auth_params, timeout=self._timeout)
         answer.raise_for_status()
         json = answer.json()
         return self._json_to_representants_legaux(json)
@@ -25,15 +26,15 @@ class ApiSubventions():
     @_handle_response_in_error
     def get_subventions_pour_etablissement(self, siret: str):
         url = f"{self._url}/etablissement/{siret}/subventions"
-        headers = self._auth_headers()
-        answer = requests.get(url, headers=headers)
+        auth_params = self._auth_params()
+        answer = requests.get(url, params=auth_params,timeout=self._timeout)
         answer.raise_for_status()
         json = answer.json()
         return self._json_to_subventions(json)
     
-    def _auth_headers(self):
+    def _auth_params(self):
         return {
-            'x-access-token': self._token
+            'token': self._token
         }
     
     def _json_to_representants_legaux(self, json_dict) -> list[RepresentantLegal]:
