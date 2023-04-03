@@ -1,13 +1,12 @@
 import sqlalchemy
 from flask import jsonify, current_app, request, g
-from flask_restx import Namespace, Resource, reqparse, inputs
+from flask_restx import Namespace, Resource, reqparse, inputs, fields
 from sqlalchemy.exc import NoResultFound
 from werkzeug.datastructures import FileStorage
 
 from app import db
 from app.controller.Decorators import check_permission
-from app.controller.utils.Error import ErrorController
-from app.exceptions.exceptions import BadRequestDataRegateNum, DataRegatException
+from app.exceptions.exceptions import BadRequestDataRegateNum
 from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.ConnectionProfile import ConnectionProfile
 from app.models.enums.DataType import DataType
@@ -24,17 +23,13 @@ parser.add_argument('force_update', type=inputs.boolean, required=False, default
 
 oidc = current_app.extensions['oidc']
 
-@api.errorhandler(DataRegatException)
-def handle_exception(e):
-    return ErrorController(e.message).to_json(), 400
-
 
 @api.route('/import/ae')
 class ChorusImport(Resource):
 
     @api.expect(parser)
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
+    @check_permission([ConnectionProfile.ADMIN, ConnectionProfile.COMPTABLE])
     @api.doc(security="Bearer")
     def post(self):
         data = request.form
@@ -55,21 +50,23 @@ class ChorusImport(Resource):
         task = import_ae(file_chorus,data['code_region'],int(data['annee']), force_update, username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
 
-@api.route('/')
+
+
+@api.route('/last-import')
 class LastImport(Resource):
 
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
     @api.doc(security="Bearer")
+    @api.marshal_with(api.model("date-last-import",{'date': fields.DateTime}), code=200)
     def get(self):
-        try:
-            stmt = db.select(sqlalchemy.sql.functions.max(AuditUpdateData.date)).where(
-                AuditUpdateData.data_type == DataType.FINANCIAL_DATA.name)
-            result = db.session.execute(stmt).scalar_one()
 
-            return {"date": result.isoformat() }, 200
-        except NoResultFound:
-            return "", 404
+        stmt = db.select(sqlalchemy.sql.functions.max(AuditUpdateData.date)).where(
+            AuditUpdateData.data_type == DataType.FINANCIAL_DATA.name)
+        result = db.session.execute(stmt).scalar_one()
+        if result is None:
+            raise NoResultFound()
+
+        return {"date": result.isoformat() }, 200
 
 
 
