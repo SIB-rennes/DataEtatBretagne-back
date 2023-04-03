@@ -22,7 +22,7 @@ def check_permission(permissions):
         @wraps(func)
         def inner_wrapper(*args, **kwargs):
             user_permissions = _get_user_permissions()  # get the user's permissions
-            if isinstance(permissions, str):
+            if isinstance(permissions, ConnectionProfile):
                 permissions_to_check = [permissions]
             elif isinstance(permissions, list):
                 permissions_to_check = permissions

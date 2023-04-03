@@ -1,3 +1,4 @@
+import logging
 
 from flask import  current_app
 from sqlalchemy.exc import NoResultFound
@@ -15,5 +16,5 @@ def handler_exception(error):
     message = None
     if hasattr(error,'message') :
         message = error.message
-
+    logging.exception(error)
     return ErrorController(message).to_json(), 500
