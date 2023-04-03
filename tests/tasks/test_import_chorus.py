@@ -10,7 +10,7 @@ from app.tasks import import_file_ae_chorus, import_line_chorus_ae
 @patch('app.tasks.import_chorus_tasks.subtask')
 def test_import_import_file_ae_chorus(mock_subtask):
     #DO
-    import_file_ae_chorus(os.path.abspath(os.getcwd())+'/data/chorus/chorue_ae.csv', "35", 2023, False)
+    import_file_ae_chorus(os.path.abspath(os.getcwd())+'/data/chorus/chorus_ae.csv', "35", 2023, False)
 
     for in_call in mock_subtask.mock_calls:
         if in_call[0] == '().delay' and json.loads(in_call[1][0])['siret'] == '#' :

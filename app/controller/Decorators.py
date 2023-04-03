@@ -3,16 +3,17 @@ from functools import wraps
 
 from requests import RequestException
 
+from app.controller import ErrorController
 from app.models.enums.ConnectionProfile import ConnectionProfile
 
 
-def check_permission(permission: ConnectionProfile):
+def check_permission(permissions):
     """Decorator that checks if the user has the specified permission.
 
     If the user does not have the permission, the decorated function returns an HTTP 403 error response.
 
     Args:
-        permission (ConnectionProfile): The permission required to execute the decorated function.
+        permissions (Union[str, List[str]]): The permission required to execute the decorated function. It can be a single string or a list of strings.
 
     Returns:
         inner_wrapper (function): The decorated function, which checks if the user has the specified permission before executing it.
@@ -20,23 +21,32 @@ def check_permission(permission: ConnectionProfile):
     def wrapper(func):
         @wraps(func)
         def inner_wrapper(*args, **kwargs):
-            if not _user_has_permission(permission):
-                response_body = {'error': 'invalid_role'}
-                return response_body, 403, {'WWW-Authenticate': 'Bearer'}
-            return func(*args, **kwargs)
+            user_permissions = _get_user_permissions()  # get the user's permissions
+            if isinstance(permissions, str):
+                permissions_to_check = [permissions]
+            elif isinstance(permissions, list):
+                permissions_to_check = permissions
+            else:
+                raise TypeError("permissions should be a ConnectionProfile or a list of ConnectionProfiles")
+
+            if user_permissions is not None :
+                for perm in permissions_to_check:
+                    if perm.value == user_permissions:
+                        return func(*args, **kwargs)  # the user has the required permission
+
+            response_body = ErrorController("Vous n`avez pas les droits").to_json()
+            return response_body, 403, {'WWW-Authenticate': 'Bearer'}
         return inner_wrapper
     return wrapper
 
-def _user_has_permission(permission: ConnectionProfile):
-    """Checks if the user has the specified permission.
 
-    Args:
-        permission (ConnectionProfile): The permission to check.
+def _get_user_permissions():
+    """Get User permission.
 
     Returns:
-        bool: True if the user has the permission, False otherwise.
+        None if no permission
     """
-    return 'profile' in g.oidc_token_info and g.oidc_token_info['profile'] == permission.value
+    return g.oidc_token_info['profile'] if 'profile' in g.oidc_token_info else None
 
 
 
