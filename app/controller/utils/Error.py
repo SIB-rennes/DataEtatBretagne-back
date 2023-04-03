@@ -7,7 +7,7 @@ class ErrorController():
 
     def to_json(self):
         if self.message is None :
-            self.message = "Erreur inconnu. Merci de contacter l'administrateur."
+            self.message = "Erreur inconnue. Merci de contacter l'administrateur."
         return {'message': self.message, 'type':'error'}
 
 
