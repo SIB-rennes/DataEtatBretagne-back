@@ -25,7 +25,14 @@ class ApisExternesService:
         siren = _siren(siret)
         donnees_etab = self.api_entreprise.donnees_etablissement(siret)
         tva = self.api_entreprise.numero_tva_intercommunautaire(siren)
-        ca = self.api_entreprise.chiffre_d_affaires(siret)
+
+        #
+        # TODO: Verrue le temps d'avoir notre compte API entreprise
+        # avec les droits suffisants
+        #
+        # ca = self.api_entreprise.chiffre_d_affaires(siret)
+        ca = []
+
         rge = self.api_entreprise.certifications_rge(siret)
         qualibat = self.api_entreprise.certification_qualibat(siret)
 
