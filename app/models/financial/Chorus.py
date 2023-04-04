@@ -58,6 +58,11 @@ class Chorus(Audit, db.Model):
        if self.referentiel_programmation.startswith('BG00/') :
             self.referentiel_programmation = self.referentiel_programmation[5:]
 
+       #Cas si le siret a moins de caractères
+       if len(self.siret) < 15:
+            nb_zeros_a_ajouter = 15 - len(self.siret)
+            self.siret = '0' * nb_zeros_a_ajouter + str(self.siret)
+
 
     def update_attribute(self,  line_chorus: dict):
         """
@@ -78,6 +83,10 @@ class Chorus(Audit, db.Model):
             value = datetime.strptime(value, '%d.%m.%Y')
         if key == "montant":
             value = float(str(value).replace('\U00002013', '-').replace(',', '.'))
+
+        if key == 'siret' and len(value) < 15 :
+            nb_zeros_a_ajouter = 15 - len(str(value))
+            value = '0' * nb_zeros_a_ajouter + str(value)
 
         super().__setattr__(key, value)
 

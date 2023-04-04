@@ -40,7 +40,7 @@ def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_u
                                              'siret': 'str'})
         for index, chorus_data in data_chorus.iterrows():
             # MAJ des referentiels si necessaire
-            if chorus_data['siret'] != '#':
+            if chorus_data[Chorus.siret.key] != '#':
                 subtask("import_line_chorus_ae").delay(chorus_data.to_json(), index, source_region, annee, force_update)
             else:
                 logging.info(f"[IMPORT][CHORUS] Siret #  sur ligne {index}")
@@ -51,7 +51,6 @@ def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_u
     except Exception as e:
         LOGGER.exception(f"[IMPORT][CHORUS] Error lors de l'import du fichier {fichier} chorus")
         raise e
-
 
 
 @celery.task(bind=True, name='import_line_chorus_ae', autoretry_for=(ChorusException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
@@ -66,20 +65,22 @@ def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: i
 
     if chorus_instance != False:
         try:
-            _check_ref(CodeProgramme, line[Chorus.programme.key])
-            _check_ref(CentreCouts, line[Chorus.centre_couts.key])
-            _check_ref(DomaineFonctionnel, line[Chorus.domaine_fonctionnel.key])
-            _check_ref(FournisseurTitulaire, line[Chorus.fournisseur_titulaire.key])
-            _check_ref(GroupeMarchandise, line[Chorus.groupe_marchandise.key])
-            _check_ref(LocalisationInterministerielle, line[Chorus.localisation_interministerielle.key])
-            _check_ref(ReferentielProgrammation, line[Chorus.referentiel_programmation.key])
+            new_chorus_data = Chorus(line, source_region=source_region, annee=annee)
+
+            _check_ref(CodeProgramme, new_chorus_data.programme)
+            _check_ref(CentreCouts, new_chorus_data.centre_couts)
+            _check_ref(DomaineFonctionnel, new_chorus_data.domaine_fonctionnel)
+            _check_ref(FournisseurTitulaire, new_chorus_data.fournisseur_titulaire)
+            _check_ref(GroupeMarchandise, new_chorus_data.groupe_marchandise)
+            _check_ref(LocalisationInterministerielle, new_chorus_data.localisation_interministerielle)
+            _check_ref(ReferentielProgrammation, new_chorus_data.referentiel_programmation)
 
             # SIRET
-            _check_siret(line[Chorus.siret.key])
+            _check_siret(new_chorus_data.siret)
 
             # CHORUS
             if chorus_instance == True:
-                _insert_chorus(line, source_region, annee)
+                _insert_chorus(new_chorus_data)
             else:
                 _update_chorus(line, chorus_instance, source_region, annee)
 
@@ -107,9 +108,8 @@ def _check_ref(model, code):
         try:
             db.session.add(instance)
             db.session.commit()
-        except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-            db.session.rollback()
-            LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout ref {model.__tablename__} code {code}")
+        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+            LOGGER.exception(f"[IMPORT][CHORUS] Error sur ajout ref {model.__tablename__} code {code}")
 
 
 def __check_commune(code):
@@ -121,8 +121,7 @@ def __check_commune(code):
             commune = maj_one_commune(commune)
             db.session.add(commune)
         except Exception:
-            db.session.rollback()
-            LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout commune {code}")
+            LOGGER.exception(f"[IMPORT][CHORUS] Error sur ajout commune {code}")
 
 def _check_siret(siret):
     """Rempli les informations du siret via l'API entreprise
@@ -137,8 +136,7 @@ def _check_siret(siret):
         db.session.add(siret_entity)
         db.session.commit()
     except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-        db.session.rollback()
-        LOGGER.warning(f"[IMPORT][CHORUS] Error sur ajout Siret {siret}")
+        LOGGER.exception(f"[IMPORT][CHORUS] Error sur ajout Siret {siret}")
 
     LOGGER.info(f"[IMPORT][CHORUS] Siret {siret} ajouté")
 
@@ -166,10 +164,8 @@ def _check_insert__update_chorus(chorus_data, force_update: bool):
     return True
 
 
-def _insert_chorus(chorus_data, source_region: str, annee: int):
-    chorus = Chorus(chorus_data,source_region=source_region,annee=annee)
-
-    db.session.add(chorus)
+def _insert_chorus(chorus_data: Chorus):
+    db.session.add(chorus_data)
     LOGGER.info('[IMPORT][CHORUS] Ajout ligne chorus')
     db.session.commit()
 
