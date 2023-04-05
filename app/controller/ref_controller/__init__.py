@@ -17,8 +17,8 @@ api_ref = Blueprint('api_ref', __name__)
 
 authorizations = {"Bearer": {"type": "apiKey", "in": "header", "name": "Authorization"}}
 
-api = Api(api_ref, doc='/doc', prefix="/api/v1", description="API de récupérations des référentiels",
-          title="Référentiel",
+api = Api(api_ref, doc='/doc', prefix="/api/v1", description="API de récupérations des référentiels de Budget",
+          title="Référentiel Budget",
           authorizations=authorizations)
 
 api_domaine = build_ref_controller(DomaineFonctionnel,

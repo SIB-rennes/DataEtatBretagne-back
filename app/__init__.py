@@ -120,7 +120,7 @@ def _expose_endpoint(app: Flask):
 
         app.register_blueprint(api_financial, url_prefix='/financial-data')
         app.register_blueprint(api_administration, url_prefix='/administration')
-        app.register_blueprint(api_ref, url_prefix='/referentiels')
+        app.register_blueprint(api_ref, url_prefix='/budget')
         app.register_blueprint(api_apis_externes, url_prefix='/apis_externes')
         app.register_blueprint(api_task, url_prefix='/task_management')
 
