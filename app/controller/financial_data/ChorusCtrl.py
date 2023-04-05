@@ -1,17 +1,10 @@
-import datetime
-
-import sqlalchemy
 from flask import jsonify, current_app, request, g
 from flask_restx import Namespace, Resource, reqparse, inputs, fields
-from sqlalchemy.exc import NoResultFound
 from werkzeug.datastructures import FileStorage
 
-from app import db
 from app.controller.Decorators import check_permission
 from app.exceptions.exceptions import BadRequestDataRegateNum
-from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.ConnectionProfile import ConnectionProfile
-from app.models.enums.DataType import DataType
 from app.services.financial_data import import_ae
 
 api = Namespace(name="chorus", path='/chorus',
@@ -51,25 +44,6 @@ class ChorusImport(Resource):
         username = g.oidc_token_info['username'] if hasattr(g,'oidc_token_info') and 'username' in g.oidc_token_info else ''
         task = import_ae(file_chorus,data['code_region'],int(data['annee']), force_update, username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import de donnée chorus AE en cours (taches asynchrone id = {task.id}'})
-
-
-
-@api.route('/last-import')
-class LastImport(Resource):
-
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @api.doc(security="Bearer")
-    @api.marshal_with(api.model("date-last-import",{'date': fields.DateTime}), code=200)
-    def get(self):
-
-        stmt = db.select(sqlalchemy.sql.functions.max(AuditUpdateData.date)).where(
-            AuditUpdateData.data_type == DataType.FINANCIAL_DATA.name)
-        result = db.session.execute(stmt).scalar_one()
-        if result is None:
-            raise NoResultFound()
-
-        return {"date": result.isoformat() }, 200
-
 
 
 parser_line = reqparse.RequestParser()
