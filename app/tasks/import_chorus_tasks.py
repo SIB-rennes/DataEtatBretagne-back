@@ -10,7 +10,7 @@ import sqlalchemy.exc
 from celery import subtask
 
 from app import db, celeryapp
-from app.exceptions.exceptions import ChorusException
+from app.exceptions.exceptions import ChorusException,ChorusLineConcurrencyError
 from app.models.financial.Chorus import Chorus
 from app.models.refs.centre_couts import CentreCouts
 from app.models.refs.code_programme import CodeProgramme
@@ -60,7 +60,7 @@ def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: i
         chorus_instance = _check_insert__update_chorus(line, force_update)
     except sqlalchemy.exc.OperationalError as o:
         LOGGER.exception(f"[IMPORT][CHORUS] Erreur index {index} sur le check ligne chorus")
-        raise ChorusException(o)
+        raise ChorusException(o) from o
 
 
     if chorus_instance != False:
@@ -94,6 +94,14 @@ def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: i
             # de retry max contrairement à ce que stipule la doc !
             # on met donc un grand nombre.
             self.retry(countdown=delay, max_retries=1000, retry_jitter=True)
+        
+        except sqlalchemy.exc.IntegrityError as e:
+            msg = (
+                f"IntegrityError pour l'index {index}. "
+                "Cela peut être dû à un soucis de concourrance. On retente."
+            ) 
+            LOGGER.exception(f"[IMPORT][CHORUS] {msg}")
+            raise ChorusLineConcurrencyError(msg) from e
 
         except Exception as e:
             LOGGER.exception(f"[IMPORT][CHORUS] erreur index {index}")
@@ -110,6 +118,7 @@ def _check_ref(model, code):
             db.session.commit()
         except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
             LOGGER.exception(f"[IMPORT][CHORUS] Error sur ajout ref {model.__tablename__} code {code}")
+            raise e
 
 
 def __check_commune(code):
@@ -135,8 +144,9 @@ def _check_siret(siret):
     try:
         db.session.add(siret_entity)
         db.session.commit()
-    except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+    except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
         LOGGER.exception(f"[IMPORT][CHORUS] Error sur ajout Siret {siret}")
+        raise e
 
     LOGGER.info(f"[IMPORT][CHORUS] Siret {siret} ajouté")
 
