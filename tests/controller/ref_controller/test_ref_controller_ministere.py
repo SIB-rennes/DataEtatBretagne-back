@@ -33,7 +33,7 @@ def add_data(test_db):
 
 def test_min_by_code(test_client, add_data):
     code = "MIN02"
-    resp = test_client.get('/referentiels/api/v1/ministere/'+code)
+    resp = test_client.get('/budget/api/v1/ministere/'+code)
     assert resp.status_code == 200
     min_return = json.loads(resp.data.decode())
     assert min_return == add_data[1]
@@ -42,18 +42,18 @@ def test_min_by_code(test_client, add_data):
 def test_min_not_found(test_client, add_data):
     # GIVEN
     code_not_found = 'code_not_found'
-    resp = test_client.get('/referentiels/api/v1/ministere/'+code_not_found)
+    resp = test_client.get('/budget/api/v1/ministere/'+code_not_found)
     assert resp.status_code == 404
 
 
 def test_search_min_no_content(test_client, add_data):
     test="fcode1"
-    resp = test_client.get('/referentiels/api/v1/ministere?query='+test)
+    resp = test_client.get('/budget/api/v1/ministere?query='+test)
     assert resp.status_code == 204
 
 def test_search_min_bycode_label(test_client, add_data):
     test="ulTUr"
-    resp = test_client.get('/referentiels/api/v1/ministere?query='+test)
+    resp = test_client.get('/budget/api/v1/ministere?query='+test)
     assert resp.status_code == 200
 
     page_return = json.loads(resp.data.decode())
