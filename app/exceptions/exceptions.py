@@ -7,6 +7,10 @@ class DataRegatException(Exception):
 class ChorusException(Exception):
     pass
 
+class ChorusLineConcurrencyError(ChorusException):
+    """Exception levée lorsque une insertion de ligne chorus échoue à cause de problème de concourrance."""
+    pass
+
 class BadRequestDataRegateNum(DataRegatException):
     def __init__(self, message=""):
         self.message = message
