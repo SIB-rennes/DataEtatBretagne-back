@@ -30,11 +30,9 @@ def import_ae(file_chorus, source_region:str ,annee: int, force_update: bool,use
         logging.info(f'[IMPORT CHORUS] Récupération du fichier {filename}')
         from app.tasks.import_chorus_tasks import import_file_ae_chorus
         task = import_file_ae_chorus.delay(str(save_path), source_region, annee, force_update)
-        try :
-            db.session.add(AuditUpdateData(username=username, filename=file_chorus.filename,data_type=DataType.FINANCIAL_DATA))
-            db.session.commit()
-        except Exception:
-            logging.exception('[IMPORT CHORUS] Erreur saving AuditUpdateData')
+
+        db.session.add(AuditUpdateData(username=username, filename=file_chorus.filename,data_type=DataType.FINANCIAL_DATA))
+        db.session.commit()
         return task
     else:
         logging.error(f'[IMPORT CHORUS] Fichier refusé {file_chorus.filename}')

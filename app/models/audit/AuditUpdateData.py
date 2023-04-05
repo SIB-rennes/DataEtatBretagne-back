@@ -17,4 +17,4 @@ class AuditUpdateData(db.Model):
     filename: str = Column(String, nullable=False)
     data_type:DataType  = Column(db.Enum(DataType), nullable=False)
 
-    date: DateTime = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    date: DateTime = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, nullable=False)

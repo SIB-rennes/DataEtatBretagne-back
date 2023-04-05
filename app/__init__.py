@@ -112,14 +112,14 @@ def _expose_endpoint(app: Flask):
         CORS(app, resources={r"/api/*": {"origins": "*"}})
 
         from app.controller.financial_data import api_financial  # pour éviter les import circulaire avec oidc
-        from app.controller.user_management import api_management
+        from app.controller.administration import api_administration
         from app.controller.ref_controller import api_ref
         from app.controller.apis_externes import api_apis_externes
         from app.controller.task_management import api_task
         from app.controller.proxy_nocodb import mount_blueprint  # pour éviter les import circulaire avec oidc
 
         app.register_blueprint(api_financial, url_prefix='/financial-data')
-        app.register_blueprint(api_management, url_prefix='/management')
+        app.register_blueprint(api_administration, url_prefix='/administration')
         app.register_blueprint(api_ref, url_prefix='/referentiels')
         app.register_blueprint(api_apis_externes, url_prefix='/apis_externes')
         app.register_blueprint(api_task, url_prefix='/task_management')
