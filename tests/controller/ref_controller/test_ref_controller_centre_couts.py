@@ -23,7 +23,7 @@ def add_data(test_db):
 
 def test_centre_cout_by_code(test_client, add_data):
     code = add_data[0]['code']
-    resp = test_client.get('/referentiels/api/v1/centre-couts/'+code)
+    resp = test_client.get('/budget/api/v1/centre-couts/'+code)
     assert resp.status_code == 200
     cc_return = json.loads(resp.data.decode())
     assert cc_return == add_data[0]
@@ -32,18 +32,18 @@ def test_centre_cout_by_code(test_client, add_data):
 def test_centre_cout_by_code_not_found(test_client, add_data):
     # GIVEN
     code_not_found = 'code_not_found'
-    resp = test_client.get('/referentiels/api/v1/centre-couts/'+code_not_found)
+    resp = test_client.get('/budget/api/v1/centre-couts/'+code_not_found)
     assert resp.status_code == 404
 
 
 def test_search_centre_cout_no_content(test_client, add_data):
     test="fcode1"
-    resp = test_client.get('/referentiels/api/v1/centre-couts?query='+test)
+    resp = test_client.get('/budget/api/v1/centre-couts?query='+test)
     assert resp.status_code == 204
 
 def test_search_centre_cout_bycode_label(test_client, add_data):
     test="code12"
-    resp = test_client.get('/referentiels/api/v1/centre-couts?query='+test)
+    resp = test_client.get('/budget/api/v1/centre-couts?query='+test)
     assert resp.status_code == 200
 
     page_return = json.loads(resp.data.decode())
@@ -55,8 +55,8 @@ def test_search_centre_cout_bycode_label(test_client, add_data):
 
 def test_search_centre_cout_bycode(test_client, add_data):
     test="code1"
-    resp = test_client.get('/referentiels/api/v1/centre-couts?query='+test+'&limit=5&pageNumber=0')
-    resp_page2 = test_client.get('/referentiels/api/v1/centre-couts?query=' + test + '&limit=5&pageNumber=2')
+    resp = test_client.get('/budget/api/v1/centre-couts?query='+test+'&limit=5&pageNumber=0')
+    resp_page2 = test_client.get('/budget/api/v1/centre-couts?query=' + test + '&limit=5&pageNumber=2')
 
     assert resp.status_code == 200
     assert resp_page2.status_code == 200
@@ -83,7 +83,7 @@ def test_search_centre_cout_bycode(test_client, add_data):
 
 def test_search_centre_cout_by_code_postal(test_client, add_data):
     test = "35411"
-    resp = test_client.get('/referentiels/api/v1/centre-couts?query=' + test + '&limit=5&pageNumber=0')
+    resp = test_client.get('/budget/api/v1/centre-couts?query=' + test + '&limit=5&pageNumber=0')
     assert resp.status_code == 200
     page_return = json.loads(resp.data.decode())
     assert page_return['items'].__len__() == 1

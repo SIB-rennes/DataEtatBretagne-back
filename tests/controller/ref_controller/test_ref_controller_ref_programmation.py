@@ -21,7 +21,7 @@ def add_data(test_db):
 
 def test_ref_prog_by_code(test_client, add_data):
     code = add_data[0]['code']
-    resp = test_client.get('/referentiels/api/v1/ref-programmation/'+code)
+    resp = test_client.get('/budget/api/v1/ref-programmation/'+code)
     assert resp.status_code == 200
     cc_return = json.loads(resp.data.decode())
     assert cc_return['code'] == add_data[0]['code']
@@ -32,18 +32,18 @@ def test_ref_prog_by_code(test_client, add_data):
 def test_ref_prog_by_code_not_found(test_client, add_data):
     # GIVEN
     code_not_found = 'code_not_found'
-    resp = test_client.get('/referentiels/api/v1/ref-programmation/'+code_not_found)
+    resp = test_client.get('/budget/api/v1/ref-programmation/'+code_not_found)
     assert resp.status_code == 404
 
 
 def test_search_ref_prog_no_content(test_client, add_data):
     test="fcode1"
-    resp = test_client.get('/referentiels/api/v1/ref-programmation?query='+test)
+    resp = test_client.get('/budget/api/v1/ref-programmation?query='+test)
     assert resp.status_code == 204
 
 def test_search_ref_prog_bycode_label(test_client, add_data):
     test="0101"
-    resp = test_client.get('/referentiels/api/v1/ref-programmation?query='+test)
+    resp = test_client.get('/budget/api/v1/ref-programmation?query='+test)
     assert resp.status_code == 200
 
     page_return = json.loads(resp.data.decode())
