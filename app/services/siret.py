@@ -1,5 +1,7 @@
 import logging
 
+from api_entreprise import ApiError
+
 from app import db
 from app.clients.entreprise import get_or_make_api_entreprise, DonneesEtablissement, LimitHitError
 from app.models.refs.siret import Siret
@@ -42,9 +44,13 @@ def update_siret_from_api_entreprise(code: str, insert_only = False):
         siret = Siret(code=str(code))
     assert siret is not None
 
-    etablissement = _api().donnees_etablissement(code)
-    if etablissement is None:
-        logger.warning(f"Aucune information sur l'entreprise via API entreprise pour le siret {code}")
+    try:
+        etablissement = _api().donnees_etablissement(code)
+        if etablissement is None:
+            logger.warning(f"Aucune information sur l'entreprise via API entreprise pour le siret {code}")
+            return siret
+    except ApiError :
+        logger.exception(f"Error api entreprise {code}")
         return siret
     
     _map(siret, etablissement)

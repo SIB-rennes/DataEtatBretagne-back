@@ -10,7 +10,8 @@ from app.tasks import import_file_ae_chorus, import_line_chorus_ae
 @patch('app.tasks.import_chorus_tasks.subtask')
 def test_import_import_file_ae_chorus(mock_subtask):
     #DO
-    import_file_ae_chorus(os.path.abspath(os.getcwd())+'/data/chorus/chorus_ae.csv', "35", 2023, False)
+    with patch('os.remove', return_value=None): #ne pas supprimer le fichier de tests :)
+        import_file_ae_chorus(os.path.abspath(os.getcwd())+'/data/chorus/chorus_ae.csv', "35", 2023, False)
 
     for in_call in mock_subtask.mock_calls:
         if in_call[0] == '().delay' and json.loads(in_call[1][0])['siret'] == '#' :
@@ -53,10 +54,10 @@ def test_import_update_line_chorus(app, test_db):
     test_db.session.commit()
 
     # update data, same n_ej n_poste_ej
-    data_update = '{"programme":"NEW","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","n_ej":"ej_to_update","n_poste_ej":5,"date_modification_ej":"10.02.2023","fournisseur_titulaire":1001465507,"fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"85129663200017","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"UPDATE","localisation_interministerielle":"N53","montant":25500}'
+    data_update = '{"programme":"NEW","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","n_ej":"ej_to_update","n_poste_ej":5,"date_modification_ej":"10.02.2023","fournisseur_titulaire":1001465507,"fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"851296632000171","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"UPDATE","localisation_interministerielle":"N53","montant":25500}'
 
     #DO
-    with patch('app.tasks.import_chorus_tasks.update_siret_from_api_entreprise', return_value=Siret(**{'code':'85129663200017', 'code_commune':"35099"})):
+    with patch('app.tasks.import_chorus_tasks.update_siret_from_api_entreprise', return_value=Siret(**{'code':'851296632000171', 'code_commune':"35099"})):
         import_line_chorus_ae(data_update,0,"35",2024, False)
 
     with app.app_context():
@@ -71,3 +72,14 @@ def test_import_update_line_chorus(app, test_db):
 
 
 
+def test_import_line_missing_zero_siret(app, test_db):
+    data = '{"programme":"103","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","n_ej":"siret_ej","n_poste_ej":5,"date_modification_ej":"10.01.2023","fournisseur_titulaire":"1001465507","fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"6380341500023","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N53","montant":22500}'
+
+    with patch('app.tasks.import_chorus_tasks.update_siret_from_api_entreprise',
+               return_value=Siret(**{'code': 'NONE', 'code_commune': "35099"})):
+        import_line_chorus_ae(data, 0, "35", 2023, False)
+
+    # ASSERT
+    with app.app_context():
+        data = Chorus.query.filter_by(n_ej="siret_ej").one()
+        assert data.siret == "06380341500023"
