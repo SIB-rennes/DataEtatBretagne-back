@@ -76,10 +76,10 @@ def test_import_line_missing_zero_siret(app, test_db):
     data = '{"programme":"103","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","n_ej":"siret_ej","n_poste_ej":5,"date_modification_ej":"10.01.2023","fournisseur_titulaire":"1001465507","fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"6380341500023","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N53","montant":22500}'
 
     with patch('app.tasks.import_chorus_tasks.update_siret_from_api_entreprise',
-               return_value=Siret(**{'code': '06380341500023', 'code_commune': "35099"})):
+               return_value=Siret(**{'code': 'NONE', 'code_commune': "35099"})):
         import_line_chorus_ae(data, 0, "35", 2023, False)
 
     # ASSERT
     with app.app_context():
         data = Chorus.query.filter_by(n_ej="siret_ej").one()
-        assert data.siret == "006380341500023"
+        assert data.siret == "06380341500023"

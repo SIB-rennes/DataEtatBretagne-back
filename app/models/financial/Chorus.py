@@ -59,9 +59,7 @@ class Chorus(Audit, db.Model):
             self.referentiel_programmation = self.referentiel_programmation[5:]
 
        #Cas si le siret a moins de caractères
-       if len(self.siret) < 15:
-            nb_zeros_a_ajouter = 15 - len(self.siret)
-            self.siret = '0' * nb_zeros_a_ajouter + str(self.siret)
+       self.siret = self._fix_siret(self.siret)
 
 
     def update_attribute(self,  line_chorus: dict):
@@ -84,11 +82,20 @@ class Chorus(Audit, db.Model):
         if key == "montant":
             value = float(str(value).replace('\U00002013', '-').replace(',', '.'))
 
-        if key == 'siret' and len(value) < 15 :
-            nb_zeros_a_ajouter = 15 - len(str(value))
-            value = '0' * nb_zeros_a_ajouter + str(value)
+        if key == 'siret':
+            value = self._fix_siret(value)
 
         super().__setattr__(key, value)
+
+
+    @staticmethod
+    def _fix_siret(value: str) -> str:
+        if len(value) < 14 :
+            nb_zeros_a_ajouter = 14 - len(value)
+            value = '0' * nb_zeros_a_ajouter + str(value)
+
+        return value
+
 
     @staticmethod
     def get_columns_files_ae():
