@@ -1,9 +1,10 @@
 from sqlalchemy import Column, String
 
 from app import db
+from app.models.common.Audit import Audit
 
 
-class Siret(db.Model):
+class Siret(Audit, db.Model):
     __tablename__ = 'ref_siret'
     id = db.Column(db.Integer, primary_key=True)
     # code siret
@@ -15,5 +16,3 @@ class Siret(db.Model):
 
     denomination = Column(String)
     adresse = Column(String)
-    longitude= Column(db.Float)
-    latitude = Column(db.Float)

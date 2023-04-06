@@ -1,5 +1,8 @@
 /.idea
 **/__pycache__
 /config/config.yml
-/migrations/data/ref_crte*.csv
+/migrations/data/ref_*.csv
 /config/keycloak.json
+/tests/database.db
+/tests/tasks/database.db
+/test.py

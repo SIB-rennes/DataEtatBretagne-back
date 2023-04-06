@@ -1,15 +1,13 @@
 from celery import Celery
 from kombu import Queue
 
-CELERY_TASK_LIST = [
-    'app.tasks',
-]
+CELERY_TASK_LIST = ['app.tasks']
 
 db_session = None
 celery = None
 
 
-def create_celery_app(_app=None):
+def create_celery_app(_app =None):
     """
     Create a new Celery object and tie together the Celery config to the app's config.
 
@@ -23,8 +21,8 @@ def create_celery_app(_app=None):
     #     _app.initialize('celery')
 
     celery = Celery(_app.import_name,
-                    backend=_app.config['result_backend'],
-                    broker=_app.config['CELERY_BROKER_URL'],
+                    backend=_app.config['result_backend'] if 'result_backend' in _app.config else None,
+                    broker=_app.config['CELERY_BROKER_URL'] if 'CELERY_BROKER_URL' in _app.config else None,
                     include=CELERY_TASK_LIST)
     celery.conf.update(_app.config)
     celery.conf.task_queues = (
@@ -44,7 +42,10 @@ def create_celery_app(_app=None):
         },
         'import_line_*': {
             'queue': 'line'
-        }
+        },
+        'update_siret_*': {
+            'queue': 'line'
+        },
     }]
 
     TaskBase = celery.Task

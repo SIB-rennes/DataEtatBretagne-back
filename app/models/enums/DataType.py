@@ -1,0 +1,6 @@
+from enum import Enum
+
+class DataType(Enum):
+    FINANCIAL_DATA = "FINANCIAL_DATA"
+    FRANCE_RELANCE = "FRANCE_RELANCE"
+    REFERENTIEL = "REFERENTIEL"
