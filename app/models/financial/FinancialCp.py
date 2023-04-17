@@ -3,10 +3,11 @@ from dataclasses import dataclass
 
 from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Float
 from app import db
-from app.models.common.Audit import Audit
+from app.models.financial import FinancialData
+
 
 @dataclass
-class FinancialAe(Audit, db.Model):
+class FinancialCp(FinancialData, db.Model):
     __tablename__ = 'financial_cp'
     # PK
     n_dp: str = Column(String, primary_key=True)
@@ -35,3 +36,17 @@ class FinancialAe(Audit, db.Model):
     montant: float = Column(Float)
     annee: int = Column(Integer, nullable= False)
 
+
+    def do_update(self, new_financial):
+        return datetime.strptime(new_financial['date_derniere_operation_dp'], '%d.%m.%Y') > self.date_derniere_operation_dp
+
+
+
+    @staticmethod
+    def get_columns_files_cp():
+        return ['programme', 'domaine_fonctionnel', 'centre_couts',
+                              'referentiel_programmation', 'n_ej', 'n_poste_ej', 'n_dp',
+                             'date_base_dp','date_derniere_operation_dp','n_sf','data_sf',
+                             'fournisseur_paye_code','fournisseur_paye_label',
+                             'siret','compte_code','compte_budgetaire','groupe_marchandise','contrat_etat_region',
+                              'contrat_etat_region_2','localisation_interministerielle', 'montant']
