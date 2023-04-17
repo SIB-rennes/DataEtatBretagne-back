@@ -11,7 +11,7 @@ from celery import subtask
 
 from app import db, celeryapp
 from app.exceptions.exceptions import ChorusException,ChorusLineConcurrencyError
-from app.models.financial.Chorus import Chorus
+from app.models.financial.FinancialAe import FinancialAe
 from app.models.refs.centre_couts import CentreCouts
 from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.commune import Commune
@@ -34,13 +34,13 @@ def import_file_ae_chorus(self, fichier, source_region: str, annee: int, force_u
     # get file
     LOGGER.info(f'[IMPORT][CHORUS] Start for region {source_region}, year {annee}, file {fichier}')
     try:
-        data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=Chorus.get_columns_files_ae(),
+        data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialAe.get_columns_files_ae(),
                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': int,
                                              'fournisseur_titulaire': str,
                                              'siret': 'str'})
         for index, chorus_data in data_chorus.iterrows():
             # MAJ des referentiels si necessaire
-            if chorus_data[Chorus.siret.key] != '#':
+            if chorus_data[FinancialAe.siret.key] != '#':
                 subtask("import_line_chorus_ae").delay(chorus_data.to_json(), index, source_region, annee, force_update)
             else:
                 logging.info(f"[IMPORT][CHORUS] Siret #  sur ligne {index}")
@@ -65,7 +65,7 @@ def import_line_chorus_ae(self, data_chorus, index, source_region: str, annee: i
 
     if chorus_instance != False:
         try:
-            new_chorus_data = Chorus(line, source_region=source_region, annee=annee)
+            new_chorus_data = FinancialAe(line, source_region=source_region, annee=annee)
 
             _check_ref(CodeProgramme, new_chorus_data.programme)
             _check_ref(CentreCouts, new_chorus_data.centre_couts)
@@ -159,13 +159,13 @@ def _check_insert__update_chorus(chorus_data, force_update: bool):
              False -> rien à faire
              Instance chorus -> Chorus à maj
     '''
-    instance = db.session.query(Chorus).filter_by(n_ej=chorus_data[Chorus.n_ej.key],
-                                                  n_poste_ej=chorus_data[Chorus.n_poste_ej.key]).one_or_none()
+    instance = db.session.query(FinancialAe).filter_by(n_ej=chorus_data[FinancialAe.n_ej.key],
+                                                  n_poste_ej=chorus_data[FinancialAe.n_poste_ej.key]).one_or_none()
     if instance:
         if force_update:
             LOGGER.info('[IMPORT][CHORUS] Doublon trouvé, Force Update')
             return instance
-        if datetime.strptime(chorus_data[Chorus.date_modification_ej.key], '%d.%m.%Y') > instance.date_modification_ej:
+        if datetime.strptime(chorus_data[FinancialAe.date_modification_ej.key], '%d.%m.%Y') > instance.date_modification_ej:
             LOGGER.info('[IMPORT][CHORUS] Doublon trouvé, MAJ à faire sur la date')
             return instance
         else:
@@ -174,7 +174,7 @@ def _check_insert__update_chorus(chorus_data, force_update: bool):
     return True
 
 
-def _insert_chorus(chorus_data: Chorus):
+def _insert_chorus(chorus_data: FinancialAe):
     db.session.add(chorus_data)
     LOGGER.info('[IMPORT][CHORUS] Ajout ligne chorus')
     db.session.commit()

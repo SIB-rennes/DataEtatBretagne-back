@@ -8,7 +8,7 @@ from app.models.enums.ConnectionProfile import ConnectionProfile
 from app.services.financial_data import import_ae
 
 api = Namespace(name="chorus", path='/chorus',
-                description='Api de délenchements des taks chorus')
+                description='Api de délenchements des task chorus')
 
 parser = reqparse.RequestParser()
 parser.add_argument('fichier', type=FileStorage, help="fichier à importer", location='files', required=True)

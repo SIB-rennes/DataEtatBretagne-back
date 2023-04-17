@@ -9,7 +9,7 @@ from app import db
 from app.exceptions.exceptions import InvalidFile
 from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.DataType import DataType
-from app.models.financial.Chorus import Chorus
+from app.models.financial.FinancialAe import FinancialAe
 from app.services import allowed_file, FileNotAllowedException
 
 def import_ae(file_chorus, source_region:str ,annee: int, force_update: bool,username=""):
@@ -44,7 +44,7 @@ def import_ae(file_chorus, source_region:str ,annee: int, force_update: bool,use
 def check_file(fichier):
     try:
         data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, nrows=5,
-                                      names=Chorus.get_columns_files_ae(),
+                                      names=FinancialAe.get_columns_files_ae(),
                                        dtype={'programme': str, 'n_ej': str, 'n_poste_ej': int,
                                                      'fournisseur_titulaire': str,
                                                      'siret': 'str'})

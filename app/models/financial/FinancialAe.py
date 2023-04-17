@@ -7,8 +7,8 @@ from app import db
 from app.models.common.Audit import Audit
 
 @dataclass
-class Chorus(Audit, db.Model):
-    __tablename__ = 'data_chorus'
+class FinancialAe(Audit, db.Model):
+    __tablename__ = 'financial_ae'
     # PK
     n_ej: str = Column(String, primary_key=True)
     n_poste_ej: int = Column(Integer, primary_key=True)
