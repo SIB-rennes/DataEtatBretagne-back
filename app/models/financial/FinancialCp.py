@@ -11,9 +11,13 @@ class FinancialCp(FinancialData, db.Model):
     __tablename__ = 'financial_cp'
     # PK
     n_dp: str = Column(String, primary_key=True)
+
+    # FK AE
+    id_ae: str = Column(String, ForeignKey('financial_ae.id'), nullable=True)
+
     # liens vers les AE
-    n_ej: str = Column(String, ForeignKey('financial_ae.n_ej'), nullable=True)
-    n_poste_ej: int = Column(Integer, ForeignKey('financial_ae.n_poste_ej') , nullable=True)
+    n_ej: str = Column(String, nullable=True)
+    n_poste_ej: int = Column(Integer, nullable=True)
 
     #FK
     source_region: str = Column(String, ForeignKey('ref_region.code'), nullable=False)

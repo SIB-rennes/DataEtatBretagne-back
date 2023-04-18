@@ -2,7 +2,7 @@ import datetime
 from datetime import datetime
 from dataclasses import dataclass
 
-from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Float
+from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Float, UniqueConstraint
 from app import db
 from app.models.financial import FinancialData
 
@@ -11,8 +11,13 @@ from app.models.financial import FinancialData
 class FinancialAe(FinancialData, db.Model):
     __tablename__ = 'financial_ae'
     # PK
-    n_ej: str = Column(String, primary_key=True)
-    n_poste_ej: int = Column(Integer, primary_key=True)
+    id: int = Column(Integer, primary_key=True)
+
+    # UNIQUE
+    n_ej: str = Column(String, nullable=False)
+    n_poste_ej: int = Column(Integer, nullable=False)
+    UniqueConstraint("n_ej", "n_poste_ej", name="n_ej_n_poste_ej"),
+
     # liens vers les référentiels
     source_region: str = Column(String, ForeignKey('ref_region.code'), nullable=True)
     programme: str  = Column(String, ForeignKey('ref_code_programme.code'), nullable=False)
@@ -30,6 +35,7 @@ class FinancialAe(FinancialData, db.Model):
     contrat_etat_region: str = Column(String(255))
     montant: float = Column(Float)
     annee: int = Column(Integer, nullable= False) # annee de l'AE chorus
+
 
 
 
