@@ -63,6 +63,23 @@ def upgrade():
                     )
 
 
+    op.execute("ALTER TYPE datatype ADD VALUE 'FINANCIAL_DATA_AE'")
+    op.execute("ALTER TYPE datatype ADD VALUE 'FINANCIAL_DATA_CP'")
+    op.execute("COMMIT")
+
+
+    # supression value FINANCIAL_DATA
+    op.execute("ALTER TYPE datatype RENAME TO datatype_old")
+    op.execute("CREATE TYPE datatype AS ENUM('FINANCIAL_DATA_AE', 'FINANCIAL_DATA_CP', 'FRANCE_RELANCE','REFERENTIEL')")
+
+    op.execute("UPDATE audit.audit_update_data SET data_type = 'FINANCIAL_DATA_AE' WHERE data_type = 'FINANCIAL_DATA' ")
+    op.execute("ALTER TABLE audit.audit_update_data ALTER COLUMN data_type TYPE datatype USING data_type::text::datatype;")
+    op.execute( "DROP TYPE datatype_old")
+
+#
+
+
+
 
     # ### end Alembic commands ###
 

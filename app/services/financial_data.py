@@ -20,7 +20,7 @@ def import_ae(file_ae, source_region:str, annee: int, force_update: bool, userna
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
     from app.tasks.import_financial_tasks import import_file_ae_financial
     task = import_file_ae_financial.delay(str(save_path), source_region, annee, force_update)
-    db.session.add(AuditUpdateData(username=username, filename=file_ae.filename, data_type=DataType.FINANCIAL_DATA))
+    db.session.add(AuditUpdateData(username=username, filename=file_ae.filename, data_type=DataType.FINANCIAL_DATA_AE))
     db.session.commit()
     return task
 
@@ -32,7 +32,7 @@ def import_cp(file_cp, source_region:str, annee: int, force_update: bool, userna
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
     from app.tasks.import_financial_tasks import import_file_ae_financial
     task = import_file_ae_financial.delay(str(save_path), source_region, annee, force_update)
-    db.session.add(AuditUpdateData(username=username, filename=file_cp.filename, data_type=DataType.FINANCIAL_DATA))
+    db.session.add(AuditUpdateData(username=username, filename=file_cp.filename, data_type=DataType.FINANCIAL_DATA_CP))
     db.session.commit()
     return task
 
@@ -59,9 +59,9 @@ def _check_file(fichier, column_names):
     try:
         data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, nrows=5,
                                       names=column_names,
-                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': int,
+                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': str,
                                                      'fournisseur_titulaire': str,
-                                                     'siret': 'str'})
+                                                     'siret': str})
     except Exception:
         logging.exception(msg="[CHECK FILE] Erreur de lecture du fichier")
         raise FileNotAllowedException(message="Erreur de lecture du fichier")

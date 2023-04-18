@@ -11,8 +11,7 @@ class FinancialData(Audit):
         if (key == "centre_couts" or key == "referentiel_programmation") and isinstance(value, str) and value.startswith("BG00/"):
             value = value[5:]
 
-        if key == "date_modification_ej" and isinstance(value, str) :
-            value = datetime.strptime(value, '%d.%m.%Y')
+
         if key == "montant":
             value = float(str(value).replace('\U00002013', '-').replace(',', '.'))
 

@@ -53,6 +53,12 @@ class FinancialAe(FinancialData, db.Model):
 
         self.update_attribute(line_chorus)
 
+    def __setattr__(self, key, value):
+        if key == "date_modification_ej" and isinstance(value, str):
+            value = datetime.strptime(value, '%d.%m.%Y')
+
+        super().__setattr__(key, value)
+
 
     def __post_init__(self):
        self.montant = float(str(self.montant).replace('\U00002013', '-').replace(',', '.'))

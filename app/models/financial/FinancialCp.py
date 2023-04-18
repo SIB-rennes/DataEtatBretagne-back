@@ -41,9 +41,31 @@ class FinancialCp(FinancialData, db.Model):
     annee: int = Column(Integer, nullable= False)
 
 
+    def __init__(self, line_chorus: dict,source_region:str,annee: int):
+        """
+        init à partir d'une ligne issue d'un fichier chorus
+
+        :param line_chorus: dict contenant les valeurs d'une ligne issue d'un fichier chorus
+        :param source_region:
+        :param annee:
+        """
+
+        self.source_region = source_region
+        self.annee = annee
+
+        self.update_attribute(line_chorus)
+
     def do_update(self, new_financial):
         return datetime.strptime(new_financial['date_derniere_operation_dp'], '%d.%m.%Y') > self.date_derniere_operation_dp
 
+    def __setattr__(self, key, value):
+        if (key == 'n_ej' or key == 'n_poste_ej') and value == '#' :
+            value = None
+
+        if (key == "date_base_dp" or key == "date_derniere_operation_dp") and isinstance(value, str) :
+            value = datetime.strptime(value, '%d.%m.%Y')
+
+        super().__setattr__(key, value)
 
 
     @staticmethod
@@ -51,6 +73,6 @@ class FinancialCp(FinancialData, db.Model):
         return ['programme', 'domaine_fonctionnel', 'centre_couts',
                               'referentiel_programmation', 'n_ej', 'n_poste_ej', 'n_dp',
                              'date_base_dp','date_derniere_operation_dp','n_sf','data_sf',
-                             'fournisseur_paye_code','fournisseur_paye_label',
+                             'fournisseur_paye','fournisseur_paye_label',
                              'siret','compte_code','compte_budgetaire','groupe_marchandise','contrat_etat_region',
                               'contrat_etat_region_2','localisation_interministerielle', 'montant']

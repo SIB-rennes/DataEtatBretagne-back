@@ -1,0 +1,13 @@
+INF-BUD-53 : Pilotage de la gestion - Vue détaillée,,,,,,,,,,,,,,,,,,,,
+Dernière MàJ des données :,,,,,,,,,,,,,,,,,,,,
+03.02.2023 05:32:09,,,,,,,,,,,,,,,,,,,,
+Affichage :,,,,,,,,,,,,,,,,,,,,
+"Pour ajuster la zone filtre, faites glisser les caractéristiques de l'espace de navigation vers cette zone.",,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,Exercice comptable,2023
+,,,,,,,,,,,,,,,,,,,,Montant payé
+Programme,Domaine fonctionnel,Centre de coûts,Référentiel de programmation,N° EJ,N° poste EJ,N° DP,Date de base de la DP,Date de dernière opération sur la DP,N° SF,Date comptable du SF,Fournisseur payé (DP),Fournisseur payé (DP),Code taxe 1,Compte général,Compte budgétaire,Groupe de marchandises,Contrat de projet Etat-Region,Contrat de projet Etat-Region,Localisation interministérielle,EUR
+101,0101-01,BG00/DSJCARE035,BG00/010101010113,#,#,500043027,31.12.2022,25.01.2023,#,#,1001477845,SANS AE,84442098400016,PCE/6512300000,Transferts aux ménag,#,#,Non affecté,N,"28,26"
+101,0101-01,BG00/DSJCARE035,BG00/010101010113,#,#,500043030,31.12.2022,25.01.2023,#,#,1001273578,SANS AE,41867744900054,PCE/6512300000,Transferts aux ménag,#,#,Non affecté,N,"27,96"
+152,0152-04-01,BG00/GN5GDPL044,BG00/015234300101,2103105755,5,100011636,25.12.2022,18.01.2023,#,#,1400875965,AE EXIST,#,PCE/6113110000,Dépenses de fonction,36.01.01,#,Non affecté,S198063,"252"
+152,0152-04-01,BG00/GN5GDPL044,BG00/015234300101,2103105755,5,100011636,25.12.2022,18.01.2023,#,#,1400875965,AE EXIST 2,#,PCE/6113110000,Dépenses de fonction,36.01.01,#,Non affecté,S198063,"150"
+152,0152-04-01,BG00/GN5GDPL044,BG00/015234300101,2103105755,1,100011552,25.12.2022,18.01.2023,#,#,1001246979,AE NOT EXIST,45228173600010,PCE/6113110000,Dépenses de fonction,36.01.01,#,Non affecté,N5244215,"807,28"
