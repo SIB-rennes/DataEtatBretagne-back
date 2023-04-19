@@ -31,7 +31,7 @@ def test_import_file_cp_with_file_ae():
 
 def test_import_file_cp_ok(app,test_db):
     filename = os.path.abspath(os.getcwd()) + '/data/chorus/financial_cp.csv'
-    with patch('app.tasks.import_financial_tasks.import_file_ae_financial', return_value=None):  # ne pas supprimer le fichier de tests :)
+    with patch('app.tasks.import_financial_tasks.import_file_cp_financial', return_value=None):  # ne pas supprimer le fichier de tests :)
         with open(filename, 'rb') as f:
             import_cp(FileStorage(f), "35", 2023, False)
 

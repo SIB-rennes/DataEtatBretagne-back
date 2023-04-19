@@ -57,4 +57,4 @@ def test_file_missing_column(test_client):
                                         content_type='multipart/form-data', follow_redirects=True)
 
             assert response.status_code == 400
-            assert {'message': 'Le fichier contient des valeurs vides', 'type': 'error'} == response.json
+            assert {'message': 'Le fichier n\'a pas les bonnes colonnes', 'type': 'error'} == response.json

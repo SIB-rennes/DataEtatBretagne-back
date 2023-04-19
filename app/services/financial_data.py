@@ -30,8 +30,8 @@ def import_cp(file_cp, source_region:str, annee: int, force_update: bool, userna
     _check_file(save_path, FinancialCp.get_columns_files_cp())
 
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
-    from app.tasks.import_financial_tasks import import_file_ae_financial
-    task = import_file_ae_financial.delay(str(save_path), source_region, annee, force_update)
+    from app.tasks.import_financial_tasks import import_file_cp_financial
+    task = import_file_cp_financial.delay(str(save_path), source_region, annee, force_update)
     db.session.add(AuditUpdateData(username=username, filename=file_cp.filename, data_type=DataType.FINANCIAL_DATA_CP))
     db.session.commit()
     return task
@@ -55,18 +55,29 @@ def _check_file_and_save(file) -> str:
 
 
 
-def _check_file(fichier, column_names):
+def _check_file(fichier, columns_name):
+
     try:
-        data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, nrows=5,
-                                      names=column_names,
-                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': str,
+        check_column = pandas.read_csv(fichier, sep=",", skiprows=8, nrows=5)
+    except Exception:
+        logging.exception(msg="[CHECK FILE] Erreur de lecture du fichier")
+        raise FileNotAllowedException(message="Erreur de lecture du fichier")
+
+    # check nb colonnes
+    if len(check_column.columns) != len(columns_name):
+        raise InvalidFile(message="Le fichier n'a pas les bonnes colonnes")
+
+    try:
+        data_financial = pandas.read_csv(fichier, sep=",", skiprows=8, nrows=5,
+                                      names=columns_name,
+                                       dtype={'n_ej': str, 'n_poste_ej': str,
                                                      'fournisseur_titulaire': str,
                                                      'siret': str})
     except Exception:
         logging.exception(msg="[CHECK FILE] Erreur de lecture du fichier")
         raise FileNotAllowedException(message="Erreur de lecture du fichier")
 
-    if data_chorus.isnull().values.any():
+    if data_financial.isnull().values.any():
         raise InvalidFile(message="Le fichier contient des valeurs vides")
 
 
