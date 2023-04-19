@@ -36,9 +36,6 @@ def test_not_role(test_client):
         assert response.status_code == 403
         assert {'message': 'Vous n`avez pas les droits', 'type':'error'} == response.json
 
-
-
-
 def test_bad_file(test_client):
     data = {'code_region':'35', 'annee':2023}
     with patch('app.controller.Decorators._get_user_permissions', return_value='ADMIN'):
