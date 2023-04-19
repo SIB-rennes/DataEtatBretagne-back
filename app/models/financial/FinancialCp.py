@@ -13,7 +13,7 @@ class FinancialCp(FinancialData, db.Model):
     n_dp: str = Column(String, primary_key=True)
 
     # FK AE
-    id_ae: str = Column(String, ForeignKey('financial_ae.id'), nullable=True)
+    id_ae: int = Column(Integer, ForeignKey('financial_ae.id'), nullable=True)
 
     # liens vers les AE
     n_ej: str = Column(String, nullable=True)
@@ -25,7 +25,7 @@ class FinancialCp(FinancialData, db.Model):
     domaine_fonctionnel:str = Column(String, db.ForeignKey('ref_domaine_fonctionnel.code'), nullable=False)
     centre_couts: str = Column(String, db.ForeignKey('ref_centre_couts.code'), nullable=False)
     referentiel_programmation: str = Column(String, db.ForeignKey('ref_programmation.code'), nullable=False)
-    siret: str = Column(String, db.ForeignKey('ref_siret.code'), nullable=False)
+    siret: str = Column(String, db.ForeignKey('ref_siret.code'), nullable=True)
     groupe_marchandise: str = Column(String, db.ForeignKey('ref_groupe_marchandise.code'), nullable=False)
     localisation_interministerielle: str = Column(String, db.ForeignKey('ref_localisation_interministerielle.code'), nullable=False)
     fournisseur_paye: str = Column(String, db.ForeignKey('ref_fournisseur_titulaire.code'), nullable=False)

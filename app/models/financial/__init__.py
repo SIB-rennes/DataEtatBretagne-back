@@ -10,8 +10,6 @@ class FinancialData(Audit):
     def __setattr__(self, key, value):
         if (key == "centre_couts" or key == "referentiel_programmation") and isinstance(value, str) and value.startswith("BG00/"):
             value = value[5:]
-
-
         if key == "montant":
             value = float(str(value).replace('\U00002013', '-').replace(',', '.'))
 
@@ -38,6 +36,10 @@ class FinancialData(Audit):
 
     @staticmethod
     def _fix_siret(value: str) -> str:
+        #SIRET VIDE
+        if value ==  "#":
+            return None
+
         if len(value) < 14 :
             nb_zeros_a_ajouter = 14 - len(value)
             value = '0' * nb_zeros_a_ajouter + str(value)

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Float, UniqueConstraint
 from app import db
 from app.models.financial import FinancialData
+from app.models.financial.FinancialCp import FinancialCp
 
 
 @dataclass
@@ -27,7 +28,7 @@ class FinancialAe(FinancialData, db.Model):
     localisation_interministerielle: str = Column(String, db.ForeignKey('ref_localisation_interministerielle.code'), nullable=False)
     groupe_marchandise: str = Column(String, db.ForeignKey('ref_groupe_marchandise.code'), nullable=False)
     fournisseur_titulaire: str = Column(String, db.ForeignKey('ref_fournisseur_titulaire.code'), nullable=False)
-    siret: str = Column(String, db.ForeignKey('ref_siret.code'), nullable=False)
+    siret: str = Column(String, db.ForeignKey('ref_siret.code'), nullable=True)
 
     # autre colonnes
     date_modification_ej: datetime = Column(DateTime, nullable=False) #date issue du fichier Chorus

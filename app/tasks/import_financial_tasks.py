@@ -3,11 +3,9 @@ import logging
 import os
 
 import pandas
-
-from datetime import datetime
-
 import sqlalchemy.exc
 from celery import subtask
+from sqlalchemy import update
 
 from app import db, celeryapp
 from app.exceptions.exceptions import ChorusException,ChorusLineConcurrencyError
@@ -41,11 +39,7 @@ def import_file_ae_financial(self, fichier, source_region: str, annee: int, forc
                                              'fournisseur_titulaire': str,
                                              'siret': str})
         for index, chorus_data in data_chorus.iterrows():
-            # MAJ des referentiels si necessaire
-            if chorus_data[FinancialAe.siret.key] != '#':
-                subtask("import_line_financial_ae").delay(chorus_data.to_json(), index, source_region, annee, force_update)
-            else:
-                logging.info(f"[IMPORT][CHORUS] Siret #  sur ligne {index}")
+            subtask("import_line_financial_ae").delay(chorus_data.to_json(), index, source_region, annee, force_update)
 
         os.remove(fichier)
         LOGGER.info('[IMPORT][FINANCIAL][AE] End')
@@ -101,10 +95,13 @@ def import_line_financial_ae(self, data_chorus, index, source_region: str, annee
             _check_siret(new_ae.siret)
 
             # CHORUS
+            financial_ae = None
             if financial_instance == True:
-                _insert_financial_data(new_ae)
+                financial_ae = _insert_financial_data(new_ae)
             else:
-                _update_financial_data(line, financial_instance, source_region, annee)
+                financial_ae = _update_financial_data(line, financial_instance, source_region, annee)
+
+            _make_link_ae_to_cp(financial_ae.id, financial_ae.n_ej, financial_ae.n_poste_ej)
 
         except LimitHitError as e:
             delay = (e.delay) + 5
@@ -157,9 +154,13 @@ def import_line_financial_cp(self, data_chorus, index, source_region: str, annee
             _check_siret(new_cp.siret)
 
             # CHORUS
+            id_ae = _get_ae_for_cp(new_cp.n_ej, new_cp.n_poste_ej)
             if financial_instance == True:
+                new_cp.id_ae = id_ae
                 _insert_financial_data(new_cp)
             else:
+                if (financial_instance.id_ae is None and id_ae is not None) :
+                    financial_instance.id_ae = id_ae
                 _update_financial_data(line, financial_instance, source_region, annee)
 
         except LimitHitError as e:
@@ -215,17 +216,18 @@ def _check_siret(siret):
     Raises:
         LimitHitError: Si le ratelimiter de l'API entreprise est déclenché
     """
-    siret_entity = update_siret_from_api_entreprise(siret, insert_only=True)
-    __check_commune(siret_entity.code_commune)
+    if siret is not None :
+        siret_entity = update_siret_from_api_entreprise(siret, insert_only=True)
+        __check_commune(siret_entity.code_commune)
 
-    try:
-        db.session.add(siret_entity)
-        db.session.commit()
-    except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-        LOGGER.exception(f"[IMPORT][FINANCIAL] Error sur ajout Siret {siret}")
-        raise e
+        try:
+            db.session.add(siret_entity)
+            db.session.commit()
+        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+            LOGGER.exception(f"[IMPORT][FINANCIAL] Error sur ajout Siret {siret}")
+            raise e
 
-    LOGGER.info(f"[IMPORT][FINANCIAL] Siret {siret} ajouté")
+        LOGGER.info(f"[IMPORT][FINANCIAL] Siret {siret} ajouté")
 
 def _check_insert_update_financial(get_instance: FinancialData | None, line, force_update: bool):
     '''
@@ -250,16 +252,48 @@ def _check_insert_update_financial(get_instance: FinancialData | None, line, for
     return True
 
 
-def _insert_financial_data(data: FinancialData):
+def _insert_financial_data(data: FinancialData) -> FinancialData:
     db.session.add(data)
     LOGGER.info('[IMPORT][FINANCIAL] Ajout ligne financière')
     db.session.commit()
+    return data
 
 
-def _update_financial_data(data, financial: FinancialData, code_source_region: str, annee: int):
+def _update_financial_data(data, financial: FinancialData, code_source_region: str, annee: int) -> FinancialData:
     financial.update_attribute(data)
 
     financial.source_region = code_source_region
     financial.annee = annee
     LOGGER.info('[IMPORT][FINANCIAL] Update ligne financière')
     db.session.commit()
+    return financial
+
+
+def _make_link_ae_to_cp(id_financial_ae: int, n_ej: str, n_poste_ej: int):
+    """
+    Lance une requête update pour faire le lien entre une AE et des CP
+    :param id_financial_ae: l'id d'une AE
+    :param n_ej : le numero d'ej
+    :parman n_poste_ej : le poste ej
+    :return:
+    """
+
+    stmt = (
+        update(FinancialCp).
+        where(FinancialCp.n_ej == n_ej).
+        where(FinancialCp.n_poste_ej == n_poste_ej).
+        values(id_ae=id_financial_ae)
+    )
+    db.session.execute(stmt)
+    db.session.commit()
+
+def _get_ae_for_cp(n_ej: str, n_poste_ej: int) -> int | None:
+    """
+    Récupère le bon AE pour le lié au CP
+    :param n_ej : le numero d'ej
+    :parman n_poste_ej : le poste ej
+    :return:
+    """
+
+    financial_ae = FinancialAe.query.filter_by(n_ej=n_ej, n_poste_ej=n_poste_ej).one_or_none()
+    return financial_ae.id if financial_ae is not None else None

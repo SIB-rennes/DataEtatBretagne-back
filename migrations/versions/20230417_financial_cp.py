@@ -36,7 +36,7 @@ def upgrade():
                     sa.Column('domaine_fonctionnel', sa.String(), nullable=False),
                     sa.Column('centre_couts', sa.String(), nullable=False),
                     sa.Column('referentiel_programmation', sa.String(), nullable=False),
-                    sa.Column('siret', sa.String(), nullable=False),
+                    sa.Column('siret', sa.String(), nullable=True),
                     sa.Column('groupe_marchandise', sa.String(), nullable=False),
                     sa.Column('localisation_interministerielle', sa.String(), nullable=False),
                     sa.Column('fournisseur_paye', sa.String(), nullable=False),
@@ -62,6 +62,8 @@ def upgrade():
                     sa.PrimaryKeyConstraint('n_dp')
                     )
 
+    # siret peut être null
+    op.execute("ALTER TABLE financial_ae ALTER COLUMN siret DROP NOT NULL")
 
     op.execute("ALTER TYPE datatype ADD VALUE 'FINANCIAL_DATA_AE'")
     op.execute("ALTER TYPE datatype ADD VALUE 'FINANCIAL_DATA_CP'")
