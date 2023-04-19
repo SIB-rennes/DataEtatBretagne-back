@@ -6,7 +6,7 @@ from app.controller.financial_data import check_param_import, parser_import
 from app.models.enums.ConnectionProfile import ConnectionProfile
 from app.services.financial_data import import_ae
 
-api = Namespace(name="Engament", path='/',
+api = Namespace(name="Engagement", path='/',
                 description='Api de  gestion des AE des données financières de l\'état')
 
 oidc = current_app.extensions['oidc']
