@@ -58,8 +58,8 @@ class FinancialCp(FinancialData, db.Model):
 
         self.update_attribute(line_chorus)
 
-    def do_update(self, new_financial):
-        return datetime.strptime(new_financial['date_derniere_operation_dp'], '%d.%m.%Y') > self.date_derniere_operation_dp
+    def do_update(self, new_financial:dict):
+        return True
 
     def __setattr__(self, key, value):
         if (key == 'n_ej' or key == 'n_poste_ej') and value == '#' :

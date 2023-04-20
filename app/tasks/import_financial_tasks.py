@@ -129,62 +129,49 @@ def import_line_financial_ae(self, data_chorus, index, source_region: str, annee
 
 @celery.task(bind=True, name='import_line_financial_cp', autoretry_for=(ChorusException,),
              retry_kwargs={'max_retries': 4, 'countdown': 10})
-def import_line_financial_cp(self, data_chorus, index, source_region: str, annee: int, force_update: bool):
-    line = json.loads(data_chorus)
+def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int, force_update: bool):
+    line = json.loads(data_cp)
     try:
-        get_instance = db.session.query(FinancialCp).filter_by(n_dp=line[FinancialCp.n_dp.key]).one_or_none()
-        financial_instance = _check_insert_update_financial(get_instance, line, force_update)
-    except sqlalchemy.exc.OperationalError as o:
-        LOGGER.exception(f"[IMPORT][CHORUS] Erreur index {index} sur le check ligne chorus")
-        raise ChorusException(o) from o
+        new_cp = FinancialCp(line, source_region=source_region, annee=annee)
 
-    if financial_instance != False:
-        try:
-            new_cp = FinancialCp(line, source_region=source_region, annee=annee)
+        _check_ref(CodeProgramme, new_cp.programme)
+        _check_ref(CentreCouts, new_cp.centre_couts)
+        _check_ref(DomaineFonctionnel, new_cp.domaine_fonctionnel)
+        _check_ref(FournisseurTitulaire, new_cp.fournisseur_paye)
+        _check_ref(GroupeMarchandise, new_cp.groupe_marchandise)
+        _check_ref(LocalisationInterministerielle, new_cp.localisation_interministerielle)
+        _check_ref(ReferentielProgrammation, new_cp.referentiel_programmation)
 
-            _check_ref(CodeProgramme, new_cp.programme)
-            _check_ref(CentreCouts, new_cp.centre_couts)
-            _check_ref(DomaineFonctionnel, new_cp.domaine_fonctionnel)
-            _check_ref(FournisseurTitulaire, new_cp.fournisseur_paye)
-            _check_ref(GroupeMarchandise, new_cp.groupe_marchandise)
-            _check_ref(LocalisationInterministerielle, new_cp.localisation_interministerielle)
-            _check_ref(ReferentielProgrammation, new_cp.referentiel_programmation)
+        # SIRET
+        _check_siret(new_cp.siret)
 
-            # SIRET
-            _check_siret(new_cp.siret)
+        # FINANCIAL_AE
+        id_ae = _get_ae_for_cp(new_cp.n_ej, new_cp.n_poste_ej)
+        new_cp.id_ae = id_ae
+        _insert_financial_data(new_cp)
 
-            # CHORUS
-            id_ae = _get_ae_for_cp(new_cp.n_ej, new_cp.n_poste_ej)
-            if financial_instance == True:
-                new_cp.id_ae = id_ae
-                _insert_financial_data(new_cp)
-            else:
-                if (financial_instance.id_ae is None and id_ae is not None) :
-                    financial_instance.id_ae = id_ae
-                _update_financial_data(line, financial_instance, source_region, annee)
+    except LimitHitError as e:
+        delay = (e.delay) + 5
+        LOGGER.info(
+            f"[IMPORT][FINANCIAL] Limite d'appel à l'API entreprise atteinte pour l'index {str(index)}. "
+            f"Ré essai de la tâche dans {str(delay)} secondes"
+        )
+        # XXX: max_retries=None ne désactive pas le mécanisme
+        # de retry max contrairement à ce que stipule la doc !
+        # on met donc un grand nombre.
+        self.retry(countdown=delay, max_retries=1000, retry_jitter=True)
 
-        except LimitHitError as e:
-            delay = (e.delay) + 5
-            LOGGER.info(
-                f"[IMPORT][FINANCIAL] Limite d'appel à l'API entreprise atteinte pour l'index {str(index)}. "
-                f"Ré essai de la tâche dans {str(delay)} secondes"
-            )
-            # XXX: max_retries=None ne désactive pas le mécanisme
-            # de retry max contrairement à ce que stipule la doc !
-            # on met donc un grand nombre.
-            self.retry(countdown=delay, max_retries=1000, retry_jitter=True)
+    except sqlalchemy.exc.IntegrityError as e:
+        msg = (
+            f"IntegrityError pour l'index {index}. "
+            "Cela peut être dû à un soucis de concurrence. On retente."
+        )
+        LOGGER.exception(f"[IMPORT][FINANCIAL] {msg}")
+        raise ChorusLineConcurrencyError(msg) from e
 
-        except sqlalchemy.exc.IntegrityError as e:
-            msg = (
-                f"IntegrityError pour l'index {index}. "
-                "Cela peut être dû à un soucis de concourrance. On retente."
-            )
-            LOGGER.exception(f"[IMPORT][FINANCIAL] {msg}")
-            raise ChorusLineConcurrencyError(msg) from e
-
-        except Exception as e:
-            LOGGER.exception(f"[IMPORT][FINANCIAL] erreur index {index}")
-            raise e
+    except Exception as e:
+        LOGGER.exception(f"[IMPORT][FINANCIAL] erreur index {index}")
+        raise e
 
 def _check_ref(model, code):
     instance = db.session.query(model).filter_by(code=code).one_or_none()

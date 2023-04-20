@@ -82,6 +82,25 @@ def test_import_new_line_cp_with_date_empty(app, test_db):
         assert data.id_ae is None
         assert data.date_base_dp is None
 
+
+def test_import_line_with_dp_exist(app, test_db):
+    #GIVEN
+    data_cp_exist = '{"programme":"723","domaine_fonctionnel":"0723-13","centre_couts":"BG00\/FIP0000035","referentiel_programmation":"BG00\/072300010133","n_ej":"1405886249","n_poste_ej":"1","n_dp":"12","date_base_dp":"#","date_derniere_operation_dp":"12.01.2023","n_sf":"#","data_sf":"#","fournisseur_paye":"23455","fournisseur_paye_label":"XXXX","siret":"2121212","compte_code":"PCE\/6115450000","compte_budgetaire":"D\u00e9penses de fonction","groupe_marchandise":"37.02.04","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\u00e9","localisation_interministerielle":"LOCMIN","montant":"400,2"}'
+    data_new_cp = '{"programme":"723","domaine_fonctionnel":"0723-13","centre_couts":"BG00\/FIP0000035","referentiel_programmation":"BG00\/072300010133","n_ej":"1405886249","n_poste_ej":"2","n_dp":"12","date_base_dp":"#","date_derniere_operation_dp":"12.01.2023","n_sf":"#","data_sf":"#","fournisseur_paye":"23455","fournisseur_paye_label":"XXXX","siret":"2121212","compte_code":"PCE\/6115450000","compte_budgetaire":"D\u00e9penses de fonction","groupe_marchandise":"37.02.04","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\u00e9","localisation_interministerielle":"LOCMIN","montant":"400,2"}'
+    financial_cp_1 = FinancialCp(json.loads(data_cp_exist), annee=2023, source_region="53")
+    test_db.session.add(financial_cp_1)
+    test_db.session.commit()
+
+    # DO
+    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise',
+               return_value=Siret(**{'code': '2121212', 'code_commune': "35099"})):
+        import_line_financial_cp(data_new_cp, 0,"53",2023, False)
+
+    # ASSERT
+    with app.app_context():
+        data = FinancialCp.query.filter_by(n_dp="12").all()
+        assert len(data) == 2
+
 def test_import_new_line_cp_with_ae(app, test_db):
     # GIVEN
     data_cp = '{"programme":"152","domaine_fonctionnel":"0152-04-01","centre_couts":"BG00\\/GN5GDPL044","referentiel_programmation":"BG00\\/015234300101","n_ej":"2103105755","n_poste_ej":"5","n_dp":100011636,"date_base_dp":"25.12.2022","date_derniere_operation_dp":"18.01.2023","n_sf":"#","data_sf":"#","fournisseur_paye":"1400875965","fournisseur_paye_label":"AE EXIST","siret":"#","compte_code":"PCE\\/6113110000","compte_budgetaire":"D\\u00e9penses de fonction","groupe_marchandise":"36.01.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"S198063","montant":"252"}'
