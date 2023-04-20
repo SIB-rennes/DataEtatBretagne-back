@@ -32,8 +32,8 @@ class FinancialCp(FinancialData, db.Model):
 
 
     # Autre colonne
-    date_base_dp: datetime = Column(DateTime, nullable=False)
-    date_derniere_operation_dp: datetime = Column(DateTime, nullable=False)
+    date_base_dp: datetime = Column(DateTime, nullable=True)
+    date_derniere_operation_dp: datetime = Column(DateTime, nullable=True)
 
     compte_budgetaire: str = Column(String(255), nullable= True)
     contrat_etat_region: str = Column(String(255), nullable= True)
@@ -62,8 +62,11 @@ class FinancialCp(FinancialData, db.Model):
         if (key == 'n_ej' or key == 'n_poste_ej') and value == '#' :
             value = None
 
-        if (key == "date_base_dp" or key == "date_derniere_operation_dp") and isinstance(value, str) :
-            value = datetime.strptime(value, '%d.%m.%Y')
+        if (key == "date_base_dp" or key == "date_derniere_operation_dp") and  isinstance(value, str) :
+            if value == '#':
+                value = None
+            else:
+                value = datetime.strptime(value, '%d.%m.%Y')
 
         super().__setattr__(key, value)
 
