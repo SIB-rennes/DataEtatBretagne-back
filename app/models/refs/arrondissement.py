@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String
 
-from app import db
+from app import db, ma
 from app.models.common.Audit import Audit
 
 
@@ -14,4 +14,9 @@ class Arrondissement(Audit, db.Model):
 
     label: str= Column(String)
 
+
+class ArrondissementSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Arrondissement
+        exclude = Arrondissement.exclude_schema()
 
