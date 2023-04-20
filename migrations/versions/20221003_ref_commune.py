@@ -74,7 +74,7 @@ def _insert_ref():
         for index, programme in data_frame.iterrows():
             commune = session.query(Commune).filter_by(**{'code_commune': programme['insee_com']}).one_or_none()
             if commune is None:
-                commune = Commune(code_commune=programme['insee_com'], code_crte=programme["id_crte"],
+                commune = Commune(code=programme['insee_com'], code_crte=programme["id_crte"],
                                       label_crte=programme["lib_crte"], label_commune=programme["lib_com"])
                 session.add(commune)
                 session.commit()
