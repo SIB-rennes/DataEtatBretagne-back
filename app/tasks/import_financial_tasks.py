@@ -54,7 +54,7 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int, forc
     LOGGER.info(f'[IMPORT][FINANCIAL][CP] Start for region {source_region}, year {annee}, file {fichier}')
     try:
         data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialCp.get_columns_files_cp(),
-                                      dtype={'programme': str, 'n_ej': str, 'n_poste_ej': str, 'n_dp': int,
+                                      dtype={'programme': str, 'n_ej': str, 'n_poste_ej': str, 'n_dp': str,
                                              'fournisseur_paye': str,
                                              'siret': str})
         for index, chorus_data in data_chorus.iterrows():
