@@ -27,6 +27,7 @@ def upgrade():
     op.execute('ALTER TABLE financial_ae ADD CONSTRAINT  unique_ej_poste_ej UNIQUE (n_ej, n_poste_ej)')
 
     op.create_table('financial_cp',
+                    sa.Column('id', sa.Integer(), nullable=False),
                     sa.Column('n_dp', sa.String(), nullable=False),
                     sa.Column('id_ae', sa.Integer(), nullable=True),
                     sa.Column('n_ej', sa.String(), nullable=True),
@@ -59,7 +60,7 @@ def upgrade():
                     sa.ForeignKeyConstraint(['referentiel_programmation'], ['ref_programmation.code'], ),
                     sa.ForeignKeyConstraint(['siret'], ['ref_siret.code'], ),
                     sa.ForeignKeyConstraint(['source_region'], ['ref_region.code'], ),
-                    sa.PrimaryKeyConstraint('n_dp')
+                    sa.PrimaryKeyConstraint('id')
                     )
 
     # siret peut être null

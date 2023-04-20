@@ -10,7 +10,10 @@ from app.models.financial import FinancialData
 class FinancialCp(FinancialData, db.Model):
     __tablename__ = 'financial_cp'
     # PK
-    n_dp: str = Column(String, primary_key=True)
+    id: int = Column(Integer, primary_key=True)
+
+    # numero de la dépense (non unique).
+    n_dp: str = Column(String, nullable=False)
 
     # FK AE
     id_ae: int = Column(Integer, ForeignKey('financial_ae.id'), nullable=True)
