@@ -5,7 +5,7 @@ import os
 import pandas
 import sqlalchemy.exc
 from celery import subtask
-from sqlalchemy import update
+from sqlalchemy import update, delete
 
 from app import db, celeryapp
 from app.exceptions.exceptions import ChorusException,ChorusLineConcurrencyError
@@ -49,7 +49,7 @@ def import_file_ae_financial(self, fichier, source_region: str, annee: int, forc
         raise e
 
 @celery.task(bind=True, name='import_file_cp_financial')
-def import_file_cp_financial(self, fichier, source_region: str, annee: int, force_update: bool):
+def import_file_cp_financial(self, fichier, source_region: str, annee: int):
     # get file
     LOGGER.info(f'[IMPORT][FINANCIAL][CP] Start for region {source_region}, year {annee}, file {fichier}')
     try:
@@ -57,8 +57,9 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int, forc
                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': str, 'n_dp': str,
                                              'fournisseur_paye': str,
                                              'siret': str})
+        _delete_cp(annee, source_region)
         for index, chorus_data in data_chorus.iterrows():
-            subtask("import_line_financial_cp").delay(chorus_data.to_json(), index, source_region, annee, force_update)
+            subtask("import_line_financial_cp").delay(chorus_data.to_json(), index, source_region, annee)
 
         os.remove(fichier)
         LOGGER.info('[IMPORT][FINANCIAL][CP] End')
@@ -129,7 +130,7 @@ def import_line_financial_ae(self, data_chorus, index, source_region: str, annee
 
 @celery.task(bind=True, name='import_line_financial_cp', autoretry_for=(ChorusException,),
              retry_kwargs={'max_retries': 4, 'countdown': 10})
-def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int, force_update: bool):
+def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int):
     line = json.loads(data_cp)
     try:
         new_cp = FinancialCp(line, source_region=source_region, annee=annee)
@@ -255,6 +256,21 @@ def _update_financial_data(data, financial: FinancialData, code_source_region: s
     db.session.commit()
     return financial
 
+
+def _delete_cp(annee: int, source_region: str):
+    """
+    Supprimes CP d'une année comptable
+    :param annee:
+    :param source_region:
+    :return:
+    """
+    stmt = (
+        delete(FinancialCp).
+        where(FinancialCp.annee == annee).
+        where(FinancialCp.source_region == source_region)
+    )
+    db.session.execute(stmt)
+    db.session.commit()
 
 def _make_link_ae_to_cp(id_financial_ae: int, n_ej: str, n_poste_ej: int):
     """

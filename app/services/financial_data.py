@@ -25,13 +25,13 @@ def import_ae(file_ae, source_region:str, annee: int, force_update: bool, userna
     return task
 
 
-def import_cp(file_cp, source_region:str, annee: int, force_update: bool, username=""):
+def import_cp(file_cp, source_region:str, annee: int, username=""):
     save_path = _check_file_and_save(file_cp)
     _check_file(save_path, FinancialCp.get_columns_files_cp())
 
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
     from app.tasks.import_financial_tasks import import_file_cp_financial
-    task = import_file_cp_financial.delay(str(save_path), source_region, annee, force_update)
+    task = import_file_cp_financial.delay(str(save_path), source_region, annee)
     db.session.add(AuditUpdateData(username=username, filename=file_cp.filename, data_type=DataType.FINANCIAL_DATA_CP))
     db.session.commit()
     return task
