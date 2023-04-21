@@ -25,6 +25,20 @@ def upgrade():
     _upgrade_tables()
     _add_columns_audit()
 
+    #Audit
+    op.execute('CREATE SCHEMA if not exists audit')
+
+    op.create_table('audit_update_data',
+                    sa.Column('id', sa.Integer(), nullable=False),
+                    sa.Column('username', sa.String(), nullable=False),
+                    sa.Column('filename', sa.String(), nullable=False),
+                    sa.Column('data_type', sa.Enum('FINANCIAL_DATA', 'FRANCE_RELANCE', 'REFERENTIEL', name='datatype'),
+                              nullable=False),
+                    sa.Column('date', sa.DateTime(timezone=True), nullable=False),
+                    sa.PrimaryKeyConstraint('id'),
+                    schema='audit'
+                    )
+
     # ### end Alembic commands ###
 
 
@@ -64,6 +78,12 @@ def downgrade():
 
     op.add_column('ref_siret', sa.Column('longitude', sa.DOUBLE_PRECISION(precision=53), autoincrement=False, nullable=True))
     op.add_column('ref_siret', sa.Column('latitude', sa.DOUBLE_PRECISION(precision=53), autoincrement=False, nullable=True))
+
+    op.drop_table('audit_update_data', schema='audit')
+
+    sql_drop_type = "DROP TYPE datatype"
+    op.execute(sql_drop_type)
+
     # ### end Alembic commands ###
 
 

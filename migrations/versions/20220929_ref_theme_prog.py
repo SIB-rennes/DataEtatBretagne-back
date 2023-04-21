@@ -13,8 +13,8 @@ from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.theme import Theme
 
 # revision identifiers, used by Alembic.
-revision = '20220929_ref_theme_label_prog'
-down_revision = '20220929_ref_theme'
+revision = '20220929_ref_theme_prog'
+down_revision = '20220919_init_budget'
 branch_labels = None
 depends_on = None
 

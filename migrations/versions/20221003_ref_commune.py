@@ -17,7 +17,7 @@ from app.models.refs.commune import Commune
 
 # revision identifiers, used by Alembic.
 revision = '20221003_ref_commune'
-down_revision = '20220929_ref_theme_label_prog'
+down_revision = '20220929_ref_theme_prog'
 branch_labels = None
 depends_on = None
 
