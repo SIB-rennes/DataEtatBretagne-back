@@ -78,8 +78,35 @@ def upgrade():
     op.execute("ALTER TABLE audit.audit_update_data ALTER COLUMN data_type TYPE datatype USING data_type::text::datatype;")
     op.execute( "DROP TYPE datatype_old")
 
+    #ARRONDISSEMENT
+    op.create_table('ref_arrondissement',
+                    sa.Column('id', sa.Integer(), nullable=False),
+                    sa.Column('code', sa.String(), nullable=False),
+                    sa.Column('code_region', sa.String(), nullable=True),
+                    sa.Column('code_departement', sa.String(), nullable=True),
+                    sa.Column('label', sa.String(), nullable=True),
+                    sa.Column('created_at', sa.DateTime(), nullable=True),
+                    sa.Column('updated_at', sa.DateTime(), nullable=True),
+                    sa.PrimaryKeyConstraint('id'),
+                    sa.UniqueConstraint('code')
+                    )
+
+    with op.batch_alter_table('ref_commune', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('code_arrondissement', sa.String(), nullable=True))
+        batch_op.create_foreign_key(None, 'ref_arrondissement', ['code_arrondissement'], ['code'])
+
+    op.execute("ALTER TABLE public.ref_commune RENAME COLUMN code_commune TO code")
+
+
+
 def downgrade():
     op.drop_table('financial_cp')
+    op.execute("ALTER TABLE public.ref_commune RENAME COLUMN code TO code_commune")
+
+    op.execute("ALTER TABLE public.ref_commune DROP COLUMN code_arrondissement")
+    op.drop_table('ref_arrondissement')
+
+
     op.execute('ALTER TABLE financial_ae DROP CONSTRAINT financial_ae_pkey')
     op.execute('ALTER TABLE financial_ae DROP COLUMN id')
     op.execute('ALTER TABLE IF EXISTS  financial_ae RENAME TO data_chorus')

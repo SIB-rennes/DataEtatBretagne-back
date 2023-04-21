@@ -200,10 +200,10 @@ def _check_ref(model, code):
 
 
 def __check_commune(code):
-    instance = db.session.query(Commune).filter_by(code_commune=code).one_or_none()
+    instance = db.session.query(Commune).filter_by(code=code).one_or_none()
     if not instance:
         LOGGER.info('[IMPORT][COMMUNE] Ajout commune %s', code)
-        commune = Commune(code_commune = code)
+        commune = Commune(code = code)
         try:
             commune = maj_one_commune(commune)
             db.session.add(commune)

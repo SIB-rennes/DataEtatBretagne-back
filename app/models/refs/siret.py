@@ -11,7 +11,7 @@ class Siret(Audit, db.Model):
     code: str = Column(String, unique=True, nullable=False)
 
     #FK
-    code_commune = Column(String, db.ForeignKey('ref_commune.code_commune'), nullable=False)
+    code_commune = Column(String, db.ForeignKey('ref_commune.code'), nullable=False)
     categorie_juridique = Column(String, db.ForeignKey('ref_categorie_juridique.code'), nullable=True)
 
     denomination = Column(String)
