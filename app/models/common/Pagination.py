@@ -5,9 +5,9 @@ from app.models.utils import _InstrumentForFlaskRestx
 
 @dataclasses.dataclass
 class Pagination(metaclass=_InstrumentForFlaskRestx):
-    total_rows: int
+    totalRows: int
     page: int
-    page_size:int
+    pageSize:int
 
     def to_json(self):
         """Returns a JSON  representation of the pagination object.
@@ -16,7 +16,7 @@ class Pagination(metaclass=_InstrumentForFlaskRestx):
             dict: The dictionary representation of the pagination object.
         """
         return {
-            'totalRows': self.total_rows,
+            'totalRows': self.totalRows,
             'page': self.page,
-            'pageSize': self.page_size
+            'pageSize': self.pageSize
         }
