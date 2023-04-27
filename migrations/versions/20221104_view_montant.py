@@ -34,8 +34,7 @@ def upgrade():
 
 
 def downgrade():
+    op.execute('DROP VIEW public.montant_par_niveau_bop_annee_type')
     op.execute('DROP VIEW public.montant_par_commune_type')
-    op.execute('DROP VIEW public.montant_par_commune_theme')
+    op.execute('DROP VIEW public.montant_par_commune_type_theme')
     op.execute('DROP VIEW public.montant_par_commune')
-    op.execute('DROP VIEW public.view_programme_annee_type')
-
