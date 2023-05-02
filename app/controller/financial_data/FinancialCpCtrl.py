@@ -22,13 +22,8 @@ class FinancialCpImport(Resource):
     def post(self):
         data = request.form
         file_cp = request.files['fichier']
-        force_update = False
-        if 'force_update' in data and data['force_update'] == 'true':
-            force_update = True
 
         username = g.oidc_token_info['username'] if hasattr(g,'oidc_token_info') and 'username' in g.oidc_token_info else ''
 
-        task = import_cp(file_cp,data['code_region'],int(data['annee']), force_update, username)
+        task = import_cp(file_cp,data['code_region'],int(data['annee']),username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import des engaments des données fiancières de l\'état en cours (taches asynchrone id = {task.id}'})
-
-
