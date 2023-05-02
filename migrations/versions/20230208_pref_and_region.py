@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 import wget
 from sqlalchemy import orm
+from sqlalchemy import Column, String
 
-from app.models.refs.region import Region
 
 # revision identifiers, used by Alembic.
 revision = "20230208_pref_and_region"
@@ -22,6 +22,17 @@ depends_on = None
 
 # Liste des regions millésime 2022
 url_csv = "https://www.data.gouv.fr/fr/datasets/r/c850b7d0-bc8f-44a2-b495-1debc438789d"
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+class _Base(orm.DeclarativeBase):
+    pass
+class _Region(_Base):
+    __tablename__ = 'ref_region'
+    id = Column(sa.Integer, primary_key=True)
+    code = Column(String, unique=True, nullable=False)
+    label = Column(String)
 
 
 def upgrade():
@@ -112,17 +123,18 @@ def _insert_ref():
             libelle = str(region["LIBELLE"])
 
             region = (
-                session.query(Region).filter_by(**{"code": code_insee}).one_or_none()
+                session.query(_Region).filter_by(**{"code": code_insee}).one_or_none()
             )
 
             if region is None:
-                region = Region(code=code_insee, label=libelle)
+                region = _Region(code=code_insee, label=libelle)
                 session.add(region)
                 session.commit()
             else:
-                logging.getLogger("flask_migrate").info(
-                    f"Ignore ligne {index}, code insee: {region['REG']}, label: {region['LIBELLE']}"
+                logger.info(
+                    f"Ignore ligne {index}"
+                    ", code insee: {region['REG']}, label: {region['LIBELLE']}"
                 )
     except Exception as e:
-        session.rollback()
-        print(e)
+        logger.exception(e)
+        raise
