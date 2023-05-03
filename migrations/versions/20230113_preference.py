@@ -23,7 +23,7 @@ def upgrade():
 
     op.create_table('preference_users',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('uuid', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('uuid', sa.String(), nullable=False),
     sa.Column('username', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('filters', sa.JSON(), nullable=False),
