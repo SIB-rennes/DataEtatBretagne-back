@@ -13,7 +13,7 @@ class Preference(db.Model):
     id = Column(Integer, primary_key=True, nullable = False)
 
     # uuid
-    uuid = Column( Text(length=36) , nullable=False, default=uuid.uuid4)
+    uuid: str = Column( Text(length=36) , nullable=False, default=uuid.uuid4)
     # user
     username = Column(String, nullable = False)
     name = Column(String, nullable = False)

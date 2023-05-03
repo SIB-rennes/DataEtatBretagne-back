@@ -76,14 +76,14 @@ def build_ref_controller(cls, namespace: Namespace, help_query="Recherche sur le
     @api.route('/<code>')
     @api.doc(model=model_single_api)
     class RefByCode(Resource):
-        @oidc.accept_token(require_token=True, scopes_required=['openid'])
+        #@oidc.accept_token(require_token=True, scopes_required=['openid'])
         @api.doc(security="Bearer")
         @api.response(200, 'Success', model_single_api)
         def get(self, code):
             try:
                 result = db.session.execute(db.select(cls).filter_by(code=code)).scalar_one()
-                centre_cout_schema = schema()
-                result = centre_cout_schema.dump(result)
+                schema_m = schema()
+                result = schema_m.dump(result)
                 return result, 200
             except NoResultFound:
                 return "", 404
