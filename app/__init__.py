@@ -98,13 +98,6 @@ def read_config(app, extra_config_settings):
         app.config['SQLALCHEMY_ECHO'] = True
         logging.getLogger().setLevel(logging.DEBUG)
 
-    #Avec la mise en place des __bind_key__, il faut configurer le SQLALCHEMY_BINDS
-    if ('SQLALCHEMY_BINDS' not in app.config):
-        app.config['SQLALCHEMY_BINDS']= {
-          'settings':  app.config['SQLALCHEMY_DATABASE_URI'] + '?options=-c%20search_path=settings',
-          'audit':  app.config['SQLALCHEMY_DATABASE_URI'] + '?options=-c%20search_path=audit'
-        }
-
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 def _expose_endpoint(app: Flask):

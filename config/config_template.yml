@@ -1,7 +1,22 @@
 DEBUG: true
 
-SQLALCHEMY_DATABASE_URI : "postgresql://postgres:password@localhost:5432/CHORUS"
+ # Connexion à la BDD principal de Chorus
+SQLALCHEMY_DATABASE_URI : "postgresql+psycopg://postgres:password@localhost:5432/CHORUS"
 
+ # préciser les connections au BDD d'audit et de settings
+SQLALCHEMY_BINDS:
+  audit: #schema audit
+    url: "postgresql+psycopg://postgres:password@localhost:5432/CHORUS?options=-c%20search_path=audit"
+    pool_pre_ping: True
+    pool_recycle: 30
+  settings:  #schema audit
+    url: "postgresql+psycopg://postgres:password@localhost:5432/CHORUS?options=-c%20search_path=settings"
+    pool_pre_ping: True
+    pool_recycle: 30
+
+SQLALCHEMY_ENGINE_OPTIONS:
+  pool_pre_ping: True
+  pool_recycle: 30
 
 CELERY_BROKER_URL: 'redis://localhost:6379/1'
 result_backend: "postgresql://postgres:password@localhost:5432/tasks"
@@ -9,9 +24,6 @@ result_backend: "postgresql://postgres:password@localhost:5432/tasks"
 SECRET_KEY: "OIDC"
 
 UPLOAD_FOLDER: "c:\\toWatch"
-
-
-
 
 KEYCLOAK_ADMIN:
   URL: <url>
