@@ -175,7 +175,7 @@ def import_line_financial_cp(self, data_cp, index, source_region: str, annee: in
         raise e
 
 def _check_ref(model, code):
-    instance = db.session.query(model).filter_by(code=code).one_or_none()
+    instance = db.session.query(model).filter_by(code=str(code)).one_or_none()
     if not instance:
         instance = model(**{'code':code})
         LOGGER.info(f'[IMPORT][REF] Ajout ref {model.__tablename__} code {code}')
@@ -297,6 +297,8 @@ def _get_ae_for_cp(n_ej: str, n_poste_ej: int) -> int | None:
     :parman n_poste_ej : le poste ej
     :return:
     """
+    if n_ej is None or n_poste_ej is None :
+        return None
 
-    financial_ae = FinancialAe.query.filter_by(n_ej=n_ej, n_poste_ej=n_poste_ej).one_or_none()
+    financial_ae = FinancialAe.query.filter_by(n_ej=str(n_ej), n_poste_ej=int(n_poste_ej)).one_or_none()
     return financial_ae.id if financial_ae is not None else None

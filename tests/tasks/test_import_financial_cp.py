@@ -39,7 +39,7 @@ def test_import_new_line_cp_without_ae(app, test_db):
     data = '{"programme":"101","domaine_fonctionnel":"0101-01","centre_couts":"BG00\\/DSJCARE035","referentiel_programmation":"BG00\\/010101010113","n_ej":"#","n_poste_ej":"#","n_dp":500043027,"date_base_dp":"31.12.2022","date_derniere_operation_dp":"25.01.2023","n_sf":"#","data_sf":"#","fournisseur_paye":1001477845,"fournisseur_paye_label":"SANS AE","siret":"84442098400016","compte_code":"PCE\\/6512300000","compte_budgetaire":"Transferts aux m\\u00e9nag","groupe_marchandise":"#","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N","montant":"28,26"}'
 
     #DO
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise', return_value=Siret(**{'code':'84442098400016', 'code_commune':"35099"})):
+    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise', return_value=Siret(**{'code':'81412098400016', 'code_commune':"35099"})):
         import_line_financial_cp(data, 0,"35",2023)
 
         # ASSERT
@@ -111,7 +111,7 @@ def test_import_new_line_cp_with_ae(app, test_db):
 
     # DO
     with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise',
-               return_value=Siret(**{'code': '84442098400016', 'code_commune': "35099"})):
+               return_value=Siret(**{'code': '00000002121212', 'code_commune': "35099"})):
         import_line_financial_cp(data_cp, 0, "35", 2023)
 
     with app.app_context():
