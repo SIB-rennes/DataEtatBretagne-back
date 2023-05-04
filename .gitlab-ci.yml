@@ -69,7 +69,7 @@ docker-build-tags:
     IMAGE: "${REGISTRY}nocode/data-transform"
     DOCKERFILE: "Dockerfile"
   before_script:
-    - export VERSION_IMAGE="${CI_COMMIT_REF_NAME}"
+    - export VERSION_IMAGE="${CI_COMMIT_REF_SLUG}"
 
 
 deploy-integ-tag:
@@ -77,7 +77,7 @@ deploy-integ-tag:
   only:
     - tags
   before_script:
-    - export VERSION=":${CI_COMMIT_REF_NAME}"
+    - export VERSION=":${CI_COMMIT_REF_SLUG}"
 
 deploy-integ-snapshot:
   extends: .deploy-integ

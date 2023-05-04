@@ -16,6 +16,7 @@ from app import celeryapp, mailapp
 from flask_cors import CORS
 
 
+
 db = SQLAlchemy()
 ma = Marshmallow()
 
