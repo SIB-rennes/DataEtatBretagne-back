@@ -6,3 +6,5 @@
 /tests/database.db
 /tests/tasks/database.db
 /test.py
+/tests/settings.db
+/tests/meta_audit.db

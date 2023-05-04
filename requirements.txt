@@ -1,7 +1,8 @@
 --extra-index-url https://repository.csm.ovh/repository/pypi-group/simple
-flask==2.2.3
+flask==2.2.5
 openpyxl==3.0.10
-psycopg2-binary==2.9.5
+psycopg==3.1.9
+psycopg-binary==3.1.9
 flask-oidc===1.4.0
 itsdangerous==2.0.1 #besoin pour flask-oidc (besoin de la version 2.0.1)
 Flask-Migrate==4.0.4

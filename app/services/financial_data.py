@@ -9,50 +9,75 @@ from app import db
 from app.exceptions.exceptions import InvalidFile
 from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.DataType import DataType
-from app.models.financial.Chorus import Chorus
+from app.models.financial.FinancialCp import FinancialCp
+from app.models.financial.FinancialAe import FinancialAe
 from app.services import allowed_file, FileNotAllowedException
 
-def import_ae(file_chorus, source_region:str ,annee: int, force_update: bool,username=""):
+def import_ae(file_ae, source_region:str, annee: int, force_update: bool, username=""):
+    save_path = _check_file_and_save(file_ae)
+    _check_file(save_path, FinancialAe.get_columns_files_ae())
 
-    if file_chorus.filename == '':
+    logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
+    from app.tasks.import_financial_tasks import import_file_ae_financial
+    task = import_file_ae_financial.delay(str(save_path), source_region, annee, force_update)
+    db.session.add(AuditUpdateData(username=username, filename=file_ae.filename, data_type=DataType.FINANCIAL_DATA_AE))
+    db.session.commit()
+    return task
+
+
+def import_cp(file_cp, source_region:str, annee: int, username=""):
+    save_path = _check_file_and_save(file_cp)
+    _check_file(save_path, FinancialCp.get_columns_files_cp())
+
+    logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
+    from app.tasks.import_financial_tasks import import_file_cp_financial
+    task = import_file_cp_financial.delay(str(save_path), source_region, annee)
+    db.session.add(AuditUpdateData(username=username, filename=file_cp.filename, data_type=DataType.FINANCIAL_DATA_CP))
+    db.session.commit()
+    return task
+
+def _check_file_and_save(file) -> str:
+    if file.filename == '':
         raise InvalidFile(message="Pas de fichier")
 
-    if file_chorus and allowed_file(file_chorus.filename):
+    if file and allowed_file(file.filename):
 
-        filename = secure_filename(file_chorus.filename)
+        filename = secure_filename(file.filename)
         if 'UPLOAD_FOLDER' in current_app.config:
             save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-        else :
+        else:
             save_path = os.path.join(tempfile.gettempdir(), filename)
-        file_chorus.save(save_path)
-        check_file(save_path)
-
-        logging.info(f'[IMPORT CHORUS] Récupération du fichier {filename}')
-        from app.tasks.import_chorus_tasks import import_file_ae_chorus
-        task = import_file_ae_chorus.delay(str(save_path), source_region, annee, force_update)
-
-        db.session.add(AuditUpdateData(username=username, filename=file_chorus.filename,data_type=DataType.FINANCIAL_DATA))
-        db.session.commit()
-        return task
+        file.save(save_path)
+        return save_path
     else:
-        logging.error(f'[IMPORT CHORUS] Fichier refusé {file_chorus.filename}')
+        logging.error(f'[IMPORT FINANCIAL] Fichier refusé {file.filename}')
         raise FileNotAllowedException(message='le fichier n\'est pas un csv')
 
 
 
+def _check_file(fichier, columns_name):
 
-def check_file(fichier):
     try:
-        data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, nrows=5,
-                                      names=Chorus.get_columns_files_ae(),
-                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': int,
-                                                     'fournisseur_titulaire': str,
-                                                     'siret': 'str'})
+        check_column = pandas.read_csv(fichier, sep=",", skiprows=8, nrows=5)
     except Exception:
-        logging.exception(msg="[CHECK FILE]Erreur de lecture du fichier")
+        logging.exception(msg="[CHECK FILE] Erreur de lecture du fichier")
         raise FileNotAllowedException(message="Erreur de lecture du fichier")
 
-    if data_chorus.isnull().values.any():
+    # check nb colonnes
+    if len(check_column.columns) != len(columns_name):
+        raise InvalidFile(message="Le fichier n'a pas les bonnes colonnes")
+
+    try:
+        data_financial = pandas.read_csv(fichier, sep=",", skiprows=8, nrows=5,
+                                      names=columns_name,
+                                       dtype={'n_ej': str, 'n_poste_ej': str,
+                                                     'fournisseur_titulaire': str,
+                                                     'siret': str})
+    except Exception:
+        logging.exception(msg="[CHECK FILE] Erreur de lecture du fichier")
+        raise FileNotAllowedException(message="Erreur de lecture du fichier")
+
+    if data_financial.isnull().values.any():
         raise InvalidFile(message="Le fichier contient des valeurs vides")
 
 

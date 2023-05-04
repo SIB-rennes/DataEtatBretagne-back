@@ -8,13 +8,12 @@ from app import db, ma
 
 class Preference(db.Model):
     __tablename__ = 'preference_users'
-    __table_args__ = {'schema': 'settings'}
     __bind_key__ = "settings"
     # PK
     id = Column(Integer, primary_key=True, nullable = False)
 
     # uuid
-    uuid = Column( Text(length=36) , nullable=False, default=uuid.uuid4)
+    uuid: str = Column( Text(length=36) , nullable=False, default=uuid.uuid4)
     # user
     username = Column(String, nullable = False)
     name = Column(String, nullable = False)
@@ -34,13 +33,12 @@ class Preference(db.Model):
 
 class Share(db.Model):
     __tablename__ = 'share_preference'
-    __table_args__ = {'schema': 'settings'}
     __bind_key__ = "settings"
     # PK
     id = Column(Integer, primary_key=True, nullable = False)
 
     # FK
-    preference_id = db.Column(Integer, db.ForeignKey('settings.preference_users.id'))
+    preference_id = db.Column(Integer, db.ForeignKey('preference_users.id'))
     shared_username_email = db.Column(String, nullable = False)
     email_send = db.Column(Boolean, nullable = False, default = False)
     date_email_send =  db.Column(DateTime, nullable = True)

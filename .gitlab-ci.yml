@@ -36,7 +36,7 @@ run_tests:
     IMAGE: ""
     DOCKERFILE: ""
   script:
-    - if [[ $VERSION_IMAGE == ""]]; then  echo "VERSION NOT SET"; VERSION_IMAGE=${CI_COMMIT_REF_NAME}-snapshot; fi
+    - if [[ $VERSION_IMAGE == ""]]; then  echo "VERSION NOT SET"; VERSION_IMAGE=${CI_COMMIT_REF_SLUG}-snapshot; fi
     - echo ${VERSION_IMAGE}
     - echo $IMAGE
     - docker build -f ${DOCKERFILE} -t ${IMAGE} .
@@ -55,7 +55,7 @@ docker-build-snapshot:
     - /^fix.*$/
     - /^hotfix.*$/
   variables:
-    IMAGE: "${REGISTRY}nocode/data-transform/${CI_COMMIT_REF_NAME}"
+    IMAGE: "${REGISTRY}nocode/data-transform/${CI_COMMIT_REF_SLUG}"
     DOCKERFILE: "Dockerfile"
   before_script:
     - export VERSION_IMAGE="${CI_COMMIT_SHA:0:8}-snapshot"
@@ -69,7 +69,7 @@ docker-build-tags:
     IMAGE: "${REGISTRY}nocode/data-transform"
     DOCKERFILE: "Dockerfile"
   before_script:
-    - export VERSION_IMAGE="${CI_COMMIT_REF_NAME}"
+    - export VERSION_IMAGE="${CI_COMMIT_REF_SLUG}"
 
 
 deploy-integ-tag:
@@ -77,7 +77,7 @@ deploy-integ-tag:
   only:
     - tags
   before_script:
-    - export VERSION=":${CI_COMMIT_REF_NAME}"
+    - export VERSION=":${CI_COMMIT_REF_SLUG}"
 
 deploy-integ-snapshot:
   extends: .deploy-integ
@@ -90,4 +90,4 @@ deploy-integ-snapshot:
     - /^fix.*$/
   when: manual
   before_script:
-    - export VERSION="/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHA:0:8}-snapshot"
+    - export VERSION="/${CI_COMMIT_REF_SLUG}:${CI_COMMIT_SHA:0:8}-snapshot"
