@@ -4,6 +4,7 @@ from flask_restx import Api, Namespace
 from app.controller.ref_controller.RefController import build_ref_controller
 from app.controller.ref_controller.RefCrte import api as crte_api
 from app.controller.ref_controller.RefLocalisationInterministerielle import api as api_loc_interministerielle
+from app.models.refs.arrondissement import Arrondissement
 # models
 from app.models.refs.centre_couts import CentreCouts
 from app.models.refs.code_programme import CodeProgramme
@@ -53,6 +54,11 @@ api_ref_ministere = build_ref_controller(Ministere,
                                          description='API referentiels des ministères')
                                )
 
+api_ref_arrondissement = build_ref_controller(Arrondissement,
+                               Namespace(name="Arrondissement", path='/arrondissement',
+                                         description='API referentiels des arrondissements')
+                               )
+
 
 api.add_namespace(api_auth)
 
@@ -64,3 +70,4 @@ api.add_namespace(api_domaine)
 api.add_namespace(api_centre_cout)
 api.add_namespace(api_groupe_marchandise)
 api.add_namespace(crte_api)
+api.add_namespace(api_ref_arrondissement)

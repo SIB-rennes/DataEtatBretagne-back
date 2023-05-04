@@ -8,14 +8,23 @@ Create Date: 2022-10-03 15:11:58.280170
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import orm
-
-from app.models.refs.categorie_juridique import CategorieJuridique
+from sqlalchemy import Column, String
 
 # revision identifiers, used by Alembic.
 revision = '20221004_ref_cat_juridique'
 down_revision = '20221003_ref_commune'
 branch_labels = None
 depends_on = None
+
+class _Base(orm.DeclarativeBase):
+    pass
+class _CategorieJuridique(_Base):
+    __tablename__ = 'ref_categorie_juridique'
+    id = sa.Column(sa.Integer, primary_key=True)
+    code: str = Column(String, unique=True, nullable=False)
+    type: str = Column(String)
+    label: str = Column(String)
+
 
 categorieJuridique = {"0000": "Collectivité",
                       "1000": "",
@@ -295,7 +304,7 @@ def upgrade():
 
     # insert data
     for code in categorieJuridique :
-        categorie = CategorieJuridique(code = code, type = None if categorieJuridique[code] == "" else categorieJuridique[code] )
+        categorie = _CategorieJuridique(code = code, type = None if categorieJuridique[code] == "" else categorieJuridique[code] )
         session.add(categorie)
         session.commit()
 

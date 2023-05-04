@@ -1,6 +1,8 @@
 import datetime
 import logging
 
+import sqlalchemy
+from sqlalchemy import cast
 from sqlalchemy.orm import lazyload
 
 from app import db, celeryapp, mailapp
@@ -43,7 +45,7 @@ def share_filter_user(self, preference_uuid, host_link):
     '''
     LOGGER.info(f'[SHARE][FILTER] Start preference {preference_uuid}')
 
-    preference = db.session.query(Preference).options(lazyload(Preference.shares)).filter_by(uuid=preference_uuid).one_or_none()
+    preference = db.session.query(Preference).options(lazyload(Preference.shares)).filter(cast(Preference.uuid, sqlalchemy.String) == preference_uuid).one_or_none()
 
     link_preference = f'{host_link}/?uuid={preference_uuid}'
     link_register = f'{host_link}/register'

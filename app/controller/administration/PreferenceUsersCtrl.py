@@ -9,9 +9,11 @@ import datetime
 import logging
 from http import HTTPStatus
 
+import sqlalchemy
 from flask_restx import Namespace, Resource, fields, abort, reqparse
 from flask import request, g, current_app
 from marshmallow import ValidationError
+from sqlalchemy import cast
 from sqlalchemy.orm import lazyload
 
 from app import db
@@ -134,7 +136,7 @@ class CrudPreferenceUsers(Resource):
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
         application = get_origin_referrer(request)
-        preference = Preference.query.filter_by(uuid=uuid, application_host=application).one()
+        preference = Preference.query.filter(cast(Preference.uuid, sqlalchemy.String)==uuid, Preference.application_host==application).one()
 
         if preference.username != username:
             return abort(message="Vous n'avez pas les droits de supprimer cette préférence", code=HTTPStatus.FORBIDDEN)
@@ -161,7 +163,7 @@ class CrudPreferenceUsers(Resource):
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
         username = g.oidc_token_info['username']
         application = get_origin_referrer(request)
-        preference_to_save = Preference.query.filter_by(uuid=uuid, application_host=application).one()
+        preference_to_save = Preference.query.filter(cast(Preference.uuid, sqlalchemy.String)==uuid, Preference.application_host==application).one()
 
         if preference_to_save.username != username:
             return abort(message="Vous n'avez pas les droits de modifier cette préférence", code=HTTPStatus.FORBIDDEN)
@@ -208,7 +210,7 @@ class CrudPreferenceUsers(Resource):
             return abort(message="Error when delete preference", code=HTTPStatus.BAD_REQUEST)
 
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    #@oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.response(200, "User preference", preference_get)
     def get(self, uuid):
@@ -218,7 +220,8 @@ class CrudPreferenceUsers(Resource):
         logging.debug(f"Get users prefs {uuid}")
 
         application = get_origin_referrer(request)
-        preference = Preference.query.filter_by(uuid=uuid, application_host=application).one()
+        preference = Preference.query.filter(cast(Preference.uuid, sqlalchemy.String) == uuid,
+                                             Preference.application_host == application).one()
 
         schema = PreferenceSchema()
         result = schema.dump(preference)

@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '20230113_preference'
-down_revision = '20221209_view_montant'
+down_revision = '20221104_view_montant'
 branch_labels = None
 depends_on = None
 
@@ -23,7 +23,7 @@ def upgrade():
 
     op.create_table('preference_users',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('uuid', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('uuid', sa.String(), nullable=False),
     sa.Column('username', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('filters', sa.JSON(), nullable=False),

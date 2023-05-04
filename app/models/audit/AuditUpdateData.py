@@ -9,7 +9,6 @@ class AuditUpdateData(db.Model):
     Table d'audit pour stocker les dernière mise à jours de JDD
     """
     __tablename__ = 'audit_update_data'
-    __table_args__ = {'schema': 'audit'}
     __bind_key__ = "audit"
     # PK
     id: int = Column(Integer, primary_key=True, nullable = False)
