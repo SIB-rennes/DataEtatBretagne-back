@@ -1,9 +1,10 @@
 import logging
 
-from flask import current_app
+from flask import current_app, request
 
-from flask_restx import Namespace, Resource
+from flask_restx import Namespace, Resource, fields
 
+from app import cache
 from app.services.api_externes import ApisExternesService
 from app.models.apis_externes.entreprise import InfoApiEntreprise
 from app.models.apis_externes.subvention import InfoApiSubvention
@@ -43,7 +44,7 @@ def _document_error_responses(api: Namespace):
     return decorator
 
 
-@api.route("/info_subvention/<siret>")
+@api.route("/info-subvention/<siret>")
 class InfoSubventionCtrl(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer")
@@ -57,7 +58,26 @@ class InfoSubventionCtrl(Resource):
         return json
 
 
-@api.route("/info_entreprise/<siret>")
+parser_ds = api.model('query', {
+    'operationName': fields.String(required=True),
+    'query': fields.String,
+    'variables': fields.Raw(required=False)
+})
+
+@api.route("/demarche-simplifie")
+class DemarcheSimplifie(Resource):
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @api.doc(security="Bearer")
+    @api.expect(parser_ds)
+    @_document_error_responses(api)
+    @cache.cached(timeout=300)
+    def post(self):
+        return service.api_demarche_simplifie.do_post(request.get_data())
+
+
+
+
+@api.route("/info-entreprise/<siret>")
 class InfoEntrepriseCtrl(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer")

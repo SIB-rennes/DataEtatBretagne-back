@@ -1,3 +1,4 @@
+from app.clients.demarche_simplifie import get_or_make_api_demarche_simplifie
 from app.clients.entreprise import get_or_make_api_entreprise
 from app.clients.data_subventions import get_or_make_app_api_subventions_client
 
@@ -13,6 +14,7 @@ class ApisExternesService:
     def __init__(self) -> None:
         self.api_entreprise = get_or_make_api_entreprise()
         self.api_subvention = get_or_make_app_api_subventions_client()
+        self.api_demarche_simplifie = get_or_make_api_demarche_simplifie()
     
     def subvention(self, siret: str):
         subventions = self.api_subvention.get_subventions_pour_etablissement(siret)

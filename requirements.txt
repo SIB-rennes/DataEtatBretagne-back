@@ -12,6 +12,7 @@ flask-marshmallow==0.14.0
 marshmallow-sqlalchemy==0.28.1
 marshmallow-dataclass==8.5.12
 marshmallow-jsonschema==0.13.0
+Flask-Caching==2.0.2
 flask-restx==1.1.0
 PyYAML==6.0
 pandas==1.5.3
