@@ -72,6 +72,10 @@ API_DATA_SUBVENTIONS:
   URL: <DS_URL>
   TOKEN: <DS_TOKEN>
 
+API_DEMARCHE_SIMPLIFIE:
+  URL: DMS_URL
+  TOKEN: TOKEN
+
 # COnfiguration SMTP pour envoi de mail
 SMTP:
   server: ""
