@@ -5,6 +5,7 @@ from flask import current_app, request
 from flask_restx import Namespace, Resource, fields
 
 from app import cache
+from app.controller.utils.ControllerUtils import make_cache
 from app.services.api_externes import ApisExternesService
 from app.models.apis_externes.entreprise import InfoApiEntreprise
 from app.models.apis_externes.subvention import InfoApiSubvention
@@ -64,13 +65,14 @@ parser_ds = api.model('query', {
     'variables': fields.Raw(required=False)
 })
 
+
 @api.route("/demarche-simplifie")
 class DemarcheSimplifie(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.expect(parser_ds)
     @_document_error_responses(api)
-    @cache.cached(timeout=300)
+    @cache.cached(timeout=300, make_cache_key= make_cache)
     def post(self):
         return service.api_demarche_simplifie.do_post(request.get_data())
 
