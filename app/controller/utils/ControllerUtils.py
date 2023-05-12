@@ -1,5 +1,7 @@
+import hashlib
 from argparse import ArgumentTypeError
 
+from flask import request
 from flask_restx import reqparse
 
 def get_origin_referrer(request):
@@ -10,6 +12,17 @@ def get_origin_referrer(request):
     else:
         return request.host
 
+def make_cache(*args, **kwargs):
+    '''
+    Construit le cache d'un méthode
+    :param args:
+    :param kwargs:
+    :return:
+    '''
+    hash_object  = hashlib.sha256()
+    hash_object.update(request.get_data())
+    hash = hash_object.hexdigest()
+    return str(hash)
 
 def positive():
     def require_positive(value):

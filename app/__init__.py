@@ -5,6 +5,7 @@ from os.path import exists
 
 import yaml
 from flask import Flask
+from flask_caching import Cache
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 from flask_oidc import OpenIDConnect
@@ -16,9 +17,10 @@ from app import celeryapp, mailapp
 from flask_cors import CORS
 
 
-
+#TODO déplacer en extensions
 db = SQLAlchemy()
 ma = Marshmallow()
+cache = Cache()
 
 def create_app_migrate():
     app = create_app_base(oidc_enable=False, expose_endpoint=False)
@@ -69,8 +71,6 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery=True, ex
             oidc = OpenIDConnect(app)
             app.extensions["oidc"] = oidc
         elif 'oidc' in kwargs:
-
-            # oidc.init_app(app)
             app.extensions["oidc"] = kwargs.get('oidc')
 
 
@@ -78,6 +78,9 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery=True, ex
     # flask_restx
     app.config.update({ 'RESTX_INCLUDE_ALL_MODELS': True })
     if expose_endpoint:
+        # TODO, à terme mettre un cache REDIS ou autre, utilisable pour les autres apis
+        # Utiliser uniquement pour Demarche simplifie pour un POC
+        cache.init_app(app,config={'CACHE_TYPE': 'SimpleCache','CACHE_DEFAULT_TIMEOUT': 300} )
         _expose_endpoint(app)
     return app
 
@@ -116,8 +119,8 @@ def _expose_endpoint(app: Flask):
         app.register_blueprint(api_financial, url_prefix='/financial-data')
         app.register_blueprint(api_administration, url_prefix='/administration')
         app.register_blueprint(api_ref, url_prefix='/budget')
-        app.register_blueprint(api_apis_externes, url_prefix='/apis_externes')
-        app.register_blueprint(api_task, url_prefix='/task_management')
+        app.register_blueprint(api_apis_externes, url_prefix='/apis-externes')
+        app.register_blueprint(api_task, url_prefix='/task-management')
 
         if 'NOCODB_PROJECT' in app.config:
             for project in app.config['NOCODB_PROJECT'].items():

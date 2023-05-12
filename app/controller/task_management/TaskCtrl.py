@@ -1,27 +1,74 @@
+import functools
+import json
 
-from flask import request, current_app, jsonify, g
+from celery import states
+from flask import request, current_app, jsonify, g, abort
 from flask_restx import Namespace, Resource, reqparse, inputs
+from flask_sqlalchemy.pagination import SelectPagination
+from sqlalchemy import select, desc
 from werkzeug.datastructures import FileStorage
 
 from app import celeryapp
+from . import TaskResultTraceSchema, TaskResultSchema
+from app.models.common.Pagination import Pagination
 from app.models.enums.ConnectionProfile import ConnectionProfile
 from app.controller.Decorators import check_permission
 from app.services import ReferentielNotFound, FileNotAllowedException, import_refs
+
+from celery.backends.database.models import TaskExtended
 
 api = Namespace(name="task", path='/',
                 description='Gestion des task asynchrone')
 oidc = current_app.extensions['oidc']
 
 
-@api.route('/status/<task_id>')
-class TaskStatus(Resource):
-    @api.response(200, 'Success')
+
+@api.route('/task/<task_id>')
+class TaskSingle(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @check_permission(ConnectionProfile.ADMIN)
     @api.doc(security="Bearer")
     def get(self, task_id):
-        res = celeryapp.celery.AsyncResult(task_id)
-        return res.state, 200
+        result = _get_session_celery().query(TaskExtended).filter(TaskExtended.task_id == task_id).one()
+        schema = TaskResultTraceSchema()
+        json = schema.dump(result)
+        return json, 200
+
+
+@api.route('/task/failed')
+class TaskFailed(Resource):
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @check_permission(ConnectionProfile.ADMIN)
+    @api.doc(security="Bearer")
+    def get(self):
+        stmt = select(TaskExtended).where(TaskExtended.status == states.FAILURE).order_by(desc(TaskExtended.date_done))
+
+        page_result = SelectPagination(
+            select=stmt,
+            session=_get_session_celery(),
+            page=1,
+            per_page=100,
+            count=True,
+        )
+        schema = TaskResultSchema(many=True)
+        return {'items': schema.dump(page_result.items),
+                    'pageInfo': Pagination(page_result.total, page_result.page, page_result.per_page).to_json()}, 200
+
+
+@api.route('/task/run/<task_id>')
+class TaskRun(Resource):
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @check_permission(ConnectionProfile.ADMIN)
+    @api.doc(security="Bearer")
+    def post(self, task_id):
+        task = _get_session_celery().query(TaskExtended).filter(TaskExtended.task_id == task_id).one()
+        if task is None:
+            abort(404)
+
+        args_decode = task.args.decode("utf-8")
+
+        celeryapp.celery.send_task(task.name, args=json.loads(args_decode))
+        return 200
 
 
 
@@ -70,14 +117,6 @@ class SiretRef(Resource):
         return jsonify({
             'status': f"Demande de mise à jour des siret faite. (Tâche asynchrone id {task.id})"
         })
-
-@api.route('/run/update-commune')
-class CommuneRef(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
-    @api.doc(security="Bearer")
-    def post(self):
-        from app.tasks import maj_all_communes_tasks
-        task = maj_all_communes_tasks.delay()
-        return jsonify({
-                           "statut": f'Demande de mise à jours des communes faites (taches asynchrone id = {task.id}'})
+@functools.cache
+def _get_session_celery():
+    return celeryapp.celery.backend.ResultSession()

@@ -8,6 +8,7 @@ from celery import subtask
 from sqlalchemy import update, delete
 
 from app import db, celeryapp
+from app.clients.geo import get_info_commune
 from app.exceptions.exceptions import ChorusException,ChorusLineConcurrencyError
 from app.models.financial import FinancialData
 from app.models.financial.FinancialAe import FinancialAe
@@ -20,7 +21,6 @@ from app.models.refs.fournisseur_titulaire import FournisseurTitulaire
 from app.models.refs.groupe_marchandise import GroupeMarchandise
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
-from app.tasks import maj_one_commune
 
 from app.services.siret import update_siret_from_api_entreprise, LimitHitError
 
@@ -193,7 +193,7 @@ def __check_commune(code):
         LOGGER.info('[IMPORT][COMMUNE] Ajout commune %s', code)
         commune = Commune(code = code)
         try:
-            commune = maj_one_commune(commune)
+            commune = _maj_one_commune(commune)
             db.session.add(commune)
         except Exception:
             LOGGER.exception(f"[IMPORT][CHORUS] Error sur ajout commune {code}")
@@ -302,3 +302,23 @@ def _get_ae_for_cp(n_ej: str, n_poste_ej: int) -> int | None:
 
     financial_ae = FinancialAe.query.filter_by(n_ej=str(n_ej), n_poste_ej=int(n_poste_ej)).one_or_none()
     return financial_ae.id if financial_ae is not None else None
+
+
+def _maj_one_commune(commune: Commune):
+    """
+    Lance la MAj d'une communce
+    :param commune:
+    :return:
+    """
+    apigeo = get_info_commune(commune)
+    commune.label_commune = apigeo['nom']
+    if 'epci' in apigeo:
+        commune.code_epci = apigeo['epci']['code']
+        commune.label_epci = apigeo['epci']['nom']
+    if 'region' in apigeo:
+        commune.code_region = apigeo['region']['code']
+        commune.label_region = apigeo['region']['nom']
+    if 'departement' in apigeo:
+        commune.code_departement = apigeo['departement']['code']
+        commune.label_departement = apigeo['departement']['nom']
+    return commune
