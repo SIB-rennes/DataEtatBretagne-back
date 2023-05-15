@@ -1,4 +1,5 @@
 import datetime
+import logging
 from datetime import datetime
 from dataclasses import dataclass
 
@@ -40,19 +41,11 @@ class FinancialAe(FinancialData, db.Model):
 
 
 
-    def __init__(self, line_chorus: dict,source_region:str,annee: int):
+    def __init__(self, **kwargs):
         """
         init à partir d'une ligne issue d'un fichier chorus
-
-        :param line_chorus: dict contenant les valeurs d'une ligne issue d'un fichier chorus
-        :param source_region:
-        :param annee:
         """
-
-        self.source_region = source_region
-        self.annee = annee
-
-        self.update_attribute(line_chorus)
+        self.update_attribute(kwargs)
 
     def __setattr__(self, key, value):
         if key == "date_modification_ej" and isinstance(value, str):
@@ -75,9 +68,40 @@ class FinancialAe(FinancialData, db.Model):
        #Cas si le siret a moins de caractères
        self.siret = self._fix_siret(self.siret)
 
+    def update_attribute(self, new_financial: dict):
+        # Applicatin montant négatif
+        if (self.montant is not None and self._update_montant(new_financial)):
+            self.montant += new_financial[FinancialAe.montant.key]
+            del new_financial[FinancialAe.annee.key] # suppression de la clé annee pour appliquer les autres modifs
+            del new_financial[FinancialAe.montant.key] # suppression de la clé montant pour appliquer les autres modifs
 
-    def do_update(self, new_financial):
-        return datetime.strptime(new_financial['date_modification_ej'], '%d.%m.%Y') > self.date_modification_ej
+        super().update_attribute(new_financial)
+
+
+    def do_update(self, new_financial: dict):
+        '''
+        Indique si MAJ ou non l'objet
+        :param new_financial:
+        :return:
+        '''
+        # Si montant négatif et année
+        if (self._update_montant(new_financial)):
+            logging.debug(f"[FINANCIAL AE] Montant negatif détecté, application sur ancien montant {self.n_poste_ej}, {self.n_ej}")
+            return True
+        else :
+            return datetime.strptime(new_financial['date_modification_ej'], '%d.%m.%Y') > self.date_modification_ej
+
+
+    def _update_montant(self, new_financial: dict):
+        '''
+        :param new_financial:
+        :return:
+        '''
+        if (new_financial[FinancialAe.montant.key] < 0 and self.annee < new_financial[
+            FinancialAe.annee.key] and self.source_region == new_financial[FinancialAe.source_region.key]):
+            return True
+        return False
+
 
     @staticmethod
     def get_columns_files_ae():
