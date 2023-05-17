@@ -1,10 +1,10 @@
 from marshmallow import fields
 from sqlalchemy import Column, String, Text
-
-
+from sqlalchemy.orm import relationship
 
 from app import db, ma
 from app.models.common.Audit import Audit
+from app.models.refs.commune import CommuneSchema
 
 
 class LocalisationInterministerielle(Audit,db.Model):
@@ -12,22 +12,24 @@ class LocalisationInterministerielle(Audit,db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code: str = Column(String, unique=True, nullable=False)
     label: str = Column(String)
-    code_departement: str = Column(String)
-    commune: str = Column(String)
     site: str = Column(String)
     description: str = Column(Text)
     niveau: str = Column(String)
     code_parent = Column(String)
 
+
+    # FK
+    commune_id = Column(db.Integer, db.ForeignKey('ref_commune.id'), nullable=True)
+    commune = relationship("Commune", lazy="select")
+
 class LocalisationInterministerielleSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = LocalisationInterministerielle
-        exclude = ('id',) + LocalisationInterministerielle.exclude_schema()
+        exclude = ('id','commune_id',) + LocalisationInterministerielle.exclude_schema()
 
     label = fields.String()
-    code_departement = fields.String()
-    commune = fields.String()
     site = fields.String()
     description = fields.String()
     niveau =  fields.String()
     code_parent = fields.String()
+    commune = fields.Nested(CommuneSchema)

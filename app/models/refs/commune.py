@@ -1,6 +1,7 @@
+from marshmallow import fields
 from sqlalchemy import Column, String
 
-from app import db
+from app import db, ma
 from app.models.common.Audit import Audit
 
 
@@ -24,4 +25,11 @@ class Commune(Audit, db.Model):
     # FK
     code_arrondissement: str = Column(String, db.ForeignKey('ref_arrondissement.code'), nullable=True)
 
+class CommuneSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Commune
+        exclude = ('id',)
+
+    code = fields.String()
+    label_commune = fields.String()
 

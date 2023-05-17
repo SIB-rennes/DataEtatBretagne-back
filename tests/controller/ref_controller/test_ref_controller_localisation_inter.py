@@ -2,56 +2,63 @@ import json
 
 import pytest
 
+from app.models.refs.commune import Commune
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
 
 
 @pytest.fixture(scope="module")
 def add_data(test_db):
-    loc_1 = {
+    commune_nime = Commune(**{"code":"001","label_commune":"Nîmes", "code_departement":"30"})
+    commune_rennes = Commune(**{"code":"002","label_commune":"Rennes", "code_departement":"35"})
+    commune_change = Commune(**{"code":"003","label_commune":"Change", "code_departement":"72"})
+
+    loc_1 = LocalisationInterministerielle(**{
         "code": "B100001",
         "label": 'ATELIER',
-        "code_departement": "30",
-        "commune":"Nîmes",
         "site": "CASERNE MAJOR SOLER",
         "niveau": "BATIMENT",
         "code_parent":"S120594",
-    }
+    })
 
-    loc_2 = {
+    loc_2 = LocalisationInterministerielle(**{
         "code": "S120594",
         "label": 'parent',
-        "code_departement": "30",
-        "commune": "Nîmes",
         "site": "site parent",
         "niveau": "TERRAIN",
         "code_parent": None
-    }
+    })
 
-    loc_3 = {
+    loc_3 = LocalisationInterministerielle(**{
         "code": "B100002",
         "label": 'site label rennes',
-        "code_departement": "35",
-        "commune": "Rennes",
         "site": "site rennest",
         "niveau": "BATIMENT",
         "code_parent": "N",
         "description": "description"
-    }
+    })
 
-    loc_4 = {
+    loc_4 = LocalisationInterministerielle(**{
         "code": "B200001",
         "label": 'ECOLE',
-        "code_departement": "72",
-        "commune": "Change",
         "site": "site Change",
         "niveau": "REGION",
         "code_parent": "S120594",
-    }
+    })
 
-    test_db.session.add(LocalisationInterministerielle(**loc_1))
-    test_db.session.add(LocalisationInterministerielle(**loc_2))
-    test_db.session.add(LocalisationInterministerielle(**loc_3))
-    test_db.session.add(LocalisationInterministerielle(**loc_4))
+    test_db.session.add(commune_nime)
+    test_db.session.add(commune_rennes)
+    test_db.session.add(commune_change)
+    loc_1.commune = commune_nime
+    loc_2.commune = commune_nime
+    loc_3.commune = commune_rennes
+    loc_4.commune = commune_change
+
+
+    test_db.session.add(loc_1)
+    test_db.session.add(loc_2)
+    test_db.session.add(loc_3)
+    test_db.session.add(loc_4)
+
     test_db.session.commit()
     return [loc_1,loc_2, loc_3,loc_4]
 
@@ -60,7 +67,8 @@ def test_loc_inter_by_code(test_client, add_data):
     resp = test_client.get('/budget/api/v1/loc-interministerielle/'+code)
     assert resp.status_code == 200
     domaine_return = json.loads(resp.data.decode())
-    assert domaine_return == add_data[2]
+    assert domaine_return['code'] == add_data[2].code
+    assert domaine_return['commune']['label_commune'] == "Rennes"
 
 
 def test_loc_inter_not_found(test_client, add_data):
