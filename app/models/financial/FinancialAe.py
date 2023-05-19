@@ -56,19 +56,19 @@ class FinancialAe(FinancialData, db.Model):
         super().__setattr__(key, value)
 
 
-    def __post_init__(self):
-       #self.montant = float(str(self.montant).replace('\U00002013', '-').replace(',', '.'))
-
-       if isinstance(self.date_modification_ej, str):
-            self.date_modification_ej = datetime.strptime(self.date_modification_ej, '%d.%m.%Y')
-       if self.centre_couts.startswith('BG00/') :
-            self.centre_couts =  self.centre_couts[5:]
-
-       if self.referentiel_programmation.startswith('BG00/') :
-            self.referentiel_programmation = self.referentiel_programmation[5:]
-
-       #Cas si le siret a moins de caractères
-       self.siret = self._fix_siret(self.siret)
+    # def __post_init__(self):
+    #    #self.montant = float(str(self.montant).replace('\U00002013', '-').replace(',', '.'))
+    #
+    #    if isinstance(self.date_modification_ej, str):
+    #         self.date_modification_ej = datetime.strptime(self.date_modification_ej, '%d.%m.%Y')
+    #    if self.centre_couts.startswith('BG00/') :
+    #         self.centre_couts =  self.centre_couts[5:]
+    #
+    #    if self.referentiel_programmation.startswith('BG00/') :
+    #         self.referentiel_programmation = self.referentiel_programmation[5:]
+    #
+    #    #Cas si le siret a moins de caractères
+    #    self.siret = self._fix_siret(self.siret)
 
     def update_attribute(self, new_financial: dict):
         # Applicatin montant négatif
