@@ -45,7 +45,7 @@ def test_import_refs_localisation_interministerielle(mock_subtask,test_db):
 
     mock_subtask.assert_has_calls([
         call().delay(cls='LocalisationInterministerielle',
-                     data='{"code":"B100000","niveau":"BATIMENT","code_departement":"30","commune":"N\\u00eemes","site":"CASERNE MAJOR SOLER","code_parent":"S120594","label":"LOGEMENTS \\"VILLA\\""}'),
+                     data='{"code":"B100000","niveau":"BATIMENT","code_departement":"30","commune":"N\\u00eemes","site":"CASERNE MAJOR SOLER","code_parent":"S120594","label":"ATELIER DE REPARATION ET D\'ENTRETIEN BAT 3"}'),
         call('import_line_one_ref_LocalisationInterministerielle'),
     ], any_order=True)
 
