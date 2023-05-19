@@ -66,8 +66,9 @@ class TaskRun(Resource):
             abort(404)
 
         args_decode = task.args.decode("utf-8")
+        kwargs = task.kwargs.decode("utf-8")
 
-        celeryapp.celery.send_task(task.name, args=json.loads(args_decode))
+        celeryapp.celery.send_task(task.name, args=json.loads(args_decode),kwargs=json.loads(kwargs) )
         return 200
 
 
