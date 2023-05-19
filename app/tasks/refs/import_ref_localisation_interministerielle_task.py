@@ -16,8 +16,9 @@ def import_line_ref_localisation_interministerielle(data:str, **kwargs):
     data = data.replace('\\"',r"'")
     row = json.loads(codecs.decode(data, 'unicode_escape'))
 
-    check_loc_inter = LocalisationInterministerielle(code=row['code'], label=row['label'], code_parent=row['code_parent'],
-                                         site=row['site'], niveau=row['niveau'])
+    check_loc_inter = LocalisationInterministerielle(code=row['code'], label=row['label'],
+                                                     code_parent=row['code_parent'],
+                                                     site=row['site'], niveau=row['niveau'])
 
     instance = db.session.execute(db.select(LocalisationInterministerielle).where( LocalisationInterministerielle.code == check_loc_inter.code)).scalar_one_or_none()
 
@@ -41,7 +42,3 @@ def import_line_ref_localisation_interministerielle(data:str, **kwargs):
         db.session.rollback()
         LOGGER.exception("[IMPORT][REF] Error sur ajout/maj ref LocalisationInterministerielle dans %s ", row)
         raise e
-
-
-
-

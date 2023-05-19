@@ -30,8 +30,8 @@ def test_import_refs_domaine_fonctionnel(mock_subtask,test_db):
                 ['code', 'label'], is_csv=False, usecols=[4,5],
                 sheet_name="07 - Domaines Fonct. (DF)", skiprows=8)
     mock_subtask.assert_has_calls([
-        call().delay(cls='DomaineFonctionnel', data='{"code":"0104-12-08","label":"TEST"}'),
-        call().delay(cls='DomaineFonctionnel', data='{"code":"0104-12-15","label":"Actions R\\u00e9fugi\\u00e9s"}'),
+        call().delay(model_name='DomaineFonctionnel', data='{"code":"0104-12-08","label":"TEST"}'),
+        call().delay(model_name='DomaineFonctionnel', data='{"code":"0104-12-15","label":"Actions R\\u00e9fugi\\u00e9s"}'),
         call('import_line_one_ref_default'),
     ], any_order=True)
 

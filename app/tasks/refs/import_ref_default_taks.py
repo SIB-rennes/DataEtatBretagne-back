@@ -10,14 +10,20 @@ LOGGER = logging.getLogger()
 celery = celeryapp.celery
 
 @celery.task(name='import_line_one_ref_default')
-def import_line_one_ref_default(cls: str, data: str):
-    """Task default that imports a single line of reference data into the database.
+def import_line_one_ref_default(model_name : str, data: str):
+    """
+    Cette fonction importe une ligne de référence par défaut dans une table de base de données.
 
         Args:
-            class_name (str): Name of the model class for the reference data.
-            row: A JSON string representing a single row of reference data.
+            model_name  (str): Le nom de la classe modèle dans laquelle importer la référence.
+            data (str): Les données de la référence au format JSON.
+
+        Raises:
+            AttributeError: Si une erreur se produit lors de la mise à jour d'un attribut.
+            Exception: Si une erreur se produit lors de l'ajout ou de la mise à jour de la référence dans la base de données.
+
     """
-    model = _get_instance_model_by_name(cls)
+    model = _get_instance_model_by_name(model_name)
     data = data.replace('\\"',r"'")
     row = json.loads(codecs.decode(data, 'unicode_escape'))
 

@@ -12,7 +12,7 @@ def test_import_refs_groupe_marchandise_pce(mock_subtask,test_db):
 
 
     mock_subtask.assert_has_calls([
-        call().delay(cls='GroupeMarchandise',
+        call().delay(model_name='GroupeMarchandise',
                      data='{"domaine":"Affranchissement et impression","segment":"Affranchissement","code":"01.01.01","label":"EX-AI EXP\\u00c9DITION","description":"EX-FRAIS POSTAUX YC VALIISE DIPLOMATIQUE","code_pce":"6161000000","label_pce":"FRAIS POSTAUX"}'),
         call('import_line_one_ref_default'),
     ], any_order=True)

@@ -14,11 +14,11 @@ def test_import_refs_centre_cout(mock_subtask,test_db):
 
 
     mock_subtask.assert_has_calls([
-        call().delay(cls='CentreCouts',
+        call().delay(model_name='CentreCouts',
                      data='{"code":"AAIACNU075","description":"ACNUSA","label":"ACNUSA","code_postal":"75006","ville":"PARIS"}'),
-        call().delay(cls='CentreCouts',
+        call().delay(model_name='CentreCouts',
                      data='{"code":"AAIAC00075","description":"AC","label":"AC","code_postal":"75001","ville":"PARIS"}'),
-        call().delay(cls='CentreCouts',
+        call().delay(model_name='CentreCouts',
                      data='{"code":"3070ATE012","description":"Centre de cout mutualise","label":"PRF0ATE012","code_postal":null,"ville":null}'),
         call('import_line_one_ref_default'),
     ], any_order=True)
@@ -38,7 +38,7 @@ def test_import_new_line_centre_cout(app):
     code = '00001123'
     row = json.dumps({"code":code,"description":"Centre de cout mutualise","label":"PRF0ATE012","code_postal":"75001","ville":"PARIS"})
     # When
-    import_line_one_ref_default(cls='CentreCouts', data=row)
+    import_line_one_ref_default(model_name='CentreCouts', data=row)
 
     # Then
     with app.app_context():

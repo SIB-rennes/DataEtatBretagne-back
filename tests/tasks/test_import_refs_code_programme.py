@@ -16,11 +16,11 @@ def test_import_refs_code_programme(mock_subtask):
                 sheet_name="03 - Programmes", skiprows=8)
 
     mock_subtask.assert_has_calls([
-        call().delay(cls='CodeProgramme',
+        call().delay(model_name='CodeProgramme',
                      data='{"code_ministere":"MIN01","code":"0105","label":"Action de la France en Europe et dans le monde"}'),
-        call().delay(cls='CodeProgramme',
+        call().delay(model_name='CodeProgramme',
                      data='{"code_ministere":"MIN01","code":"0151","label":"Fran\\u00e7ais \\u00e0 l\'\\u00e9tranger et affaires consulaires"}'),
-        call().delay(cls='CodeProgramme',
+        call().delay(model_name='CodeProgramme',
                      data='{"code_ministere":"MIN01","code":"0185","label":"Diplomatie culturelle et d\'influence"}'),
         call('import_line_one_ref_default'),
     ], any_order=True)
@@ -33,7 +33,7 @@ def test_import_refs_ministere(mock_subtask,app):
 
 
     mock_subtask.assert_has_calls([
-        call().delay(cls='Ministere', data='{"code":"MIN01","sigle_ministere":"MEAE","label":"Europe&Aff.\\u00c9trang\\u00e8res"}'),
+        call().delay(model_name='Ministere', data='{"code":"MIN01","sigle_ministere":"MEAE","label":"Europe&Aff.\\u00c9trang\\u00e8res"}'),
         call('import_line_one_ref_default'),
     ], any_order=True)
 

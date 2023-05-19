@@ -13,8 +13,8 @@ def test_import_refs_programme_financement(mock_subtask,test_db):
     import_refs_task(os.path.abspath(os.getcwd())+'/data/Calculette_Chorus_test.xlsx', 'ReferentielProgrammation',  ['code','label'], is_csv=False, usecols=[9,10],
                 sheet_name="08 - Activités (OS,OP,OB,ACT)", skiprows=8)
     mock_subtask.assert_has_calls([
-        call().delay(cls='ReferentielProgrammation', data='{"code":"010101010101","label":"DOTATIONS CARPA AJ ET AUTRES INTERVENTIONS"}'),
-        call().delay(cls='ReferentielProgrammation', data='{"code":"010101010106","label":"RETRIBUER AVOCATS CE CCASS MISSIONS AJ"}'),
+        call().delay(model_name='ReferentielProgrammation', data='{"code":"010101010101","label":"DOTATIONS CARPA AJ ET AUTRES INTERVENTIONS"}'),
+        call().delay(model_name='ReferentielProgrammation', data='{"code":"010101010106","label":"RETRIBUER AVOCATS CE CCASS MISSIONS AJ"}'),
         call('import_line_one_ref_default'),
     ], any_order=True)
 
