@@ -120,6 +120,6 @@ def build_params(args):
         'offset': 0 if args['offset'] is None else args['offset'],
         'sort': None if args['sort'] is None else args['sort'],
         'fields':  None if args['fields'] is None else args['fields'],
-        'where': None if args['where'] is None else args['where'],
+        'where': None if args['where'] is None else args['where']
     }
     return params

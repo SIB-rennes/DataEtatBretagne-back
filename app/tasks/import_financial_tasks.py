@@ -23,7 +23,7 @@ from app.models.refs.localisation_interministerielle import LocalisationIntermin
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 
 from app.services.siret import update_siret_from_api_entreprise, LimitHitError
-
+from app.tasks import limiter_queue
 
 LOGGER = logging.getLogger()
 
@@ -40,7 +40,7 @@ def import_file_ae_financial(self, fichier, source_region: str, annee: int, forc
                                              'siret': str})
         series = pandas.Series({ f'{FinancialAe.annee.key}' : annee, f'{FinancialAe.source_region.key}': source_region})
         for index, line in data_chorus.iterrows():
-            subtask("import_line_financial_ae").delay(line.append(series).to_json(), index,force_update)
+            _send_subtask_financial_ae(line.append(series).to_json(), index, force_update)
 
         os.remove(fichier)
         LOGGER.info('[IMPORT][FINANCIAL][AE] End')
@@ -60,7 +60,7 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
                                              'siret': str})
         _delete_cp(annee, source_region)
         for index, chorus_data in data_chorus.iterrows():
-            subtask("import_line_financial_cp").delay(chorus_data.to_json(), index, source_region, annee)
+            _send_subtask_financial_cp(chorus_data.to_json(), index, source_region, annee)
 
         os.remove(fichier)
         LOGGER.info('[IMPORT][FINANCIAL][CP] End')
@@ -68,6 +68,14 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
     except Exception as e:
         LOGGER.exception(f"[IMPORT][FINANCIAL][CP] Error lors de l'import du fichier {fichier} chorus")
         raise e
+
+
+@limiter_queue(queue_name='line')
+def _send_subtask_financial_ae(line, index, force_update):
+    subtask("import_line_financial_ae").delay(line, index, force_update)
+@limiter_queue(queue_name='line')
+def _send_subtask_financial_cp(line, index, source_region, annee):
+    subtask("import_line_financial_cp").delay(line, index, source_region, annee)
 
 @celery.task(bind=True, name='import_line_financial_ae', autoretry_for=(ChorusException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
 def import_line_financial_ae(self, dict_financial: dict, index: int, force_update: bool):
