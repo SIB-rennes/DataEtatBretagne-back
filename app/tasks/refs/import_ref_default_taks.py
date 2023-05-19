@@ -18,7 +18,9 @@ def import_line_one_ref_default(cls: str, data: str):
             row: A JSON string representing a single row of reference data.
     """
     model = _get_instance_model_by_name(cls)
-    row = json.loads(codecs.decode(data,'unicode_escape'))
+    data = data.replace('\\"',r"'")
+    row = json.loads(codecs.decode(data, 'unicode_escape'))
+
     check_model = model(**row)
     instance = db.session.query(model).filter_by(code=check_model.code).one_or_none()
     if not instance:

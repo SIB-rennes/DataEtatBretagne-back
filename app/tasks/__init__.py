@@ -33,7 +33,7 @@ def limiter_queue(queue_name:str, max_queue_size: int = max_queue_size, timeout_
     def wrapper(func):
         @wraps(func)
         def inner_wrapper(*args, **kwargs):
-            if not current_app.conf.task_always_eager or redis_conn is not None:
+            if not current_app.conf.task_always_eager and redis_conn is not None:
                 num_retries=0
                 while redis_conn.llen(queue_name) > max_queue_size:
                     if num_retries >= timeout_queue_retry:

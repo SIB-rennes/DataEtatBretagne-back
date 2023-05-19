@@ -13,7 +13,9 @@ celery = celeryapp.celery
 @celery.task(name='import_line_one_ref_LocalisationInterministerielle')
 def import_line_ref_localisation_interministerielle(data:str, **kwargs):
 
+    data = data.replace('\\"',r"'")
     row = json.loads(codecs.decode(data, 'unicode_escape'))
+
     check_loc_inter = LocalisationInterministerielle(code=row['code'], label=row['label'], code_parent=row['code_parent'],
                                          site=row['site'], niveau=row['niveau'])
 
