@@ -3,11 +3,14 @@ import logging
 from datetime import datetime
 from dataclasses import dataclass
 
-from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Float, UniqueConstraint
+from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, UniqueConstraint
+from sqlalchemy.orm import relationship
+
 from app import db
 from app.models.financial import FinancialData
-from app.models.financial.FinancialCp import FinancialCp
+from app.models.financial.MontantFinancialAe import MontantFinancialAe
 
+COLUMN_MONTANT_NAME= 'montant'
 
 @dataclass
 class FinancialAe(FinancialData, db.Model):
@@ -35,10 +38,9 @@ class FinancialAe(FinancialData, db.Model):
     date_modification_ej: datetime = Column(DateTime, nullable=False) #date issue du fichier Chorus
     compte_budgetaire: str = Column(String(255), nullable= False)
     contrat_etat_region: str = Column(String(255))
-    montant: float = Column(Float)
     annee: int = Column(Integer, nullable= False) # annee de l'AE chorus
 
-
+    montant_ae = relationship("MontantFinancialAe", uselist=True)
 
 
     def __init__(self, **kwargs):
@@ -55,7 +57,7 @@ class FinancialAe(FinancialData, db.Model):
 
 
     def __post_init__(self):
-       self.montant = float(str(self.montant).replace('\U00002013', '-').replace(',', '.'))
+       #self.montant = float(str(self.montant).replace('\U00002013', '-').replace(',', '.'))
 
        if isinstance(self.date_modification_ej, str):
             self.date_modification_ej = datetime.strptime(self.date_modification_ej, '%d.%m.%Y')
@@ -70,38 +72,59 @@ class FinancialAe(FinancialData, db.Model):
 
     def update_attribute(self, new_financial: dict):
         # Applicatin montant négatif
-        if (self.montant is not None and self._update_montant(new_financial)):
-            self.montant += new_financial[FinancialAe.montant.key]
-            del new_financial[FinancialAe.annee.key] # suppression de la clé annee pour appliquer les autres modifs
-            del new_financial[FinancialAe.montant.key] # suppression de la clé montant pour appliquer les autres modifs
+        if (self._update_montant_ae(new_financial)):
+            self.add_or_update_montant_ae(new_financial[COLUMN_MONTANT_NAME], new_financial[FinancialAe.annee.key])
 
         super().update_attribute(new_financial)
 
 
-    def do_update(self, new_financial: dict):
+    def should_update(self, new_financial: dict)-> bool:
         '''
         Indique si MAJ ou non l'objet
         :param new_financial:
         :return:
         '''
-        # Si montant négatif et année
-        if (self._update_montant(new_financial)):
+
+        if (self._update_montant_ae(new_financial)):
             logging.debug(f"[FINANCIAL AE] Montant negatif détecté, application sur ancien montant {self.n_poste_ej}, {self.n_ej}")
             return True
         else :
             return datetime.strptime(new_financial['date_modification_ej'], '%d.%m.%Y') > self.date_modification_ej
 
 
-    def _update_montant(self, new_financial: dict):
+    def _update_montant_ae(self, new_financial: dict):
         '''
+        ajoute ou maj un montant dans montant_ae
         :param new_financial:
         :return:
         '''
-        if (new_financial[FinancialAe.montant.key] < 0 and self.annee < new_financial[
-            FinancialAe.annee.key] and self.source_region == new_financial[FinancialAe.source_region.key]):
-            return True
-        return False
+        if(new_financial[FinancialAe.source_region.key] != self.source_region):
+            return False
 
+        nouveau_montant = new_financial[COLUMN_MONTANT_NAME]
+        annee = new_financial[FinancialAe.annee.key]
+
+        if any(montant_ae.montant == nouveau_montant and montant_ae.annee == annee for montant_ae in self.montant_ae):
+            return False
+
+        return True
+
+
+    def add_or_update_montant_ae(self, montant, annee):
+        '''
+        Ajoute un montant à une ligne AE
+        :param montant:
+        :param annee:
+        :return:
+        '''
+        if (self.montant_ae is None):
+            self.montant_ae = [MontantFinancialAe(montant=montant, annee=annee)]
+        elif montant > 0:
+            for montant_ae in self.montant_ae:
+                if (montant_ae.annee == annee):
+                    montant_ae.montant = montant
+        else :
+            self.montant_ae.append(MontantFinancialAe(montant=montant, annee=annee))
 
     @staticmethod
     def get_columns_files_ae():
@@ -109,4 +132,7 @@ class FinancialAe(FinancialData, db.Model):
                               'referentiel_programmation', 'n_ej', 'n_poste_ej', 'date_modification_ej',
                               'fournisseur_titulaire', 'fournisseur_label', 'siret', 'compte_code',
                               'compte_budgetaire', 'groupe_marchandise', 'contrat_etat_region',
-                              'contrat_etat_region_2','localisation_interministerielle', 'montant']
+                              'contrat_etat_region_2','localisation_interministerielle', COLUMN_MONTANT_NAME]
+
+
+

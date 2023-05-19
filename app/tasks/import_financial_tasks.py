@@ -240,7 +240,7 @@ def _check_insert_update_financial(financial_ae: FinancialData | None, line,forc
         if force_update:
             LOGGER.info('[IMPORT][FINANCIAL] Doublon trouvé, Force Update')
             return financial_ae
-        if financial_ae.do_update(line):
+        if financial_ae.should_update(line):
             LOGGER.info('[IMPORT][FINANCIAL] Doublon trouvé, MAJ à faire')
             return financial_ae
         else:
