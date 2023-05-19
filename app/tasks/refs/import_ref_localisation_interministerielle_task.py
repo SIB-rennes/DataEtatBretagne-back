@@ -3,6 +3,8 @@ import codecs
 import json
 import logging
 
+from sqlalchemy import func
+
 from app import db, celeryapp
 from app.models.refs.commune import Commune
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
@@ -22,7 +24,7 @@ def import_line_ref_localisation_interministerielle(data:str, **kwargs):
 
     instance = db.session.execute(db.select(LocalisationInterministerielle).where( LocalisationInterministerielle.code == check_loc_inter.code)).scalar_one_or_none()
 
-    stmt_find_commune = db.select(Commune).where((Commune.label_commune == row['commune'])).where(
+    stmt_find_commune = db.select(Commune).where((func.upper(Commune.label_commune) == func.upper(row['commune']))).where(
         Commune.code_departement == row['code_departement'])
     commune = db.session.execute(stmt_find_commune).scalar_one_or_none()
     if not instance:

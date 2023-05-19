@@ -50,7 +50,7 @@ def test_import_refs_localisation_interministerielle(mock_subtask,test_db):
     ], any_order=True)
 
 def test_import_insert_localisation(app, test_db, add_comune_belley):
-    import_line_ref_localisation_interministerielle(data=json.dumps({"code":"B100000","niveau":"NATIONAL","code_departement":"01","commune":"Belley","site":"CASERNE MAJOR SOLER","code_parent":"S120594","label":"ATELIER DE REPARATION ET D\'ENTRETIEN BAT 3"}))
+    import_line_ref_localisation_interministerielle(data=json.dumps({"code":"B100000","niveau":"NATIONAL","code_departement":"01","commune":"BELLEY","site":"CASERNE MAJOR SOLER","code_parent":"S120594","label":"ATELIER DE REPARATION ET D\'ENTRETIEN BAT 3"}))
     with app.app_context():
         d_to_update = LocalisationInterministerielle.query.filter_by(code='B100000').one()
         assert d_to_update.commune.label_commune == "Belley"
