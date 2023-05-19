@@ -7,7 +7,7 @@ from celery import current_app
 from app import celeryapp
 from app.services import MissingCodeColumns
 from app.services.import_refs import _get_instance_model_by_name
-from app.tasks import limiter_queue
+from app.tasks import limiter_queue, LimitQueueException
 
 LOGGER = logging.getLogger()
 
@@ -49,12 +49,13 @@ Args:
             if row.isna().code : # si le code est nan ou none, on passe
                 continue
             send_subtask(task_name, cls=class_name, data=row.to_json())
-    except Exception as e:
-        print(e)
+    except LimitQueueException as e:
+        LOGGER.exception('[IMPORT][REFS] Error limit queue exception', e)
+        raise e
 
-@limiter_queue()
-def send_subtask(task_name, **kwargs):
-    subtask(task_name).delay(kwargs)
+@limiter_queue(queue_name='line')
+def send_subtask(task_name,cls, data):
+    subtask(task_name).delay(cls=cls, data=data)
 
 def check_task_exists(task_name):
 
