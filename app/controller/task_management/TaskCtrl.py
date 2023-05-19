@@ -69,6 +69,8 @@ class TaskRun(Resource):
         kwargs = task.kwargs.decode("utf-8")
 
         celeryapp.celery.send_task(task.name, args=json.loads(args_decode),kwargs=json.loads(kwargs) )
+        _get_session_celery().delete(task)
+        _get_session_celery().commit()
         return 200
 
 
