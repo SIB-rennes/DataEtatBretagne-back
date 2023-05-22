@@ -72,7 +72,7 @@ class FinancialAe(FinancialData, db.Model):
 
     def update_attribute(self, new_financial: dict):
         # Applicatin montant négatif
-        if (self._update_montant_ae(new_financial)):
+        if (self._should_update_montant_ae(new_financial)):
             self.add_or_update_montant_ae(new_financial[COLUMN_MONTANT_NAME], new_financial[FinancialAe.annee.key])
 
         super().update_attribute(new_financial)
@@ -85,14 +85,44 @@ class FinancialAe(FinancialData, db.Model):
         :return:
         '''
 
-        if (self._update_montant_ae(new_financial)):
+        if (self._should_update_montant_ae(new_financial)):
             logging.debug(f"[FINANCIAL AE] Montant negatif détecté, application sur ancien montant {self.n_poste_ej}, {self.n_ej}")
             return True
         else :
             return datetime.strptime(new_financial['date_modification_ej'], '%d.%m.%Y') > self.date_modification_ej
 
+    def add_or_update_montant_ae(self, nouveau_montant, annee):
+        '''
+        Ajoute un montant à une ligne AE
+        :param nouveau_montant: le nouveau montant à ajouter
+        :param annee: l'année comptable
+        :return:
+        '''
+        if (self.montant_ae is None): # si aucun montant AE encore, on ajoute
+            self.montant_ae = [MontantFinancialAe(montant=nouveau_montant, annee=annee)]
+        else:
+            montant_ae_annee = next(montant_ae for montant_ae in self.montant_ae if montant_ae.annee == annee) # recherche d'un montant sur la même année existant
 
-    def _update_montant_ae(self, new_financial: dict):
+            if (nouveau_montant > 0) : # Si nouveau montant positif
+                montant_ae_positif = next(montant_ae for montant_ae in self.montant_ae if montant_ae.montant > 0)
+
+                if (montant_ae_positif is None):
+                    if (montant_ae_annee is None): # si aucun montant positif enregistré et sur, alors on ajoute
+                        self.montant_ae.append(MontantFinancialAe(montant=nouveau_montant, annee=annee))
+                    else :
+                        montant_ae_annee.montant = nouveau_montant
+                else :
+                    # sinon je prend le montant positif le plus récent
+                    montant_ae_positif.montant = nouveau_montant if (montant_ae_positif.annee <= annee) else montant_ae_positif.montant
+
+            else: # nouveau_montant < 0
+                if (montant_ae_annee is None) : # si l'année n'est pas déjà enregistré, alors on ajoute le montant
+                    self.montant_ae.append(MontantFinancialAe(montant=nouveau_montant, annee=annee))
+                else : # sinon on MAJ
+                    montant_ae_annee.montant = nouveau_montant
+
+
+    def _should_update_montant_ae(self, new_financial: dict)-> bool:
         '''
         ajoute ou maj un montant dans montant_ae
         :param new_financial:
@@ -108,23 +138,6 @@ class FinancialAe(FinancialData, db.Model):
             return False
 
         return True
-
-
-    def add_or_update_montant_ae(self, montant, annee):
-        '''
-        Ajoute un montant à une ligne AE
-        :param montant:
-        :param annee:
-        :return:
-        '''
-        if (self.montant_ae is None):
-            self.montant_ae = [MontantFinancialAe(montant=montant, annee=annee)]
-        elif montant > 0:
-            for montant_ae in self.montant_ae:
-                if (montant_ae.annee == annee):
-                    montant_ae.montant = montant
-        else :
-            self.montant_ae.append(MontantFinancialAe(montant=montant, annee=annee))
 
     @staticmethod
     def get_columns_files_ae():
