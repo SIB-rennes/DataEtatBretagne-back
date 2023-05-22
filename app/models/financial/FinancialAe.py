@@ -73,7 +73,10 @@ class FinancialAe(FinancialData, db.Model):
     def update_attribute(self, new_financial: dict):
         # Applicatin montant négatif
         if (self._should_update_montant_ae(new_financial)):
-            self.add_or_update_montant_ae(new_financial[COLUMN_MONTANT_NAME], new_financial[FinancialAe.annee.key])
+            nouveau_montant = new_financial[COLUMN_MONTANT_NAME]
+            self.add_or_update_montant_ae(nouveau_montant, new_financial[FinancialAe.annee.key])
+            if (nouveau_montant < 0 and self.annee):
+                del new_financial[FinancialAe.annee.key] # on ne maj pas l'année comptable si montant <0
 
         super().update_attribute(new_financial)
 
@@ -98,22 +101,24 @@ class FinancialAe(FinancialData, db.Model):
         :param annee: l'année comptable
         :return:
         '''
-        if (self.montant_ae is None): # si aucun montant AE encore, on ajoute
+        if (self.montant_ae is None or not self.montant_ae): # si aucun montant AE encore, on ajoute
             self.montant_ae = [MontantFinancialAe(montant=nouveau_montant, annee=annee)]
         else:
-            montant_ae_annee = next(montant_ae for montant_ae in self.montant_ae if montant_ae.annee == annee) # recherche d'un montant sur la même année existant
+            montant_ae_annee = next((montant_ae for montant_ae in self.montant_ae if montant_ae.annee == annee), None) # recherche d'un montant sur la même année existant
 
             if (nouveau_montant > 0) : # Si nouveau montant positif
-                montant_ae_positif = next(montant_ae for montant_ae in self.montant_ae if montant_ae.montant > 0)
+                montant_ae_positif = next((montant_ae for montant_ae in self.montant_ae if montant_ae.montant > 0), None)
 
                 if (montant_ae_positif is None):
                     if (montant_ae_annee is None): # si aucun montant positif enregistré et sur, alors on ajoute
                         self.montant_ae.append(MontantFinancialAe(montant=nouveau_montant, annee=annee))
                     else :
                         montant_ae_annee.montant = nouveau_montant
+                        montant_ae_annee.annee = annee
                 else :
                     # sinon je prend le montant positif le plus récent
                     montant_ae_positif.montant = nouveau_montant if (montant_ae_positif.annee <= annee) else montant_ae_positif.montant
+                    montant_ae_positif.annee = annee if (montant_ae_positif.annee <= annee) else montant_ae_positif.annee
 
             else: # nouveau_montant < 0
                 if (montant_ae_annee is None) : # si l'année n'est pas déjà enregistré, alors on ajoute le montant
@@ -128,7 +133,7 @@ class FinancialAe(FinancialData, db.Model):
         :param new_financial:
         :return:
         '''
-        if(new_financial[FinancialAe.source_region.key] != self.source_region):
+        if(self.source_region is not None and new_financial[FinancialAe.source_region.key] != self.source_region):
             return False
 
         nouveau_montant = new_financial[COLUMN_MONTANT_NAME]
