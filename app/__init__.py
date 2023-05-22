@@ -24,7 +24,6 @@ cache = Cache()
 
 def create_app_migrate():
     app = create_app_base(oidc_enable=False, expose_endpoint=False)
-    from app import models
     migrate = Migrate()
     migrate.init_app(app, db)
     return app
