@@ -1,8 +1,7 @@
-import datetime
 from abc import abstractmethod
-from datetime import datetime
 from app.models.common.Audit import Audit
 
+__all__ = ('FinancialData',)
 
 class FinancialData(Audit):
 
@@ -31,7 +30,7 @@ class FinancialData(Audit):
                 setattr(self, key, value)
 
     @abstractmethod
-    def do_update(self, new_financial: dict):
+    def should_update(self, new_financial: dict)-> bool :
         pass
 
     @staticmethod
