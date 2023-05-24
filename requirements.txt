@@ -25,7 +25,7 @@ redis==4.3.4
 flower==1.2.0
 gevent==22.10.2
 nocodb==0.1.0
-python-keycloak==2.14.0
+python-keycloak==2.16.3
 uuid==1.30
 pytest==7.2.2
 xlrd==2.0.1
