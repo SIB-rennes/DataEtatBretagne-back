@@ -8,15 +8,16 @@ from flask import g
 from flask_restx import Namespace, Resource, abort, inputs
 
 from app.clients.keycloack.factory import make_or_get_keycloack_admin, KeycloakConfigurationException
+from app.controller import ErrorController
 from app.controller.Decorators import check_permission
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
 from app.models.enums.ConnectionProfile import ConnectionProfile
 
 api = Namespace(name="users", path='/users',
-                description='API for managing users')
+                description='API de gestion des utilisateurs')
 parser_get = get_pagination_parser()
-parser_get.add_argument("only_disable", type=inputs.boolean, required=False, default=False, help="Only disable user or not")
+parser_get.add_argument("only_disable", type=inputs.boolean, required=False, default=False, help="Uniquement les utilisateurs non actif ou non")
 
 oidc = current_app.extensions['oidc']
 
@@ -32,7 +33,7 @@ class UsersManagement(Resource):
     @check_permission(ConnectionProfile.ADMIN)
     def get(self):
         """
-        Get a list of users.
+        Retourne la liste des utilisateurs
         """
         p_args = parser_get.parse_args()
         page_number = p_args.get("pageNumber")
@@ -57,18 +58,36 @@ class UsersManagement(Resource):
             return abort(message=admin_exception.message, code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
-@api.route('/disable/<uuid>')
+@api.route('/<uuid>')
+class UserDelete(Resource):
+    @api.response(200, 'Success')
+    @api.response(400, 'Utilisateur est activé')
+    @api.doc(security="Bearer")
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @check_permission(ConnectionProfile.ADMIN)
+    def delete(self, uuid):
+        """
+          Supprime l'utilisateur si il est désactivé
+        """
+        logging.debug(f'[USERS] Call enable users {uuid}')
+        keycloak_admin = make_or_get_keycloack_admin()
+        user = keycloak_admin.get_user(uuid)
+        if (user['enabled'] == False):
+            keycloak_admin.delete_user(user_id=uuid)
+            return "Success", 200
+        else :
+            return ErrorController("User is enabled").to_json(), 400
+
+@api.route('/<uuid>/disable')
 class UsersDisable(Resource):
-    """
-    Resource for disabling users.
-    """
+
     @api.response(200, 'Success')
     @api.doc(security="Bearer")
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @check_permission(ConnectionProfile.ADMIN)
     def patch(self, uuid):
         """
-        Disable a user.
+        Désactive un utilisateur
         """
         logging.debug(f'[USERS] Call disable users {uuid}')
 
@@ -79,18 +98,16 @@ class UsersDisable(Resource):
             return make_response("", 200)
         except KeycloakConfigurationException as admin_exception:
             return abort(message= admin_exception.message, code=HTTPStatus.INTERNAL_SERVER_ERROR)
-@api.route('/enable/<uuid>')
+@api.route('/<uuid>/enable')
 class UsersEnable(Resource):
-    """
-    Resource for enabling users.
-    """
+
     @api.response(200, 'Success')
     @api.doc(security="Bearer")
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @check_permission(ConnectionProfile.ADMIN)
     def patch(self, uuid):
         """
-        Enable a user.
+        Active un compte utilisateur
         """
         logging.debug(f'[USERS] Call enable users {uuid}')
         try:
