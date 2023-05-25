@@ -1,3 +1,3 @@
 from .factory import get_or_make_api_entreprise
-from api_entreprise.exceptions import LimitHitError, ApiError
+from api_entreprise.exceptions import LimitHitError, ApiError, ApiEntrepriseClientError
 from api_entreprise.models.donnees_etablissement import DonneesEtablissement
