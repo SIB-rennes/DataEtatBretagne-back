@@ -50,7 +50,7 @@ class ApiSubventions():
             )
             return representant
 
-        raws = _dict_get_nested(json_dict, 'etablissement', 'representants_legaux')
+        raws = _dict_get_nested(json_dict, 'etablissement', 'representants_legaux', default={})
         return [map(x) for x in raws]
     
     def _json_to_subventions(self, json_dict) -> list[Subvention]:
