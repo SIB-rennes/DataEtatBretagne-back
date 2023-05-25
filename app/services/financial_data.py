@@ -3,14 +3,22 @@ import os
 import tempfile
 import pandas
 from flask import current_app
+from sqlalchemy import Select
+from sqlalchemy.orm import selectinload,contains_eager
 from werkzeug.utils import secure_filename
 
 from app import db
 from app.exceptions.exceptions import InvalidFile
 from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.DataType import DataType
+from app.models.financial.MontantFinancialAe import MontantFinancialAe
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.financial.FinancialAe import FinancialAe
+from app.models.refs.code_programme import CodeProgramme
+from app.models.refs.commune import Commune
+from app.models.refs.referentiel_programmation import ReferentielProgrammation
+from app.models.refs.siret import Siret
+from app.models.refs.theme import Theme
 from app.services import allowed_file, FileNotAllowedException
 
 def import_ae(file_ae, source_region:str, annee: int, force_update: bool, username=""):
@@ -35,6 +43,45 @@ def import_cp(file_cp, source_region:str, annee: int, username=""):
     db.session.add(AuditUpdateData(username=username, filename=file_cp.filename, data_type=DataType.FINANCIAL_DATA_CP))
     db.session.commit()
     return task
+
+
+def get_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
+                          code_geo: list = None, pageNumber=1, limit=500):
+
+    stmt = _build_select_financial_ae()
+
+    stmt = stmt.join(FinancialAe.ref_siret.and_(Siret.code.in_(siret_beneficiaire))) if siret_beneficiaire is not None else stmt.join(Siret)
+    stmt = stmt.join(Siret.ref_commune)
+
+    if code_programme is not None:
+        stmt = stmt.join(FinancialAe.ref_programme.and_(CodeProgramme.code.in_(code_programme))).join(CodeProgramme.theme_r)
+    elif theme is not None:
+        stmt = stmt.join(FinancialAe.ref_programme).join(CodeProgramme.theme_r.and_(Theme.label.in_(theme)))
+    else:
+        stmt = stmt.join(FinancialAe.ref_programme).join(CodeProgramme.theme_r)
+
+    if annee is not None:
+        stmt = stmt.where(FinancialAe.annee.in_(annee))
+
+    stmt = stmt.options(
+            contains_eager(FinancialAe.ref_programme).load_only(CodeProgramme.label).contains_eager(CodeProgramme.theme_r).load_only(Theme.label),
+            contains_eager(FinancialAe.ref_siret).load_only(Siret.code, Siret.denomination).contains_eager(Siret.ref_commune).load_only(Commune.label_commune))
+
+    page_result = db.paginate(stmt, per_page=limit, page=pageNumber, error_out=False)
+
+    return page_result
+
+
+def _build_select_financial_ae() -> Select:
+
+    return db.select(FinancialAe)\
+        .options(db.defer(FinancialAe.source_region),
+                 db.defer(FinancialAe.groupe_marchandise),
+                 db.defer(FinancialAe.compte_budgetaire),
+                 selectinload(FinancialAe.montant_ae).load_only(MontantFinancialAe.montant),
+                 selectinload(FinancialAe.financial_cp).load_only(FinancialCp.montant),
+                 db.defer(FinancialAe.contrat_etat_region))
+
 
 def _check_file_and_save(file) -> str:
     if file.filename == '':

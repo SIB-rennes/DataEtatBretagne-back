@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String
+from sqlalchemy.orm import relationship
 
 from app import db
 from app.models.common.Audit import Audit
@@ -16,3 +17,5 @@ class Siret(Audit, db.Model):
 
     denomination = Column(String)
     adresse = Column(String)
+
+    ref_commune =  relationship("Commune", lazy="select")

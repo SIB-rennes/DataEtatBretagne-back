@@ -3,12 +3,16 @@ import logging
 from datetime import datetime
 from dataclasses import dataclass
 
+from flask_marshmallow.sqla import auto_field
+from marshmallow import fields
 from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, UniqueConstraint
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
-from app import db
+from app import db, ma
 from app.models.financial import FinancialData
 from app.models.financial.MontantFinancialAe import MontantFinancialAe
+from app.models.refs.commune import CommuneSchema
 
 COLUMN_MONTANT_NAME= 'montant'
 
@@ -40,8 +44,20 @@ class FinancialAe(FinancialData, db.Model):
     contrat_etat_region: str = Column(String(255))
     annee: int = Column(Integer, nullable= False) # annee de l'AE chorus
 
-    montant_ae = relationship("MontantFinancialAe", uselist=True)
+    montant_ae = relationship("MontantFinancialAe", uselist=True, lazy="select")
+    financial_cp = relationship("FinancialCp", uselist=True, lazy="select")
+    ref_programme = relationship("CodeProgramme", lazy="select")
+    ref_domaine_fonctionnel = relationship("DomaineFonctionnel", lazy="select")
+    ref_ref_programmation = relationship("ReferentielProgrammation", lazy="select")
+    ref_siret = relationship("Siret", lazy="select")
 
+    @hybrid_property
+    def montant_ae_total(self):
+        return sum(montant_financial_ae.montant for montant_financial_ae in self.montant_ae)
+
+    @hybrid_property
+    def montant_cp(self):
+        return sum(financial_cp.montant for financial_cp in self.financial_cp)
 
     def __init__(self, **kwargs):
         """
@@ -139,3 +155,21 @@ class FinancialAe(FinancialData, db.Model):
 
 
 
+
+
+class FinancialAeSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = FinancialAe
+        exclude = ('id','groupe_marchandise','updated_at','created_at','source_region','compte_budgetaire','contrat_etat_region','financial_cp')
+
+    montant_ae = fields.Method('_map_montant')
+    montant_cp = fields.Integer()
+    label_commune = fields.Method('_map_commune')
+    domaine_fonctionnel = auto_field()
+    referentiel_programmation = auto_field()
+    programme = auto_field()
+    def _map_commune(self, obj: FinancialAe):
+        return obj.ref_siret.ref_commune.label_commune
+
+    def _map_montant(self, obj:FinancialAe):
+        return obj.montant_ae_total
