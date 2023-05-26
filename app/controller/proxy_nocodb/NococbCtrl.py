@@ -46,8 +46,9 @@ class NocoDb(Resource):
             else:
                 logging.debug('[NOCODB] return response')
                 return table_rows, 200
-        except requests.exceptions.JSONDecodeError :
+        except requests.exceptions.JSONDecodeError as e :
             logging.exception('[NOCODB] Error JSOnDecodeError')
+            raise e
 
 
 @api.route('/<table>/<views>/csv')

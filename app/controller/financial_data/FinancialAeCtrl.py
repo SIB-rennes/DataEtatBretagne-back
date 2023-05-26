@@ -1,12 +1,14 @@
 from flask import jsonify, current_app, request, g
-from flask_restx import Namespace, Resource, reqparse
+from flask_restx import Namespace, Resource
 
+from app.controller import ErrorController
 from app.controller.Decorators import check_permission
 from app.controller.financial_data import check_param_import, parser_import
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
 from app.models.enums.ConnectionProfile import ConnectionProfile
 from app.models.financial.FinancialAe import FinancialAeSchema
+from app.services.code_geo import BadCodeGeoException
 from app.services.financial_data import import_ae, get_financial_data_ae
 
 api = Namespace(name="Engagement", path='/',
@@ -25,6 +27,11 @@ parser_get.add_argument('code_geo', type=str, action="split", help="Le code d'un
 parser_get.add_argument('theme', type=str, action="split", help="Le libelle theme (si code_programme est renseigné, le theme est ignoré)")
 parser_get.add_argument('siret_beneficiaire', type=str, action="split", help="Code siret d'un beneficiaire")
 parser_get.add_argument('annee', type=int, action="split", help="L'année comptable")
+
+
+@api.errorhandler(BadCodeGeoException)
+def handle_error_input_parameter(e: BadCodeGeoException):
+    return ErrorController(e.message).to_json(), 400
 
 @api.route('/ae')
 class FinancialAe(Resource):

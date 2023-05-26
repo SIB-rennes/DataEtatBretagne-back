@@ -20,6 +20,8 @@ from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.models.refs.siret import Siret
 from app.models.refs.theme import Theme
 from app.services import allowed_file, FileNotAllowedException
+from app.services.code_geo import BuilderCodeGeo
+
 
 def import_ae(file_ae, source_region:str, annee: int, force_update: bool, username=""):
     save_path = _check_file_and_save(file_ae)
@@ -48,6 +50,9 @@ def import_cp(file_cp, source_region:str, annee: int, username=""):
 def get_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
                           code_geo: list = None, pageNumber=1, limit=500):
 
+    if (code_geo is not None):
+        (type, code_geo)  = BuilderCodeGeo.build_list_code_geo(code_geo)
+
     stmt = _build_select_financial_ae()
 
     stmt = stmt.join(FinancialAe.ref_siret.and_(Siret.code.in_(siret_beneficiaire))) if siret_beneficiaire is not None else stmt.join(Siret)
@@ -73,6 +78,10 @@ def get_financial_data_ae(code_programme: list = None, theme: list = None, siret
 
 
 def _build_select_financial_ae() -> Select:
+    '''
+    Construit la selection des données fiancières
+    :return: Select statement
+    '''
 
     return db.select(FinancialAe)\
         .options(db.defer(FinancialAe.source_region),
