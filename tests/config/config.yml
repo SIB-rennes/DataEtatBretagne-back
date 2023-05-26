@@ -1,1 +1,2 @@
 DEBUG: true
+task_always_eager: True

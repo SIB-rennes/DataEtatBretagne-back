@@ -23,7 +23,7 @@ from app.models.refs.localisation_interministerielle import LocalisationIntermin
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 
 from app.services.siret import update_siret_from_api_entreprise, LimitHitError
-
+from app.tasks import limiter_queue
 
 LOGGER = logging.getLogger()
 
@@ -38,8 +38,9 @@ def import_file_ae_financial(self, fichier, source_region: str, annee: int, forc
                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': int,
                                              'fournisseur_titulaire': str,
                                              'siret': str})
-        for index, chorus_data in data_chorus.iterrows():
-            subtask("import_line_financial_ae").delay(chorus_data.to_json(), index, source_region, annee, force_update)
+        series = pandas.Series({ f'{FinancialAe.annee.key}' : annee, f'{FinancialAe.source_region.key}': source_region})
+        for index, line in data_chorus.iterrows():
+            _send_subtask_financial_ae(line.append(series).to_json(), index, force_update)
 
         os.remove(fichier)
         LOGGER.info('[IMPORT][FINANCIAL][AE] End')
@@ -59,7 +60,7 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
                                              'siret': str})
         _delete_cp(annee, source_region)
         for index, chorus_data in data_chorus.iterrows():
-            subtask("import_line_financial_cp").delay(chorus_data.to_json(), index, source_region, annee)
+            _send_subtask_financial_cp(chorus_data.to_json(), index, source_region, annee)
 
         os.remove(fichier)
         LOGGER.info('[IMPORT][FINANCIAL][CP] End')
@@ -68,13 +69,21 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
         LOGGER.exception(f"[IMPORT][FINANCIAL][CP] Error lors de l'import du fichier {fichier} chorus")
         raise e
 
+
+@limiter_queue(queue_name='line')
+def _send_subtask_financial_ae(line, index, force_update):
+    subtask("import_line_financial_ae").delay(line, index, force_update)
+@limiter_queue(queue_name='line')
+def _send_subtask_financial_cp(line, index, source_region, annee):
+    subtask("import_line_financial_cp").delay(line, index, source_region, annee)
+
 @celery.task(bind=True, name='import_line_financial_ae', autoretry_for=(ChorusException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
-def import_line_financial_ae(self, data_chorus, index, source_region: str, annee: int, force_update: bool):
-    line = json.loads(data_chorus)
+def import_line_financial_ae(self, dict_financial: dict, index: int, force_update: bool):
+    line = json.loads(dict_financial)
     try :
-        get_instance = db.session.query(FinancialAe).filter_by(n_ej=line[FinancialAe.n_ej.key],
+        financial_ae_instance = db.session.query(FinancialAe).filter_by(n_ej=line[FinancialAe.n_ej.key],
                                                   n_poste_ej=line[FinancialAe.n_poste_ej.key]).one_or_none()
-        financial_instance = _check_insert_update_financial(get_instance,line, force_update)
+        financial_instance = _check_insert_update_financial(financial_ae_instance,line, force_update)
     except sqlalchemy.exc.OperationalError as o:
         LOGGER.exception(f"[IMPORT][CHORUS] Erreur index {index} sur le check ligne chorus")
         raise ChorusException(o) from o
@@ -82,7 +91,7 @@ def import_line_financial_ae(self, data_chorus, index, source_region: str, annee
 
     if financial_instance != False:
         try:
-            new_ae = FinancialAe(line, source_region=source_region, annee=annee)
+            new_ae = FinancialAe(**line)
 
             _check_ref(CodeProgramme, new_ae.programme)
             _check_ref(CentreCouts, new_ae.centre_couts)
@@ -96,13 +105,13 @@ def import_line_financial_ae(self, data_chorus, index, source_region: str, annee
             _check_siret(new_ae.siret)
 
             # CHORUS
-            financial_ae = None
+            new_financial_ae = None
             if financial_instance == True:
-                financial_ae = _insert_financial_data(new_ae)
+                new_financial_ae = _insert_financial_data(new_ae)
             else:
-                financial_ae = _update_financial_data(line, financial_instance, source_region, annee)
+                new_financial_ae = _update_financial_data(line, financial_instance)
 
-            _make_link_ae_to_cp(financial_ae.id, financial_ae.n_ej, financial_ae.n_poste_ej)
+            _make_link_ae_to_cp(new_financial_ae.id, new_financial_ae.n_ej, new_financial_ae.n_poste_ej)
 
         except LimitHitError as e:
             delay = (e.delay) + 5
@@ -217,23 +226,23 @@ def _check_siret(siret):
 
         LOGGER.info(f"[IMPORT][FINANCIAL] Siret {siret} ajouté")
 
-def _check_insert_update_financial(get_instance: FinancialData | None, line, force_update: bool):
+def _check_insert_update_financial(financial_ae: FinancialData | None, line,force_update: bool) -> FinancialData | bool:
     '''
 
-    :param get_instance: l'instance financière déjà présente ou non
+    :param financial_ae: l'instance financière déjà présente ou non
     :param force_update:
-    :return: True -> Chorus à créer
+    :return: True -> Objet à créer
              False -> rien à faire
-             Instance chorus -> Chorus à maj
+             Instance chorus -> Objet à update
     '''
 
-    if get_instance:
+    if financial_ae:
         if force_update:
             LOGGER.info('[IMPORT][FINANCIAL] Doublon trouvé, Force Update')
-            return get_instance
-        if get_instance.do_update(line):
+            return financial_ae
+        if financial_ae.should_update(line):
             LOGGER.info('[IMPORT][FINANCIAL] Doublon trouvé, MAJ à faire')
-            return get_instance
+            return financial_ae
         else:
             LOGGER.info('[IMPORT][FINANCIAL] Doublon trouvé, Pas de maj')
             return False
@@ -247,11 +256,8 @@ def _insert_financial_data(data: FinancialData) -> FinancialData:
     return data
 
 
-def _update_financial_data(data, financial: FinancialData, code_source_region: str, annee: int) -> FinancialData:
+def _update_financial_data(data, financial: FinancialData) -> FinancialData:
     financial.update_attribute(data)
-
-    financial.source_region = code_source_region
-    financial.annee = annee
     LOGGER.info('[IMPORT][FINANCIAL] Update ligne financière')
     db.session.commit()
     return financial

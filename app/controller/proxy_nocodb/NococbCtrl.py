@@ -36,8 +36,8 @@ class NocoDb(Resource):
         project = request.blueprint
         client = build_client(project)
 
-        params = build_params(args_get.parse_args())
-        logging.debug(f'[NOCODB] get {table} {views} where {params}')
+        params = request.args
+        logging.debug(f'[NOCODB] get {table} {views} with params {params}')
         try:
             table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
             if ('msg' in table_rows):
@@ -59,7 +59,7 @@ class ExportCsv(Resource):
     def get(self, table, views):
         project = request.blueprint
         client = build_client(project)
-        params = build_params(args_get.parse_args())
+        params = request.args
         logging.debug(f'[NOCODB] get CSV {table} {views} where {params}')
 
         table_rows = client.table_row_list(NocoDBProject("noco", project), f'{table}/views/{views}', params=params)
@@ -114,12 +114,12 @@ def build_client(project) -> NocoDBRequestsClient:
         abort(500, f"Erreur interne ")
 
 
-def build_params(args):
-    params = {
-        'limit': 20 if  args['limit'] is None else args['limit'],
-        'offset': 0 if args['offset'] is None else args['offset'],
-        'sort': None if args['sort'] is None else args['sort'],
-        'fields':  None if args['fields'] is None else args['fields'],
-        'where': None if args['where'] is None else args['where'],
-    }
-    return params
+# def build_params(args):
+#     params = {
+#         'limit': 20 if  args['limit'] is None else args['limit'],
+#         'offset': 0 if args['offset'] is None else args['offset'],
+#         'sort': None if args['sort'] is None else args['sort'],
+#         'fields':  None if args['fields'] is None else args['fields'],
+#         'where': None if args['where'] is None else args['where']
+#     }
+#     return params

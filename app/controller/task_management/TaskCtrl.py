@@ -66,8 +66,11 @@ class TaskRun(Resource):
             abort(404)
 
         args_decode = task.args.decode("utf-8")
+        kwargs = task.kwargs.decode("utf-8")
 
-        celeryapp.celery.send_task(task.name, args=json.loads(args_decode))
+        celeryapp.celery.send_task(task.name, args=json.loads(args_decode),kwargs=json.loads(kwargs) )
+        _get_session_celery().delete(task)
+        _get_session_celery().commit()
         return 200
 
 
@@ -90,14 +93,14 @@ class TaskRunImportRef(Resource):
     @api.expect(parser)
     def post(self):
         data = request.form
-        file = request.files['file']
+        file_ref = request.files['file']
 
         if 'class_name' not in data or 'columns' not in data:
             return {"status":"Le modèle n'existe pas ou les colonnes sont manquantes"}, 400
 
         username = g.oidc_token_info['username'] if hasattr(g,'oidc_token_info') and 'username' in g.oidc_token_info else ''
         try :
-            task = import_refs(file, data, username)
+            task = import_refs(file_ref, data, username)
             return jsonify(
                 {"status": f'Fichier récupéré. Demande d`import du referentiel (taches asynchrone id = {task.id}'})
         except ReferentielNotFound:

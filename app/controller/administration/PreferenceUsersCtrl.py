@@ -22,7 +22,7 @@ from app.controller.utils.ControllerUtils import get_origin_referrer
 from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema, Share
 
 api = Namespace(name="preferences", path='/users/preferences',
-                description='API for managing users preference')
+                description='API de gestion des préférences utilisateurs')
 oidc = current_app.extensions['oidc']
 
 preference = api.model('CreateUpdatePreference', {

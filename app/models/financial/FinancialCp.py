@@ -58,7 +58,7 @@ class FinancialCp(FinancialData, db.Model):
 
         self.update_attribute(line_chorus)
 
-    def do_update(self, new_financial:dict):
+    def should_update(self, new_financial:dict)-> bool:
         return True
 
     def __setattr__(self, key, value):
