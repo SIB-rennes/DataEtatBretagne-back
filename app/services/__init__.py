@@ -50,12 +50,12 @@ class BuilderStatementFinancialAe():
         """
         if code_programme is not None:
             self._stmt = self._stmt.join(FinancialAe.ref_programme.and_(CodeProgramme.code.in_(code_programme))).join(
-                CodeProgramme.theme_r)
+                CodeProgramme.theme_r, isouter=True)
         elif theme is not None:
             self._stmt = self._stmt.join(FinancialAe.ref_programme).join(
-                CodeProgramme.theme_r.and_(Theme.label.in_(theme)))
+                CodeProgramme.theme_r.and_(Theme.label.in_(theme)), isouter=True)
         else:
-            self._stmt = self._stmt.join(FinancialAe.ref_programme).join(CodeProgramme.theme_r)
+            self._stmt = self._stmt.join(FinancialAe.ref_programme).join(CodeProgramme.theme_r, isouter=True)
 
         self._stmt = self._stmt.join(FinancialAe.ref_ref_programmation)
         self._stmt = self._stmt.join(FinancialAe.ref_domaine_fonctionnel)
