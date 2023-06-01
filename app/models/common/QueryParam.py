@@ -21,7 +21,7 @@ class QueryParam():
         p_args = request_parser.parse_args()
 
         self.query_search = p_args.get("query") if p_args.get("query") is not None else None
-        self.page_number = p_args.get("pageNumber")
+        self.page_number = p_args.get("page_number")
         self.limit = p_args.get("limit")
 
 

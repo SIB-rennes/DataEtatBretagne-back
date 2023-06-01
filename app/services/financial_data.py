@@ -3,15 +3,26 @@ import os
 import tempfile
 import pandas
 from flask import current_app
+from sqlalchemy import Select, text, bindparam
+from sqlalchemy.orm import contains_eager, selectinload
 from werkzeug.utils import secure_filename
 
 from app import db
 from app.exceptions.exceptions import InvalidFile
 from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.DataType import DataType
+from app.models.enums.TypeCodeGeo import TypeCodeGeo
+
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.financial.FinancialAe import FinancialAe
-from app.services import allowed_file, FileNotAllowedException
+from app.models.financial.MontantFinancialAe import MontantFinancialAe
+from app.models.refs.code_programme import CodeProgramme
+from app.models.refs.commune import Commune
+from app.models.refs.siret import Siret
+from app.models.refs.theme import Theme
+from app.services import allowed_file, FileNotAllowedException, BuilderStatementFinancialAe
+from app.services.code_geo import BuilderCodeGeo
+
 
 def import_ae(file_ae, source_region:str, annee: int, force_update: bool, username=""):
     save_path = _check_file_and_save(file_ae)
@@ -35,6 +46,25 @@ def import_cp(file_cp, source_region:str, annee: int, username=""):
     db.session.add(AuditUpdateData(username=username, filename=file_cp.filename, data_type=DataType.FINANCIAL_DATA_CP))
     db.session.commit()
     return task
+
+
+def get_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
+                          code_geo: list = None, page_number=1, limit=500):
+
+
+    query_siret = BuilderStatementFinancialAe().select()\
+        .join_filter_siret(siret_beneficiaire)\
+        .join_filter_programme_theme(code_programme, theme)
+
+    if code_geo is not None:
+        (type_geo, list_code_geo) = BuilderCodeGeo().build_list_code_geo(code_geo)
+        query_siret.where_geo(type_geo, list_code_geo)
+    else :
+        query_siret.join_commune()
+
+    page_result = query_siret.where_annee(annee).options_select_load().do_paginate(limit, page_number)
+    return page_result
+
 
 def _check_file_and_save(file) -> str:
     if file.filename == '':

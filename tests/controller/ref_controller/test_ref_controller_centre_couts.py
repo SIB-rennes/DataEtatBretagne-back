@@ -55,8 +55,8 @@ def test_search_centre_cout_bycode_label(test_client, add_data):
 
 def test_search_centre_cout_bycode(test_client, add_data):
     test="code1"
-    resp = test_client.get('/budget/api/v1/centre-couts?query='+test+'&limit=5&pageNumber=0')
-    resp_page2 = test_client.get('/budget/api/v1/centre-couts?query=' + test + '&limit=5&pageNumber=2')
+    resp = test_client.get('/budget/api/v1/centre-couts?query='+test+'&limit=5&page_number=0')
+    resp_page2 = test_client.get('/budget/api/v1/centre-couts?query=' + test + '&limit=5&page_number=2')
 
     assert resp.status_code == 200
     assert resp_page2.status_code == 200

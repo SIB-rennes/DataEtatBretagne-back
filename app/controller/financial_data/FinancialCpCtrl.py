@@ -20,6 +20,10 @@ class FinancialCpImport(Resource):
     @check_param_import()
     @api.doc(security="Bearer")
     def post(self):
+        """
+        Charge un fichier issue de CHorus pour enregistrer les crédits de paiements
+        Les lignes sont insérés de manière asynchrone
+        """
         data = request.form
         file_cp = request.files['fichier']
 
