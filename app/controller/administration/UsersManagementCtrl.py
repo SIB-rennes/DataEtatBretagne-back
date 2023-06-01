@@ -35,7 +35,7 @@ class UsersManagement(Resource):
         Get a list of users.
         """
         p_args = parser_get.parse_args()
-        page_number = p_args.get("pageNumber")
+        page_number = p_args.get("page_number")
         limit = p_args.get("limit")
         if (page_number < 1 ) :
             page_number = 1

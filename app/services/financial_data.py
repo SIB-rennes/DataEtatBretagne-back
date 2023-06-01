@@ -3,23 +3,24 @@ import os
 import tempfile
 import pandas
 from flask import current_app
-from sqlalchemy import Select
-from sqlalchemy.orm import selectinload,contains_eager
+from sqlalchemy import Select, text, bindparam
+from sqlalchemy.orm import contains_eager, selectinload
 from werkzeug.utils import secure_filename
 
 from app import db
 from app.exceptions.exceptions import InvalidFile
 from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.DataType import DataType
-from app.models.financial.MontantFinancialAe import MontantFinancialAe
+from app.models.enums.TypeCodeGeo import TypeCodeGeo
+
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.financial.FinancialAe import FinancialAe
+from app.models.financial.MontantFinancialAe import MontantFinancialAe
 from app.models.refs.code_programme import CodeProgramme
 from app.models.refs.commune import Commune
-from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.models.refs.siret import Siret
 from app.models.refs.theme import Theme
-from app.services import allowed_file, FileNotAllowedException
+from app.services import allowed_file, FileNotAllowedException, BuilderStatementFinancialAe
 from app.services.code_geo import BuilderCodeGeo
 
 
@@ -48,48 +49,21 @@ def import_cp(file_cp, source_region:str, annee: int, username=""):
 
 
 def get_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
-                          code_geo: list = None, pageNumber=1, limit=500):
+                          code_geo: list = None, page_number=1, limit=500):
 
-    if (code_geo is not None):
-        (type, code_geo)  = BuilderCodeGeo.build_list_code_geo(code_geo)
 
-    stmt = _build_select_financial_ae()
+    query_siret = BuilderStatementFinancialAe().select()\
+        .join_filter_siret(siret_beneficiaire)\
+        .join_filter_programme_theme(code_programme, theme)
 
-    stmt = stmt.join(FinancialAe.ref_siret.and_(Siret.code.in_(siret_beneficiaire))) if siret_beneficiaire is not None else stmt.join(Siret)
-    stmt = stmt.join(Siret.ref_commune)
+    if code_geo is not None:
+        (type_geo, list_code_geo) = BuilderCodeGeo().build_list_code_geo(code_geo)
+        query_siret.where_geo(type_geo, list_code_geo)
+    else :
+        query_siret.join_commune()
 
-    if code_programme is not None:
-        stmt = stmt.join(FinancialAe.ref_programme.and_(CodeProgramme.code.in_(code_programme))).join(CodeProgramme.theme_r)
-    elif theme is not None:
-        stmt = stmt.join(FinancialAe.ref_programme).join(CodeProgramme.theme_r.and_(Theme.label.in_(theme)))
-    else:
-        stmt = stmt.join(FinancialAe.ref_programme).join(CodeProgramme.theme_r)
-
-    if annee is not None:
-        stmt = stmt.where(FinancialAe.annee.in_(annee))
-
-    stmt = stmt.options(
-            contains_eager(FinancialAe.ref_programme).load_only(CodeProgramme.label).contains_eager(CodeProgramme.theme_r).load_only(Theme.label),
-            contains_eager(FinancialAe.ref_siret).load_only(Siret.code, Siret.denomination).contains_eager(Siret.ref_commune).load_only(Commune.label_commune))
-
-    page_result = db.paginate(stmt, per_page=limit, page=pageNumber, error_out=False)
-
+    page_result = query_siret.where_annee(annee).options_select_load().do_paginate(limit, page_number)
     return page_result
-
-
-def _build_select_financial_ae() -> Select:
-    '''
-    Construit la selection des données fiancières
-    :return: Select statement
-    '''
-
-    return db.select(FinancialAe)\
-        .options(db.defer(FinancialAe.source_region),
-                 db.defer(FinancialAe.groupe_marchandise),
-                 db.defer(FinancialAe.compte_budgetaire),
-                 selectinload(FinancialAe.montant_ae).load_only(MontantFinancialAe.montant),
-                 selectinload(FinancialAe.financial_cp).load_only(FinancialCp.montant),
-                 db.defer(FinancialAe.contrat_etat_region))
 
 
 def _check_file_and_save(file) -> str:

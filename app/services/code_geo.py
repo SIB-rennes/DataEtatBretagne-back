@@ -51,7 +51,6 @@ class BuilderCodeGeo():
         :return: le type de code géo commun à tous les éléments de la liste et une liste des codes géographiques
         :raise BadCodeGeoException: si la liste ne contient pas des code geo de même type
         '''
-        list
         list_code_geo = []
         for code_geo in list_code:
             list_code_geo.append(CodeGeo(code_geo))
@@ -60,7 +59,7 @@ class BuilderCodeGeo():
 
         all_same_type_geo = all(code_geo.type == type_geo for code_geo in list_code_geo)
         if not all_same_type_geo:
-            raise BadCodeGeoException(message="La liste ne contient pas des code geo de même type")
+            raise BadCodeGeoException(message="La liste ne contient pas des codes geo de même type")
 
         return type_geo, [code_geo.code_geo for code_geo in list_code_geo]
 

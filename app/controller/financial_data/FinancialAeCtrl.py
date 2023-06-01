@@ -42,6 +42,10 @@ class FinancialAe(Resource):
     @check_param_import()
     @api.doc(security="Bearer")
     def post(self):
+        """
+        Charge un fichier issue de Chorus pour enregistrer les lignes d'engagements
+        Les lignes sont insérés de façon asynchrone
+        """
         data = request.form
 
         file_ae = request.files['fichier']
@@ -54,7 +58,12 @@ class FinancialAe(Resource):
         return jsonify({"status": f'Fichier récupéré. Demande d`import des engaments des données fiancières de l\'état en cours (taches asynchrone id = {task.id}'})
 
     @api.expect(parser_get)
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @api.doc(security="Bearer")
     def get(self):
+        """
+        Retourne les lignes d'engagements Chorus
+        """
         params = parser_get.parse_args()
         page_result = get_financial_data_ae(**params)
 

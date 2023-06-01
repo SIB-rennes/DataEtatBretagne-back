@@ -32,3 +32,4 @@ class LocalisationInterministerielleSchema(ma.SQLAlchemyAutoSchema):
     description = fields.String()
     niveau =  fields.String()
     code_parent = fields.String()
+    commune = fields.Nested(CommuneSchema)
