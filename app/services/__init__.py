@@ -36,7 +36,7 @@ class BuilderStatementFinancialAe():
                      db.defer(FinancialAe.groupe_marchandise),
                      db.defer(FinancialAe.compte_budgetaire),
                      selectinload(FinancialAe.montant_ae).load_only(MontantFinancialAe.montant),
-                     selectinload(FinancialAe.financial_cp).load_only(FinancialCp.montant),
+                     selectinload(FinancialAe.financial_cp).load_only(FinancialCp.montant, FinancialCp.date_derniere_operation_dp),
                      db.defer(FinancialAe.contrat_etat_region))
         return self
 
