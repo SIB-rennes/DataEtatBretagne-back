@@ -3,7 +3,7 @@ import json
 
 from celery import states
 from flask import request, current_app, jsonify, g, abort
-from flask_restx import Namespace, Resource, reqparse, inputs
+from flask_restx import Namespace, Resource, reqparse, inputs, fields
 from flask_sqlalchemy.pagination import SelectPagination
 from sqlalchemy import select, desc
 from werkzeug.datastructures import FileStorage
@@ -55,8 +55,36 @@ class TaskFailed(Resource):
                     'pageInfo': Pagination(page_result.total, page_result.page, page_result.per_page).to_json()}, 200
 
 
-@api.route('/task/run/<task_id>')
+
+parser_task = api.model('task', {
+    'taskName': fields.String(required=True, help="nom de la tâche"),
+    'args': fields.Raw(required=False, default=None),
+    'kwargs': fields.Raw(required=False, default=None)
+})
+
+
+@api.route('/task/run')
 class TaskRun(Resource):
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @check_permission(ConnectionProfile.ADMIN)
+    @api.doc(security="Bearer")
+    @api.expect(parser_task)
+    def post(self):
+        """
+        Lance une task celery
+        """
+
+        data = request.get_json()
+        args= ()
+        if ("args" in data) :
+            for key,value  in data['args'].items():
+                args = args + (value,)
+        celeryapp.celery.send_task(name=data["taskName"],args=args)
+        return "",200
+
+
+@api.route('/task/run/<task_id>')
+class TaskRunId(Resource):
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @check_permission(ConnectionProfile.ADMIN)
     @api.doc(security="Bearer")
