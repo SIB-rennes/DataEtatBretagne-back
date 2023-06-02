@@ -3,10 +3,12 @@ import logging
 from datetime import datetime
 from dataclasses import dataclass
 
+from marshmallow import fields
 from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, UniqueConstraint
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
-from app import db
+from app import db, ma
 from app.models.financial import FinancialData
 from app.models.financial.MontantFinancialAe import MontantFinancialAe
 
@@ -40,8 +42,27 @@ class FinancialAe(FinancialData, db.Model):
     contrat_etat_region: str = Column(String(255))
     annee: int = Column(Integer, nullable= False) # annee de l'AE chorus
 
-    montant_ae = relationship("MontantFinancialAe", uselist=True)
+    montant_ae = relationship("MontantFinancialAe", uselist=True, lazy="select")
+    financial_cp = relationship("FinancialCp", uselist=True, lazy="select")
+    ref_programme = relationship("CodeProgramme", lazy="select")
+    ref_domaine_fonctionnel = relationship("DomaineFonctionnel", lazy="select")
+    ref_ref_programmation = relationship("ReferentielProgrammation", lazy="select")
+    ref_siret = relationship("Siret", lazy="select")
+    ref_localisation_interministerielle = relationship("LocalisationInterministerielle", lazy="select")
 
+    @hybrid_property
+    def montant_ae_total(self):
+        return sum(montant_financial_ae.montant for montant_financial_ae in self.montant_ae)
+
+    @hybrid_property
+    def montant_cp(self):
+        return sum(financial_cp.montant for financial_cp in self.financial_cp)
+
+    @hybrid_property
+    def date_cp(self):
+        if self.financial_cp:
+            return max(self.financial_cp, key=lambda obj: obj.date_derniere_operation_dp).date_derniere_operation_dp
+        return None
 
     def __init__(self, **kwargs):
         """
@@ -58,7 +79,7 @@ class FinancialAe(FinancialData, db.Model):
     def update_attribute(self, new_financial: dict):
         # Applicatin montant négatif
         if (self._should_update_montant_ae(new_financial)):
-            nouveau_montant = new_financial[COLUMN_MONTANT_NAME]
+            nouveau_montant = float(new_financial[COLUMN_MONTANT_NAME].replace(",",".")) if isinstance(new_financial[COLUMN_MONTANT_NAME], str) else new_financial[COLUMN_MONTANT_NAME]
             self.add_or_update_montant_ae(nouveau_montant, new_financial[FinancialAe.annee.key])
             if (nouveau_montant < 0 and self.annee):
                 del new_financial[FinancialAe.annee.key] # on ne maj pas l'année comptable si montant <0
@@ -79,7 +100,7 @@ class FinancialAe(FinancialData, db.Model):
         else :
             return datetime.strptime(new_financial['date_modification_ej'], '%d.%m.%Y') > self.date_modification_ej
 
-    def add_or_update_montant_ae(self, nouveau_montant, annee):
+    def add_or_update_montant_ae(self, nouveau_montant: float, annee):
         '''
         Ajoute un montant à une ligne AE
         :param nouveau_montant: le nouveau montant à ajouter
@@ -121,7 +142,8 @@ class FinancialAe(FinancialData, db.Model):
         if(self.source_region is not None and new_financial[FinancialAe.source_region.key] != self.source_region):
             return False
 
-        nouveau_montant = new_financial[COLUMN_MONTANT_NAME]
+        nouveau_montant = float(new_financial[COLUMN_MONTANT_NAME].replace(",",".")) if isinstance(new_financial[COLUMN_MONTANT_NAME], str) else new_financial[COLUMN_MONTANT_NAME]
+
         annee = new_financial[FinancialAe.annee.key]
 
         if any(montant_ae.montant == nouveau_montant and montant_ae.annee == annee for montant_ae in self.montant_ae):
@@ -137,5 +159,54 @@ class FinancialAe(FinancialData, db.Model):
                               'compte_budgetaire', 'groupe_marchandise', 'contrat_etat_region',
                               'contrat_etat_region_2','localisation_interministerielle', COLUMN_MONTANT_NAME]
 
+class FinancialAeSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = FinancialAe
+        exclude = ('id','groupe_marchandise','updated_at','created_at','source_region','compte_budgetaire','contrat_etat_region','financial_cp')
 
+    montant_ae = fields.Method('_map_montant')
+    montant_cp = fields.Float()
+    date_cp = fields.String()
+    commune = fields.Method('_map_commune')
+    domaine_fonctionnel = fields.Method('_map_domaine_fonctionnelle')
+    referentiel_programmation = fields.Method('_map_ref_programmation')
+    programme =  fields.Method('_map_programme')
+    n_ej = fields.String()
+    n_poste_ej = fields.Integer()
+    annee = fields.Integer()
+    siret = fields.Method('_map_siret')
 
+    def _map_commune(self, obj: FinancialAe):
+        return {
+            'label' : obj.ref_siret.ref_commune.label_commune,
+            'code' : obj.ref_siret.ref_commune.code
+        }
+
+    def _map_programme(self, obj:FinancialAe):
+        return {
+            'label': obj.ref_programme.label,
+            'code': obj.programme,
+            'theme': obj.ref_programme.label_theme
+        }
+
+    def _map_domaine_fonctionnelle(self, obj:FinancialAe):
+        return {
+            'label': obj.ref_domaine_fonctionnel.label,
+            'code': obj.domaine_fonctionnel
+        }
+
+    def _map_ref_programmation(self, obj:FinancialAe):
+        return {
+            'label': obj.ref_ref_programmation.label,
+            'code': obj.referentiel_programmation
+        }
+
+    def _map_siret(self, obj: FinancialAe):
+        return {
+            'nom_beneficiare': obj.ref_siret.denomination,
+            'code': obj.siret,
+            'categorie_juridique': obj.ref_siret.type_categorie_juridique
+        }
+
+    def _map_montant(self, obj:FinancialAe):
+        return obj.montant_ae_total

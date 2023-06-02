@@ -48,10 +48,6 @@ api.add_namespace(api_ae)
 api.add_namespace(api_cp)
 
 
-
-
-
-
 @api_financial.errorhandler(DataRegatException)
 def handle_exception(e):
     return ErrorController(e.message).to_json(), 400
