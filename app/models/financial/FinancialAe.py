@@ -79,7 +79,7 @@ class FinancialAe(FinancialData, db.Model):
     def update_attribute(self, new_financial: dict):
         # Applicatin montant négatif
         if (self._should_update_montant_ae(new_financial)):
-            nouveau_montant = new_financial[COLUMN_MONTANT_NAME]
+            nouveau_montant = float(new_financial[COLUMN_MONTANT_NAME])
             self.add_or_update_montant_ae(nouveau_montant, new_financial[FinancialAe.annee.key])
             if (nouveau_montant < 0 and self.annee):
                 del new_financial[FinancialAe.annee.key] # on ne maj pas l'année comptable si montant <0
@@ -100,7 +100,7 @@ class FinancialAe(FinancialData, db.Model):
         else :
             return datetime.strptime(new_financial['date_modification_ej'], '%d.%m.%Y') > self.date_modification_ej
 
-    def add_or_update_montant_ae(self, nouveau_montant, annee):
+    def add_or_update_montant_ae(self, nouveau_montant: float, annee):
         '''
         Ajoute un montant à une ligne AE
         :param nouveau_montant: le nouveau montant à ajouter
@@ -142,7 +142,7 @@ class FinancialAe(FinancialData, db.Model):
         if(self.source_region is not None and new_financial[FinancialAe.source_region.key] != self.source_region):
             return False
 
-        nouveau_montant = new_financial[COLUMN_MONTANT_NAME]
+        nouveau_montant = float(new_financial[COLUMN_MONTANT_NAME])
         annee = new_financial[FinancialAe.annee.key]
 
         if any(montant_ae.montant == nouveau_montant and montant_ae.annee == annee for montant_ae in self.montant_ae):
