@@ -1,7 +1,6 @@
 import datetime
 from sqlalchemy import Column, String, Integer, DateTime
 from app import db, ma
-from marshmallow import fields
 from app.models.enums.DataType import DataType
 
 class AuditUpdateData(db.Model):

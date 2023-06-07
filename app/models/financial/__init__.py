@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from app.models.common.Audit import Audit
 
-__all__ = ('FinancialData',)
+__all__ = ('FinancialData','MontantFinancialAe','FinancialCp','FinancialAe')
 
 class FinancialData(Audit):
 
