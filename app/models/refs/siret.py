@@ -1,10 +1,12 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, JSON
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
 
 from app import db
 from app.models.common.Audit import Audit
 
+JSONVariant = JSON().with_variant(JSONB(), "postgresql")
 
 class Siret(Audit, db.Model):
     __tablename__ = 'ref_siret'
@@ -18,6 +20,8 @@ class Siret(Audit, db.Model):
 
     denomination = Column(String)
     adresse = Column(String)
+    # Ajout de la partie Naf
+    naf = Column(JSONVariant, nullable=True)
 
     ref_commune =  relationship("Commune", lazy="select")
     ref_categorie_juridique =  relationship("CategorieJuridique", lazy="select", uselist=False)
