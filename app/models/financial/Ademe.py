@@ -24,8 +24,8 @@ class Ademe(FinancialData, db.Model):
     pourcentage_subvention = Column(Float)
 
     #FK
-    attribuant = Column(String, db.ForeignKey('ref_siret.code'), nullable=True)
-    siret: str = Column(String, db.ForeignKey('ref_siret.code'), nullable=True)
+    siret_attribuant = Column(String, db.ForeignKey('ref_siret.code'), nullable=True)
+    siret_beneficiaire: str = Column(String, db.ForeignKey('ref_siret.code'), nullable=True)
 
     location_lat = Column(Float)
     location_lon = Column(Float)
