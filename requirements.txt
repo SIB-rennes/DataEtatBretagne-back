@@ -31,4 +31,4 @@ uuid==1.30
 pytest==7.2.2
 xlrd==2.0.1
 odfpy==1.4.1
-api-entreprise>=3.1.2
+api-entreprise>=3.2.1
