@@ -13,9 +13,12 @@ from . import TaskResultTraceSchema, TaskResultSchema
 from app.models.common.Pagination import Pagination
 from app.models.enums.ConnectionProfile import ConnectionProfile
 from app.controller.Decorators import check_permission
-from app.services import ReferentielNotFound, FileNotAllowedException, import_refs
+from app.services import  import_refs
 
 from celery.backends.database.models import TaskExtended
+
+from ...exceptions.exceptions import FileNotAllowedException
+from ...services.import_refs import ReferentielNotFound
 
 api = Namespace(name="task", path='/',
                 description='Gestion des task asynchrone')

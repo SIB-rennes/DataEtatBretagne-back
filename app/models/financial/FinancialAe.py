@@ -14,6 +14,8 @@ from app.models.financial.MontantFinancialAe import MontantFinancialAe
 
 COLUMN_MONTANT_NAME= 'montant'
 
+__all__ = ('FinancialAe','FinancialAeSchema')
+
 @dataclass
 class FinancialAe(FinancialData, db.Model):
     __tablename__ = 'financial_ae'

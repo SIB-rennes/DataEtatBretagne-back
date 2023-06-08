@@ -3,7 +3,9 @@ import logging
 from api_entreprise import ApiError
 
 from app import db
-from app.clients.entreprise import get_or_make_api_entreprise, DonneesEtablissement, LimitHitError
+from app.clients.entreprise import get_or_make_api_entreprise, DonneesEtablissement
+from app.clients.geo import get_info_commune
+from app.models.refs.commune import Commune
 from app.models.refs.siret import Siret
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,57 @@ def _map(siret: Siret, etablissement: DonneesEtablissement):
 
 def _api():
     return get_or_make_api_entreprise()
+
+
+def check_siret(siret):
+    """Rempli les informations du siret via l'API entreprise
+
+    Raises:
+        LimitHitError: Si le ratelimiter de l'API entreprise est déclenché
+    """
+    if siret is not None :
+        siret_entity = update_siret_from_api_entreprise(siret, insert_only=True)
+        __check_commune(siret_entity.code_commune)
+        try:
+            db.session.add(siret_entity)
+            db.session.commit()
+        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+            logger.exception(f"[SIRET] Error sur ajout Siret {siret}")
+            raise e
+
+        logger.info(f"[SIRET] Siret {siret} ajouté")
+
+def __check_commune(code):
+    instance = db.session.query(Commune).filter_by(code=code).one_or_none()
+    if not instance:
+        logger.info('[IMPORT][COMMUNE] Ajout commune %s', code)
+        commune = Commune(code = code)
+        try:
+            commune = _maj_one_commune(commune)
+            db.session.add(commune)
+        except Exception:
+            logger.exception(f"[IMPORT][CHORUS] Error sur ajout commune {code}")
+
+def _maj_one_commune(commune: Commune):
+    """
+    Lance la MAj d'une communce
+    :param commune:
+    :return:
+    """
+    apigeo = get_info_commune(commune)
+    commune.label_commune = apigeo['nom']
+    if 'epci' in apigeo:
+        commune.code_epci = apigeo['epci']['code']
+        commune.label_epci = apigeo['epci']['nom']
+    if 'region' in apigeo:
+        commune.code_region = apigeo['region']['code']
+        commune.label_region = apigeo['region']['nom']
+    if 'departement' in apigeo:
+        commune.code_departement = apigeo['departement']['code']
+        commune.label_departement = apigeo['departement']['nom']
+    return commune
+
+
 
 def update_siret_from_api_entreprise(code: str, insert_only = False):
     """Met à jour le siret donné via une requête à l'API entreprise

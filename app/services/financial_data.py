@@ -3,25 +3,18 @@ import os
 import tempfile
 import pandas
 from flask import current_app
-from sqlalchemy import Select, text, bindparam
-from sqlalchemy.orm import contains_eager, selectinload
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.exceptions.exceptions import InvalidFile
+from app.exceptions.exceptions import InvalidFile, FileNotAllowedException
 from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.DataType import DataType
-from app.models.enums.TypeCodeGeo import TypeCodeGeo
 
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.financial.FinancialAe import FinancialAe
-from app.models.financial.MontantFinancialAe import MontantFinancialAe
-from app.models.refs.code_programme import CodeProgramme
-from app.models.refs.commune import Commune
-from app.models.refs.siret import Siret
-from app.models.refs.theme import Theme
-from app.services import allowed_file, FileNotAllowedException, BuilderStatementFinancialAe
+from app.services import BuilderStatementFinancialAe
 from app.services.code_geo import BuilderCodeGeo
+from app.services.file_service import allowed_file
 
 
 def import_ae(file_ae, source_region:str, annee: int, force_update: bool, username=""):
@@ -47,6 +40,15 @@ def import_cp(file_cp, source_region:str, annee: int, username=""):
     db.session.commit()
     return task
 
+def import_ademe(file_ademe, username=""):
+    save_path = _check_file_and_save(file_ademe)
+
+    logging.info(f'[IMPORT ADEME] Récupération du fichier {save_path}')
+    from app.tasks.import_financial_tasks import import_file_ademe
+    task = import_file_ademe.delay(str(save_path))
+    db.session.add(AuditUpdateData(username=username, filename=file_ademe.filename, data_type=DataType.ADEME))
+    db.session.commit()
+    return task
 
 def get_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
                           code_geo: list = None, page_number=1, limit=500):

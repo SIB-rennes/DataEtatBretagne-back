@@ -4,10 +4,13 @@ class DataRegatException(Exception):
     pass
 
 
-class ChorusException(Exception):
+class FinancialException(Exception):
+    """
+    Exception basique sur les Données financières
+    """
     pass
 
-class ChorusLineConcurrencyError(ChorusException):
+class FinancialLineConcurrencyError(FinancialException):
     """Exception levée lorsque une insertion de ligne chorus échoue à cause de problème de concourrance."""
     pass
 

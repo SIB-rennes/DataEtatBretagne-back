@@ -2,13 +2,13 @@ from sqlalchemy import Select
 from sqlalchemy.orm import selectinload, contains_eager
 
 from .code_geo import BadCodeGeoException
-from .import_refs import *
+from .. import db
 from ..models.enums.TypeCodeGeo import TypeCodeGeo
-from ..models.financial.FinancialAe import FinancialAe
-from ..models.financial.FinancialCp import FinancialCp
-from ..models.financial.MontantFinancialAe import MontantFinancialAe
 from ..models.refs.categorie_juridique import CategorieJuridique
 from ..models.refs.code_programme import CodeProgramme
+from app.models.financial.FinancialAe import FinancialAe as Ae
+from app.models.financial.MontantFinancialAe import MontantFinancialAe as MontantAe
+from app.models.financial.FinancialCp import FinancialCp as Cp
 from ..models.refs.commune import Commune
 from ..models.refs.domaine_fonctionnel import DomaineFonctionnel
 from ..models.refs.localisation_interministerielle import LocalisationInterministerielle
@@ -17,7 +17,6 @@ from ..models.refs.siret import Siret
 from ..models.refs.theme import Theme
 
 __all__ = ('BadCodeGeoException', 'BuilderStatementFinancialAe')
-
 
 class BuilderStatementFinancialAe():
     """
@@ -31,13 +30,13 @@ class BuilderStatementFinancialAe():
 
         :return: L'instance courante de BuilderStatementFinancialAe.
         """
-        self._stmt = db.select(FinancialAe) \
-            .options(db.defer(FinancialAe.source_region),
-                     db.defer(FinancialAe.groupe_marchandise),
-                     db.defer(FinancialAe.compte_budgetaire),
-                     selectinload(FinancialAe.montant_ae).load_only(MontantFinancialAe.montant),
-                     selectinload(FinancialAe.financial_cp).load_only(FinancialCp.montant, FinancialCp.date_derniere_operation_dp),
-                     db.defer(FinancialAe.contrat_etat_region))
+        self._stmt = db.select(Ae) \
+            .options(db.defer(Ae.source_region),
+                     db.defer(Ae.groupe_marchandise),
+                     db.defer(Ae.compte_budgetaire),
+                     selectinload(Ae.montant_ae).load_only(MontantAe.montant),
+                     selectinload(Ae.financial_cp).load_only(Cp.montant, Cp.date_derniere_operation_dp),
+                     db.defer(Ae.contrat_etat_region))
         return self
 
     def join_filter_programme_theme(self, code_programme: list, theme: list):
@@ -49,16 +48,16 @@ class BuilderStatementFinancialAe():
         :return: L'instance courante de BuilderStatementFinancialAe.
         """
         if code_programme is not None:
-            self._stmt = self._stmt.join(FinancialAe.ref_programme.and_(CodeProgramme.code.in_(code_programme))).join(
+            self._stmt = self._stmt.join(Ae.ref_programme.and_(CodeProgramme.code.in_(code_programme))).join(
                 CodeProgramme.theme_r, isouter=True)
         elif theme is not None:
-            self._stmt = self._stmt.join(FinancialAe.ref_programme).join(
+            self._stmt = self._stmt.join(Ae.ref_programme).join(
                 CodeProgramme.theme_r.and_(Theme.label.in_(theme)), isouter=True)
         else:
-            self._stmt = self._stmt.join(FinancialAe.ref_programme).join(CodeProgramme.theme_r, isouter=True)
+            self._stmt = self._stmt.join(Ae.ref_programme).join(CodeProgramme.theme_r, isouter=True)
 
-        self._stmt = self._stmt.join(FinancialAe.ref_ref_programmation)
-        self._stmt = self._stmt.join(FinancialAe.ref_domaine_fonctionnel)
+        self._stmt = self._stmt.join(Ae.ref_ref_programmation)
+        self._stmt = self._stmt.join(Ae.ref_domaine_fonctionnel)
         return self
 
     def join_filter_siret(self, siret: list):
@@ -69,7 +68,7 @@ class BuilderStatementFinancialAe():
         :return: L'instance courante de BuilderStatementFinancialAe.
         """
         self._stmt = self._stmt.join(
-            FinancialAe.ref_siret.and_(Siret.code.in_(siret))) if siret is not None else self._stmt.join(Siret)
+            Ae.ref_siret.and_(Siret.code.in_(siret))) if siret is not None else self._stmt.join(Siret)
         self._stmt = self._stmt.join(Siret.ref_categorie_juridique)
         return self
 
@@ -80,7 +79,7 @@ class BuilderStatementFinancialAe():
         :return: L'instance courante de BuilderStatementFinancialAe.
         """
         if annee is not None:
-            self._stmt = self._stmt.where(FinancialAe.annee.in_(annee))
+            self._stmt = self._stmt.where(Ae.annee.in_(annee))
         return self
 
     def join_commune(self):
@@ -107,26 +106,26 @@ class BuilderStatementFinancialAe():
                 case TypeCodeGeo.DEPARTEMENT:
                     subquery = subquery.where(Commune.code_departement.in_(list_code_geo)).subquery()
                     self._stmt = self._stmt.where(
-                        Commune.code_departement.in_(list_code_geo) | FinancialAe.localisation_interministerielle.in_(
+                        Commune.code_departement.in_(list_code_geo) | Ae.localisation_interministerielle.in_(
                             subquery))
                 case TypeCodeGeo.EPCI:
                     subquery = subquery.where(Commune.code_epci.in_(list_code_geo)).subquery()
                     self._stmt = self._stmt.where(
-                        Commune.code_epci.in_(list_code_geo) | FinancialAe.localisation_interministerielle.in_(
+                        Commune.code_epci.in_(list_code_geo) | Ae.localisation_interministerielle.in_(
                             subquery))
                 case TypeCodeGeo.CRTE:
                     subquery = subquery.where(Commune.code_crte.in_(list_code_geo)).subquery()
                     self._stmt = self._stmt.where(
-                        Commune.code_crte.in_(list_code_geo) | FinancialAe.localisation_interministerielle.in_(
+                        Commune.code_crte.in_(list_code_geo) | Ae.localisation_interministerielle.in_(
                             subquery))
                 case TypeCodeGeo.ARRONDISSEMENT:
                     subquery = subquery.where(Commune.code_arrondissement.in_(list_code_geo)).subquery()
                     self._stmt = self._stmt.where(Commune.code_arrondissement.in_(
-                        list_code_geo) | FinancialAe.localisation_interministerielle.in_(subquery))
+                        list_code_geo) | Ae.localisation_interministerielle.in_(subquery))
                 case _:
                     subquery = subquery.where(Commune.code.in_(list_code_geo)).subquery()
                     self._stmt = self._stmt.where(
-                        Commune.code.in_(list_code_geo) | FinancialAe.localisation_interministerielle.in_(subquery))
+                        Commune.code.in_(list_code_geo) | Ae.localisation_interministerielle.in_(subquery))
 
         return self
 
@@ -137,13 +136,13 @@ class BuilderStatementFinancialAe():
         :return: L'instance courante de BuilderStatementFinancialAe.
         """
         self._stmt = self._stmt.options(
-            contains_eager(FinancialAe.ref_programme).load_only(CodeProgramme.label).contains_eager(
+            contains_eager(Ae.ref_programme).load_only(CodeProgramme.label).contains_eager(
                 CodeProgramme.theme_r).load_only(Theme.label),
-            contains_eager(FinancialAe.ref_ref_programmation).load_only(ReferentielProgrammation.label),
-            contains_eager(FinancialAe.ref_domaine_fonctionnel).load_only(DomaineFonctionnel.label),
-            contains_eager(FinancialAe.ref_siret).load_only(Siret.code, Siret.denomination).contains_eager(
+            contains_eager(Ae.ref_ref_programmation).load_only(ReferentielProgrammation.label),
+            contains_eager(Ae.ref_domaine_fonctionnel).load_only(DomaineFonctionnel.label),
+            contains_eager(Ae.ref_siret).load_only(Siret.code, Siret.denomination).contains_eager(
                 Siret.ref_commune).load_only(Commune.label_commune, Commune.code),
-            contains_eager(FinancialAe.ref_siret).contains_eager(Siret.ref_categorie_juridique).load_only(CategorieJuridique.type)
+            contains_eager(Ae.ref_siret).contains_eager(Siret.ref_categorie_juridique).load_only(CategorieJuridique.type)
         )
         return self
 

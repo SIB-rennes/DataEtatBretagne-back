@@ -4,26 +4,27 @@ import os
 
 import pandas
 import sqlalchemy.exc
+from api_entreprise import LimitHitError
 from celery import subtask
+from numpy import int64
 from sqlalchemy import update, delete
 
 from app import db, celeryapp
-from app.clients.geo import get_info_commune
-from app.exceptions.exceptions import ChorusException,ChorusLineConcurrencyError
+from app.exceptions.exceptions import FinancialException,FinancialLineConcurrencyError
 from app.models.financial import FinancialData
+from app.models.financial.Ademe import Ademe
 from app.models.financial.FinancialAe import FinancialAe
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.refs.centre_couts import CentreCouts
 from app.models.refs.code_programme import CodeProgramme
-from app.models.refs.commune import Commune
 from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
 from app.models.refs.fournisseur_titulaire import FournisseurTitulaire
 from app.models.refs.groupe_marchandise import GroupeMarchandise
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
+from app.services.siret import check_siret
 
-from app.services.siret import update_siret_from_api_entreprise, LimitHitError
-from app.tasks import limiter_queue
+from app.tasks import limiter_queue, handle_exception_import
 
 LOGGER = logging.getLogger()
 
@@ -77,8 +78,8 @@ def _send_subtask_financial_ae(line, index, force_update):
 def _send_subtask_financial_cp(line, index, source_region, annee):
     subtask("import_line_financial_cp").delay(line, index, source_region, annee)
 
-@celery.task(bind=True, name='import_line_financial_ae', autoretry_for=(ChorusException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
-def import_line_financial_ae(self, dict_financial: dict, index: int, force_update: bool):
+@celery.task(bind=True, name='import_line_financial_ae', autoretry_for=(FinancialException,), retry_kwargs={'max_retries': 4, 'countdown': 10})
+def import_line_financial_ae(self, dict_financial, index: int, force_update: bool):
     line = json.loads(dict_financial)
     try :
         financial_ae_instance = db.session.query(FinancialAe).filter_by(n_ej=line[FinancialAe.n_ej.key],
@@ -86,7 +87,7 @@ def import_line_financial_ae(self, dict_financial: dict, index: int, force_updat
         financial_instance = _check_insert_update_financial(financial_ae_instance,line, force_update)
     except sqlalchemy.exc.OperationalError as o:
         LOGGER.exception(f"[IMPORT][CHORUS] Erreur index {index} sur le check ligne chorus")
-        raise ChorusException(o) from o
+        raise FinancialException(o) from o
 
 
     if financial_instance != False:
@@ -102,7 +103,7 @@ def import_line_financial_ae(self, dict_financial: dict, index: int, force_updat
             _check_ref(ReferentielProgrammation, new_ae.referentiel_programmation)
 
             # SIRET
-            _check_siret(new_ae.siret)
+            check_siret(new_ae.siret)
 
             # CHORUS
             new_financial_ae = None
@@ -130,14 +131,14 @@ def import_line_financial_ae(self, dict_financial: dict, index: int, force_updat
                 "Cela peut être dû à un soucis de concourrance. On retente."
             ) 
             LOGGER.exception(f"[IMPORT][FINANCIAL] {msg}")
-            raise ChorusLineConcurrencyError(msg) from e
+            raise FinancialLineConcurrencyError(msg) from e
 
         except Exception as e:
             LOGGER.exception(f"[IMPORT][FINANCIAL] erreur index {index}")
             raise e
 
 
-@celery.task(bind=True, name='import_line_financial_cp', autoretry_for=(ChorusException,),
+@celery.task(bind=True, name='import_line_financial_cp', autoretry_for=(FinancialException,),
              retry_kwargs={'max_retries': 4, 'countdown': 10})
 def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int):
     line = json.loads(data_cp)
@@ -153,7 +154,7 @@ def import_line_financial_cp(self, data_cp, index, source_region: str, annee: in
         _check_ref(ReferentielProgrammation, new_cp.referentiel_programmation)
 
         # SIRET
-        _check_siret(new_cp.siret)
+        check_siret(new_cp.siret)
 
         # FINANCIAL_AE
         id_ae = _get_ae_for_cp(new_cp.n_ej, new_cp.n_poste_ej)
@@ -177,11 +178,65 @@ def import_line_financial_cp(self, data_cp, index, source_region: str, annee: in
             "Cela peut être dû à un soucis de concurrence. On retente."
         )
         LOGGER.exception(f"[IMPORT][FINANCIAL] {msg}")
-        raise ChorusLineConcurrencyError(msg) from e
+        raise FinancialLineConcurrencyError(msg) from e
 
     except Exception as e:
         LOGGER.exception(f"[IMPORT][FINANCIAL] erreur index {index}")
         raise e
+
+@celery.task(bind=True, name='import_file_ademe')
+def import_file_ademe(self, fichier):
+    # get file
+    LOGGER.info(f'[IMPORT][ADEME] Start for file {fichier}')
+    try:
+        data_ademe_chunk = pandas.read_csv(fichier, sep=",", skiprows=1, names=Ademe.get_columns_files(),
+                                      dtype={'location_lat': float,'pourcentage_subvention':float,
+                                             'location_lon': float, 'idBeneficiaire': str,"notification_ue": str,
+                                             'idAttribuant': str}, chunksize=1000)
+        _delete_ademe()
+
+        for chunk in data_ademe_chunk:
+            for index,ademe_data in chunk.iterrows():
+                _send_subtask_ademe(ademe_data.to_json())
+
+        os.remove(fichier)
+        LOGGER.info('[IMPORT][FINANCIAL][CP] End')
+        return True
+    except Exception as e:
+        LOGGER.exception(f"[IMPORT][FINANCIAL][CP] Error lors de l'import du fichier {fichier} chorus")
+        raise e
+
+
+@limiter_queue(queue_name='line')
+def _send_subtask_ademe(data_ademe):
+    subtask("import_line_ademe").delay(data_ademe)
+
+
+@celery.task(bind=True, name='import_line_ademe', autoretry_for=(FinancialException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
+@handle_exception_import('ADEME')
+def import_line_ademe(self, line_ademe: str):
+    line = json.loads(line_ademe)
+    new_ademe = Ademe(line)
+
+    # SIRET Attribuant
+    check_siret(new_ademe.siret_attribuant)
+    # SIRET beneficiaire
+    check_siret(new_ademe.siret_beneficiaire)
+
+    db.session.add(new_ademe)
+    LOGGER.info('[IMPORT][FINANCIAL] Ajout ligne financière')
+    db.session.commit()
+
+def _delete_ademe():
+    """
+    Supprime toutes les données ADEME
+    :return:
+    """
+    stmt = delete(Ademe)
+    db.session.execute(stmt)
+    db.session.commit()
+
+
 
 def _check_ref(model, code):
     instance = db.session.query(model).filter_by(code=str(code)).one_or_none()
@@ -195,36 +250,6 @@ def _check_ref(model, code):
             LOGGER.exception(f"[IMPORT][CHORUS] Error sur ajout ref {model.__tablename__} code {code}")
             raise e
 
-
-def __check_commune(code):
-    instance = db.session.query(Commune).filter_by(code=code).one_or_none()
-    if not instance:
-        LOGGER.info('[IMPORT][COMMUNE] Ajout commune %s', code)
-        commune = Commune(code = code)
-        try:
-            commune = _maj_one_commune(commune)
-            db.session.add(commune)
-        except Exception:
-            LOGGER.exception(f"[IMPORT][CHORUS] Error sur ajout commune {code}")
-
-def _check_siret(siret):
-    """Rempli les informations du siret via l'API entreprise
-
-    Raises:
-        LimitHitError: Si le ratelimiter de l'API entreprise est déclenché
-    """
-    if siret is not None :
-        siret_entity = update_siret_from_api_entreprise(siret, insert_only=True)
-        __check_commune(siret_entity.code_commune)
-
-        try:
-            db.session.add(siret_entity)
-            db.session.commit()
-        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-            LOGGER.exception(f"[IMPORT][FINANCIAL] Error sur ajout Siret {siret}")
-            raise e
-
-        LOGGER.info(f"[IMPORT][FINANCIAL] Siret {siret} ajouté")
 
 def _check_insert_update_financial(financial_ae: FinancialData | None, line,force_update: bool) -> FinancialData | bool:
     '''
@@ -308,23 +333,3 @@ def _get_ae_for_cp(n_ej: str, n_poste_ej: int) -> int | None:
 
     financial_ae = FinancialAe.query.filter_by(n_ej=str(n_ej), n_poste_ej=int(n_poste_ej)).one_or_none()
     return financial_ae.id if financial_ae is not None else None
-
-
-def _maj_one_commune(commune: Commune):
-    """
-    Lance la MAj d'une communce
-    :param commune:
-    :return:
-    """
-    apigeo = get_info_commune(commune)
-    commune.label_commune = apigeo['nom']
-    if 'epci' in apigeo:
-        commune.code_epci = apigeo['epci']['code']
-        commune.label_epci = apigeo['epci']['nom']
-    if 'region' in apigeo:
-        commune.code_region = apigeo['region']['code']
-        commune.label_region = apigeo['region']['nom']
-    if 'departement' in apigeo:
-        commune.code_departement = apigeo['departement']['code']
-        commune.label_departement = apigeo['departement']['nom']
-    return commune
