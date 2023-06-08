@@ -3,7 +3,7 @@ import logging
 from api_entreprise import ApiError
 
 from app import db
-from app.clients.entreprise import get_or_make_api_entreprise, DonneesEtablissement, LimitHitError
+from app.clients.entreprise import get_or_make_api_entreprise, DonneesEtablissement
 from app.models.refs.siret import Siret
 
 logger = logging.getLogger(__name__)
