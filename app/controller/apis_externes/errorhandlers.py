@@ -20,6 +20,8 @@ from app.clients.data_subventions import CallError as ApiSubventionCallError
 @api.errorhandler(ApiSubventionCallError)
 @api.response(500, "Internal Server Error", model=ApiError.schema_model(api))
 def handle_api_subvention_call_error(error: ApiSubventionCallError):
+    """Lorsqu'une erreur lors d'un appel à l'API subvention est survenue"""
+
     logger.error(
         f"[API EXTERNES][CTRL] "
         "Une erreur lors de l'appel à l'API subvention est survenue"
@@ -42,6 +44,8 @@ def handle_api_subvention_call_error(error: ApiSubventionCallError):
 @api.errorhandler(LimitHitError)
 @api.response(429, "Limite d'usage API atteint", model=ApiError.schema_model(api))
 def handle_limit_hit(error: LimitHitError):
+    """Lorsqu'une limite d'usage API a été atteint"""
+
     msg = f"Limite d'utilisation API atteintes (réessayer dans {error.delay} secondes)"
     logger.error(f"[API EXTERNES][CTRL] {msg}")
 
@@ -56,6 +60,8 @@ def handle_limit_hit(error: LimitHitError):
 @api.errorhandler(ApiEntrepriseError)
 @api.response(500, "Internal Server Error", model=ApiError.schema_model(api))
 def handle_api_entreprise_error(error: ApiEntrepriseError):
+    """Lorsqu'une erreur lors de l'appel à l'API entreprise est survenue"""
+
     logger.error(
         f"[API EXTERNES][CTRL] Une erreur lors de l'appel à l'API entreprise est survenue"
     )
@@ -72,6 +78,8 @@ def handle_api_entreprise_error(error: ApiEntrepriseError):
 @api.errorhandler(Timeout)
 @api.response(500, "Internal Server Error", model=ApiError.schema_model(api))
 def handle_generic(error: Timeout):
+    """Lorsqu'un timeout vers le service externe est survenu"""
+
     logger.error(f"[API EXTERNES][CTRL] Un timeout s'est produit")
 
     err = ApiError(
@@ -86,6 +94,8 @@ def handle_generic(error: Timeout):
 @api.errorhandler(Exception)
 @api.response(500, "Internal Server Error", model=ApiError.schema_model(api))
 def handle_generic(error):
+    """Lorsqu'une erreur 500 vers la ressource externe est survenue"""
+
     logger.error(f"[API EXTERNES][CTRL] Une erreur est survenue")
 
     err = ApiError(
