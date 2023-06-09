@@ -19,7 +19,7 @@ def test_missing_arguments(test_client):
 
         response_missing_file = test_client.post('/financial-data/api/v1/cp', data={},content_type='multipart/form-data', follow_redirects=True)
         assert response_missing_file.status_code == 400
-        assert {'message': 'Missing File', 'type': 'error'} == response_missing_file.json
+        assert {'message': 'Missing Argument code_region or annee', 'type': 'error'} == response_missing_file.json
 
 
 def test_not_role(test_client):

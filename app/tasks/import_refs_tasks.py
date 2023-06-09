@@ -5,8 +5,7 @@ import pandas
 from celery import subtask
 from celery import current_app
 from app import celeryapp
-from app.services import MissingCodeColumns
-from app.services.import_refs import _get_instance_model_by_name
+from app.services.import_refs import _get_instance_model_by_name, MissingCodeColumns
 from app.tasks import limiter_queue, LimitQueueException
 
 LOGGER = logging.getLogger()

@@ -14,25 +14,37 @@ parser_import.add_argument('code_region', type=str, help="Code INSEE de la régi
 parser_import.add_argument('annee', type=int, help="Année d'engagement du fichier Chorus",location='files', required=True)
 parser_import.add_argument('force_update', type=inputs.boolean, required=False, default=False,location='files', help="Force la mise à jours si la ligne existe déjà")
 
-def check_param_import():
+def check_param_source_annee_import():
     """
-    Vérifie sur la request contient les bon paramètres
+    Vérifie sur la request contient les paramètres code_region et annee
     :return:
     """
     def wrapper(func):
         @wraps(func)
         def inner_wrapper(*args, **kwargs):
             data = request.form
-
-            if 'fichier' not in request.files:
-                raise BadRequestDataRegateNum("Missing File")
             if 'code_region' not in data or 'annee' not in data:
                 raise BadRequestDataRegateNum("Missing Argument code_region or annee")
-
             if not isinstance(int(data['annee']), int):
                 raise BadRequestDataRegateNum("Missing Argument code_region or annee")
             return func(*args, **kwargs)
         return inner_wrapper
+    return wrapper
+
+def check_file_import():
+    """
+    Vérifie sur la request contient un attribut fichier
+    :return:
+    """
+    def wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            if 'fichier' not in request.files:
+                raise BadRequestDataRegateNum("Missing File")
+            return func(*args, **kwargs)
+
+        return inner_wrapper
+
     return wrapper
 
 

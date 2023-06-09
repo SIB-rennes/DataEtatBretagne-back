@@ -5,10 +5,9 @@ from unittest.mock import patch
 import pytest
 from werkzeug.datastructures import FileStorage
 
-from app.exceptions.exceptions import InvalidFile
 from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.DataType import DataType
-from app.services import FileNotAllowedException
+from app.exceptions.exceptions import InvalidFile, FileNotAllowedException
 from app.services.financial_data import import_cp
 
 

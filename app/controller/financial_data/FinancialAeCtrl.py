@@ -3,7 +3,7 @@ from flask_restx import Namespace, Resource
 
 from app.controller import ErrorController
 from app.controller.Decorators import check_permission
-from app.controller.financial_data import check_param_import, parser_import
+from app.controller.financial_data import check_param_source_annee_import, parser_import, check_file_import
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
 from app.models.enums.ConnectionProfile import ConnectionProfile
@@ -39,7 +39,8 @@ class FinancialAe(Resource):
     @api.expect(parser_import)
     @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @check_permission([ConnectionProfile.ADMIN, ConnectionProfile.COMPTABLE])
-    @check_param_import()
+    @check_param_source_annee_import()
+    @check_file_import()
     @api.doc(security="Bearer")
     def post(self):
         """

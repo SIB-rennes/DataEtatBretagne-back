@@ -5,7 +5,7 @@ import json
 from app.models.financial.FinancialAe import FinancialAe
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.refs.siret import Siret
-from app.tasks import import_file_ae_financial, import_line_financial_ae
+from app.tasks.import_financial_tasks import import_line_financial_ae, import_file_ae_financial
 
 
 @patch('app.tasks.import_financial_tasks.subtask')
@@ -31,7 +31,7 @@ def test_import_new_line_ae(app, test_db):
     data = '{"montant":"22500,12","annee":2023,"source_region":"35","n_ej":"2103105755","n_poste_ej":5,"programme":"103","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","date_modification_ej":"10.01.2023","fournisseur_titulaire":"1001465507","fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"85129663200017","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N53"}'
 
     #DO
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise', return_value=Siret(**{'code':'85129663200017', 'code_commune':"35099"})):
+    with patch('app.services.siret.update_siret_from_api_entreprise', return_value=Siret(**{'code':'85129663200017', 'code_commune':"35099"})):
         import_line_financial_ae(data, 0, False)
 
     #ASSERT
@@ -58,7 +58,7 @@ def test_import_update_line_montant_positive_ae(app, test_db):
     data_update = '{"annee":2021,"montant":10000,"source_region":"35","n_ej":"ej_to_update","n_poste_ej":5,"programme":"NEW","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","date_modification_ej":"10.02.2023","fournisseur_titulaire":1001465507,"fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"851296632000171","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"UPDATE","localisation_interministerielle":"N53"}'
 
     #DO
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise', return_value=Siret(**{'code':'851296632000171', 'code_commune':"35099"})):
+    with patch('app.services.siret.update_siret_from_api_entreprise', return_value=Siret(**{'code':'851296632000171', 'code_commune':"35099"})):
         import_line_financial_ae(data_update,0, False)
 
     with app.app_context():
@@ -86,7 +86,7 @@ def test_import_montant_negatif(app, test_db):
     data_update = '{"annee":2022,"montant":-105.50,"n_ej":"ej_negatif","n_poste_ej":6,"source_region":"35","programme":"103","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","date_modification_ej":"10.01.2023","fournisseur_titulaire":1001465507,"fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"851296632000172","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N53"}'
 
     #DO
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise', return_value=Siret(**{'code':'851296632000172', 'code_commune':"35099"})):
+    with patch('app.services.siret.update_siret_from_api_entreprise', return_value=Siret(**{'code':'851296632000172', 'code_commune':"35099"})):
         import_line_financial_ae(data_update,0, False)
 
     with app.app_context():
@@ -100,7 +100,7 @@ def test_import_montant_negatif(app, test_db):
         assert data[0].montant_ae[1].montant == -105.50
 
 
-def test_import_montant_negatif_sur_annee_antérieur(app, test_db):
+def test_import_montant_negatif_sur_annee_anterieur(app, test_db):
     #WHEN - ligne AE sur année 2024 avec montant > 0
     data = '{"annee":2024,"montant":22500,"n_ej":"ej_negatif_2024","n_poste_ej":7,"source_region":"35","programme":"103","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","date_modification_ej":"10.01.2023","fournisseur_titulaire":1001465507,"fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"851296632000173","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N53"}'
     chorus = FinancialAe(**json.loads(data))
@@ -111,7 +111,7 @@ def test_import_montant_negatif_sur_annee_antérieur(app, test_db):
     data_update = '{"annee":2022,"montant":-105.50,"n_ej":"ej_negatif_2024","n_poste_ej":7,"source_region":"35","programme":"103","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","date_modification_ej":"10.01.2023","fournisseur_titulaire":1001465507,"fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"851296632000173","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N53"}'
 
     #DO
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise', return_value=Siret(**{'code':'851296632000173', 'code_commune':"35099"})):
+    with patch('app.services.siret.update_siret_from_api_entreprise', return_value=Siret(**{'code':'851296632000173', 'code_commune':"35099"})):
         import_line_financial_ae(data_update,0, False)
 
     with app.app_context():
@@ -138,9 +138,9 @@ def test_import_deux_montant_negatif(app, test_db):
 
 
     #DO
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise', return_value=Siret(**{'code':'851296632000174', 'code_commune':"35099"})):
+    with patch('app.services.siret.update_siret_from_api_entreprise', return_value=Siret(**{'code':'851296632000174', 'code_commune':"35099"})):
         import_line_financial_ae(data_montant_2021,0, False)
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise',
+    with patch('app.services.siret.update_siret_from_api_entreprise',
                return_value=Siret(**{'code': '851296632000175', 'code_commune': "35099"})):
         import_line_financial_ae(data_montant_2022, 0, False)
 
@@ -168,7 +168,7 @@ def test_import_montant_positif_apres_negatif_meme_annee(app, test_db):
     data_update = '{"annee":2021,"montant":500,"n_ej":"ej_negatif_2021","n_poste_ej":2,"source_region":"35","programme":"103","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","date_modification_ej":"10.01.2023","fournisseur_titulaire":1001465507,"fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"851296632000180","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N53"}'
 
     # DO
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise',
+    with patch('app.services.siret.update_siret_from_api_entreprise',
                return_value=Siret(**{'code': '851296632000180', 'code_commune': "35099"})):
         import_line_financial_ae(data_update, 0, False)
 
@@ -193,7 +193,7 @@ def test_import_montant_positif_apres_negatif_annee_differente(app, test_db):
     data_update = '{"annee":2021,"montant":500,"n_ej":"ej_negatif_2020","n_poste_ej":1,"source_region":"35","programme":"103","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","date_modification_ej":"10.01.2023","fournisseur_titulaire":1001465507,"fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"851296632000181","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N53"}'
 
     # DO
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise',
+    with patch('app.services.siret.update_siret_from_api_entreprise',
                return_value=Siret(**{'code': '851296632000181', 'code_commune': "35099"})):
         import_line_financial_ae(data_update, 0, False)
 
@@ -216,7 +216,7 @@ def test_import_montant_positif_apres_negatif_annee_differente(app, test_db):
 def test_import_line_missing_zero_siret(app, test_db):
     data = '{"annee":2023,"source_region":"35","programme":"103","domaine_fonctionnel":"0103-01-01","centre_couts":"BG00\\/DREETS0035","referentiel_programmation":"BG00\\/010300000108","n_ej":"siret_ej","n_poste_ej":5,"date_modification_ej":"10.01.2023","fournisseur_titulaire":"1001465507","fournisseur_label":"ATLAS SOUTENIR LES COMPETENCES","siret":"6380341500023","compte_code":"PCE\\/6522800000","compte_budgetaire":"Transferts aux entre","groupe_marchandise":"09.02.01","contrat_etat_region":"#","contrat_etat_region_2":"Non affect\\u00e9","localisation_interministerielle":"N53","montant":22500}'
 
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise',
+    with patch('app.services.siret.update_siret_from_api_entreprise',
                return_value=Siret(**{'code': '06380341500023', 'code_commune': "35099"})):
         import_line_financial_ae(data, 0, False)
 
@@ -254,7 +254,7 @@ def test_import_new_line_ae_with_cp(app, test_db):
     test_db.session.commit()
 
     # DO
-    with patch('app.tasks.import_financial_tasks.update_siret_from_api_entreprise',
+    with patch('app.services.siret.update_siret_from_api_entreprise',
                return_value=Siret(**{'code': '84442098400016', 'code_commune': "35099"})):
         import_line_financial_ae(data_ae, 0,False)
 

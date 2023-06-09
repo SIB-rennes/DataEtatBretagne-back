@@ -4,8 +4,7 @@ import re
 import pytest
 from werkzeug.datastructures import FileStorage
 
-from app.exceptions.exceptions import InvalidFile
-from app.services import FileNotAllowedException
+from app.exceptions.exceptions import InvalidFile, FileNotAllowedException
 from app.services.financial_data import import_ae
 
 

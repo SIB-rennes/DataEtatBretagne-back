@@ -27,7 +27,7 @@ def upgrade():
     sa.Column('nature', sa.String(length=255), nullable=True),
     sa.Column('conditions_versement', sa.String(length=255), nullable=True),
     sa.Column('dates_periode_versement', sa.String(length=255), nullable=True),
-    sa.Column('notification_ue', sa.String(length=255), nullable=True),
+    sa.Column('notification_ue', sa.Boolean(), default=False, nullable=True),
     sa.Column('pourcentage_subvention', sa.Float(), nullable=True),
     sa.Column('siret_beneficiaire', sa.String(), nullable=True),
     sa.Column('siret_attribuant', sa.String(), nullable=True),
@@ -38,8 +38,7 @@ def upgrade():
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['attribuant'], ['ref_siret.code'], ),
     sa.ForeignKeyConstraint(['siret'], ['ref_siret.code'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('reference_decision')
+    sa.PrimaryKeyConstraint('id')
     )
 
     with op.batch_alter_table('ref_siret', schema=None) as batch_op:
