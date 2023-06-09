@@ -4,13 +4,16 @@ from datetime import datetime
 from dataclasses import dataclass
 
 from marshmallow import fields
+from marshmallow_sqlalchemy import auto_field
 from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, UniqueConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
 from app import db, ma
-from app.models.financial import FinancialData
+from app.models.financial import FinancialData, json_type_object_code_label
 from app.models.financial.MontantFinancialAe import MontantFinancialAe
+from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
+from app.models.refs.siret import Siret
 
 COLUMN_MONTANT_NAME= 'montant'
 
@@ -161,54 +164,110 @@ class FinancialAe(FinancialData, db.Model):
                               'compte_budgetaire', 'groupe_marchandise', 'contrat_etat_region',
                               'contrat_etat_region_2','localisation_interministerielle', COLUMN_MONTANT_NAME]
 
-class FinancialAeSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = FinancialAe
-        exclude = ('id','groupe_marchandise','updated_at','created_at','source_region','compte_budgetaire','contrat_etat_region','financial_cp')
 
-    montant_ae = fields.Method('_map_montant')
-    montant_cp = fields.Float()
-    date_cp = fields.String()
-    commune = fields.Method('_map_commune')
-    domaine_fonctionnel = fields.Method('_map_domaine_fonctionnelle')
-    referentiel_programmation = fields.Method('_map_ref_programmation')
-    programme =  fields.Method('_map_programme')
-    n_ej = fields.String()
-    n_poste_ej = fields.Integer()
-    annee = fields.Integer()
-    siret = fields.Method('_map_siret')
 
-    def _map_commune(self, obj: FinancialAe):
+
+class CommuneField(fields.Field):
+    """Field Commune
+    """
+    def _jsonschema_type_mapping(self):
+        return json_type_object_code_label()
+
+    def _serialize(self, value: Siret, attr, obj, **kwargs):
+        if value is None:
+            return {}
         return {
-            'label' : obj.ref_siret.ref_commune.label_commune,
-            'code' : obj.ref_siret.ref_commune.code
+            'label': value.ref_commune.label_commune,
+            'code': value.ref_commune.code
         }
 
-    def _map_programme(self, obj:FinancialAe):
+
+class ReferentielField(fields.Field):
+    """Field Ref programmation
+    """
+    def _jsonschema_type_mapping(self):
+        return json_type_object_code_label()
+
+    def _serialize(self, code: String, attr, obj: FinancialAe, **kwargs):
+        if code is None:
+            return {}
+        return {
+            'label': obj.ref_ref_programmation.label,
+            'code': code
+        }
+
+class DomaineField(fields.Field):
+    """Field Domaine fonctionnel
+    """
+    def _jsonschema_type_mapping(self):
+        return json_type_object_code_label()
+
+    def _serialize(self, code: String, attr, obj: FinancialAe, **kwargs):
+        if code is None:
+            return {}
+        return {
+            'label': obj.ref_domaine_fonctionnel.label,
+            'code': code
+        }
+
+class ProgrammeField(fields.Field):
+    """Field programme
+    """
+
+    def _jsonschema_type_mapping(self):
+        return {
+            'type': 'object',
+            'properties': {
+                'label': {'type': 'string'},
+                'code': {'type': 'string'},
+                'theme': {'type': 'string'}
+            }
+        }
+
+    def _serialize(self, code: String, attr, obj: FinancialAe, **kwargs):
+        if code is None:
+            return {}
         return {
             'label': obj.ref_programme.label,
-            'code': obj.programme,
+            'code': code,
             'theme': obj.ref_programme.label_theme
         }
 
-    def _map_domaine_fonctionnelle(self, obj:FinancialAe):
+class SiretField(fields.Field):
+    """Field Siret
+    """
+    def _jsonschema_type_mapping(self):
         return {
-            'label': obj.ref_domaine_fonctionnel.label,
-            'code': obj.domaine_fonctionnel
+            'type': 'object',
+            'properties': {
+                'nom_beneficiare': {'type': 'string'},
+                'code': {'type': 'string'},
+                'categorie_juridique': {'type': 'string'}
+            }
         }
 
-    def _map_ref_programmation(self, obj:FinancialAe):
-        return {
-            'label': obj.ref_ref_programmation.label,
-            'code': obj.referentiel_programmation
-        }
-
-    def _map_siret(self, obj: FinancialAe):
+    def _serialize(self, code: String, attr, obj: FinancialAe, **kwargs):
+        if code is None:
+            return {}
         return {
             'nom_beneficiare': obj.ref_siret.denomination,
-            'code': obj.siret,
+            'code': code,
             'categorie_juridique': obj.ref_siret.type_categorie_juridique
         }
 
-    def _map_montant(self, obj:FinancialAe):
-        return obj.montant_ae_total
+class FinancialAeSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = FinancialAe
+        exclude = ('groupe_marchandise','updated_at','created_at','source_region','compte_budgetaire','contrat_etat_region','financial_cp')
+
+    montant_ae = fields.Float(attribute='montant_ae_total')
+    montant_cp = fields.Float()
+    date_cp = fields.String()
+    commune = CommuneField(attribute="ref_siret")
+    domaine_fonctionnel = DomaineField(attribute="domaine_fonctionnel")
+    referentiel_programmation = ReferentielField()
+    programme =  ProgrammeField()
+    n_ej = fields.String()
+    n_poste_ej = fields.Integer()
+    annee = fields.Integer()
+    siret = SiretField()

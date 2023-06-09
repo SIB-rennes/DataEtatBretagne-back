@@ -1,5 +1,6 @@
 from flask import jsonify, current_app, request, g
 from flask_restx import Namespace, Resource
+from marshmallow_jsonschema import JSONSchema
 
 from app.controller import ErrorController
 from app.controller.Decorators import check_permission
@@ -9,7 +10,7 @@ from app.models.common.Pagination import Pagination
 from app.models.enums.ConnectionProfile import ConnectionProfile
 from app.models.financial.FinancialAe import FinancialAeSchema
 from app.services.code_geo import BadCodeGeoException
-from app.services.financial_data import import_ae, get_financial_data_ae
+from app.services.financial_data import import_ae, search_financial_data_ae, get_financial_ae
 
 api = Namespace(name="Engagement", path='/',
                 description='Api de  gestion des AE des données financières de l\'état')
@@ -66,7 +67,7 @@ class FinancialAe(Resource):
         Retourne les lignes d'engagements Chorus
         """
         params = parser_get.parse_args()
-        page_result = get_financial_data_ae(**params)
+        page_result = search_financial_data_ae(**params)
 
         if page_result.items == []:
             return "", 204
@@ -76,4 +77,27 @@ class FinancialAe(Resource):
         return {'items': result,
                 'pageInfo': Pagination(page_result.total, page_result.page, page_result.per_page).to_json()}, 200
 
+#
+schema = FinancialAeSchema()
+model_json = JSONSchema().dump(schema)['definitions']["FinancialAeSchema"]
+model_single_api = api.schema_model("FinancialAe", model_json)
 
+@api.route('/ae/<id>')
+@api.doc(model=model_single_api)
+class GetFinancialAe(Resource):
+    """
+    Récupére les infos d'engagements en fonction de son identifiant technique
+    :return:
+    """
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @api.doc(security="Bearer")
+    def get(self, id: str):
+
+        result = get_financial_ae(int(id))
+
+        if result is None:
+            return "", 204
+
+        financial_ae = FinancialAeSchema().dump(result)
+
+        return financial_ae, 200

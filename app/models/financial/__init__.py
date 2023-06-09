@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from app.models.common.Audit import Audit
 
-__all__ = ('FinancialData','MontantFinancialAe','FinancialCp','FinancialAe','Ademe')
+__all__ = ('FinancialData','MontantFinancialAe','FinancialCp','FinancialAe','Ademe','json_type_object_code_label')
 
 class FinancialData(Audit):
 
@@ -44,3 +44,17 @@ class FinancialData(Audit):
             value = '0' * nb_zeros_a_ajouter + str(value)
 
         return value
+
+
+def json_type_object_code_label():
+    """
+    Retourne un jsonchema object contenant code et label
+    :return:
+    """
+    return {
+            'type': 'object',
+            'properties': {
+                'label': {'type': 'string'},
+                'code': { 'type': 'string'}
+            }
+        }

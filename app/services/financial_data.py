@@ -40,6 +40,7 @@ def import_cp(file_cp, source_region:str, annee: int, username=""):
     db.session.commit()
     return task
 
+
 def import_ademe(file_ademe, username=""):
     save_path = _check_file_and_save(file_ademe)
 
@@ -50,7 +51,17 @@ def import_ademe(file_ademe, username=""):
     db.session.commit()
     return task
 
-def get_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
+def get_financial_ae(id: int) -> FinancialAe:
+    query_select = BuilderStatementFinancialAe().select() \
+        .join_filter_siret() \
+        .join_filter_programme_theme()\
+        .join_commune().by_id(id).options_select_load()
+
+    result = query_select.do_single()
+    return result
+
+
+def search_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
                           code_geo: list = None, page_number=1, limit=500):
 
 

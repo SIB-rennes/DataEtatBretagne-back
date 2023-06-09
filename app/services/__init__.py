@@ -39,7 +39,7 @@ class BuilderStatementFinancialAe():
                      db.defer(Ae.contrat_etat_region))
         return self
 
-    def join_filter_programme_theme(self, code_programme: list, theme: list):
+    def join_filter_programme_theme(self, code_programme: list = None, theme: list= None):
         """
         Effectue des jointures avec les tables CodeProgramme et Theme en fonction des codes de programme et des thèmes fournis.
 
@@ -60,7 +60,7 @@ class BuilderStatementFinancialAe():
         self._stmt = self._stmt.join(Ae.ref_domaine_fonctionnel)
         return self
 
-    def join_filter_siret(self, siret: list):
+    def join_filter_siret(self, siret: list = None):
         """
         Effectue une jointure avec la table Siret en fonction des SIRET fournis.
 
@@ -80,6 +80,28 @@ class BuilderStatementFinancialAe():
         """
         if annee is not None:
             self._stmt = self._stmt.where(Ae.annee.in_(annee))
+        return self
+
+    def where_ej(self, n_ej:str, n_poste_ej: int):
+        """
+        Ajoute une condition Where pour filter sur le poste_ej et numéro ej
+        :param n_ej: le numéro EJ
+        :param n_poste_ej:  Le poste ej
+        :return:  L'instance courante de BuilderStatementFinancialAe.
+        """
+
+        if n_ej is not None and n_poste_ej is not None:
+            self._stmt = self._stmt.where(FinancialAe.n_ej == n_ej).where(FinancialAe.n_poste_ej == n_poste_ej)
+        return self
+
+    def by_id(self, id:int):
+        """
+        Sélection uniquement selon l'id technique
+        :param id: l'identifiant technique
+        :return: L'instance courante de BuilderStatementFinancialAe.
+        """
+        if id is not None :
+            self._stmt = self._stmt.where(FinancialAe.id == id)
         return self
 
     def join_commune(self):
@@ -154,3 +176,10 @@ class BuilderStatementFinancialAe():
         :return: L'objet Pagination contenant les résultats paginés.
         """
         return db.paginate(self._stmt, per_page=limit, page=page_number, error_out=False)
+
+    def do_single(self):
+        """
+        Effectue la recherche et retourne le seul résultat
+        :return:
+        """
+        return db.session.execute(self._stmt).scalar_one_or_none()
