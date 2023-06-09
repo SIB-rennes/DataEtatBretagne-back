@@ -79,7 +79,8 @@ def _send_subtask_financial_cp(line, index, source_region, annee):
     subtask("import_line_financial_cp").delay(line, index, source_region, annee)
 
 @celery.task(bind=True, name='import_line_financial_ae', autoretry_for=(FinancialException,), retry_kwargs={'max_retries': 4, 'countdown': 10})
-def import_line_financial_ae(self, dict_financial, index: int, force_update: bool):
+@handle_exception_import('FINANCIAL_AE')
+def import_line_financial_ae(self, dict_financial: str, index: int, force_update: bool):
     line = json.loads(dict_financial)
     try :
         financial_ae_instance = db.session.query(FinancialAe).filter_by(n_ej=line[FinancialAe.n_ej.key],
@@ -91,98 +92,52 @@ def import_line_financial_ae(self, dict_financial, index: int, force_update: boo
 
 
     if financial_instance != False:
-        try:
-            new_ae = FinancialAe(**line)
 
-            _check_ref(CodeProgramme, new_ae.programme)
-            _check_ref(CentreCouts, new_ae.centre_couts)
-            _check_ref(DomaineFonctionnel, new_ae.domaine_fonctionnel)
-            _check_ref(FournisseurTitulaire, new_ae.fournisseur_titulaire)
-            _check_ref(GroupeMarchandise, new_ae.groupe_marchandise)
-            _check_ref(LocalisationInterministerielle, new_ae.localisation_interministerielle)
-            _check_ref(ReferentielProgrammation, new_ae.referentiel_programmation)
+        new_ae = FinancialAe(**line)
 
-            # SIRET
-            check_siret(new_ae.siret)
+        _check_ref(CodeProgramme, new_ae.programme)
+        _check_ref(CentreCouts, new_ae.centre_couts)
+        _check_ref(DomaineFonctionnel, new_ae.domaine_fonctionnel)
+        _check_ref(FournisseurTitulaire, new_ae.fournisseur_titulaire)
+        _check_ref(GroupeMarchandise, new_ae.groupe_marchandise)
+        _check_ref(LocalisationInterministerielle, new_ae.localisation_interministerielle)
+        _check_ref(ReferentielProgrammation, new_ae.referentiel_programmation)
 
-            # CHORUS
-            new_financial_ae = None
-            if financial_instance == True:
-                new_financial_ae = _insert_financial_data(new_ae)
-            else:
-                new_financial_ae = _update_financial_data(line, financial_instance)
+        # SIRET
+        check_siret(new_ae.siret)
 
-            _make_link_ae_to_cp(new_financial_ae.id, new_financial_ae.n_ej, new_financial_ae.n_poste_ej)
+        # CHORUS
+        new_financial_ae = None
+        if financial_instance == True:
+            new_financial_ae = _insert_financial_data(new_ae)
+        else:
+            new_financial_ae = _update_financial_data(line, financial_instance)
 
-        except LimitHitError as e:
-            delay = (e.delay) + 5
-            LOGGER.info(
-                f"[IMPORT][FINANCIAL] Limite d'appel à l'API entreprise atteinte pour l'index {str(index)}. " 
-                f"Ré essai de la tâche dans {str(delay)} secondes"
-            )
-            # XXX: max_retries=None ne désactive pas le mécanisme 
-            # de retry max contrairement à ce que stipule la doc !
-            # on met donc un grand nombre.
-            self.retry(countdown=delay, max_retries=1000, retry_jitter=True)
-        
-        except sqlalchemy.exc.IntegrityError as e:
-            msg = (
-                f"IntegrityError pour l'index {index}. "
-                "Cela peut être dû à un soucis de concourrance. On retente."
-            ) 
-            LOGGER.exception(f"[IMPORT][FINANCIAL] {msg}")
-            raise FinancialLineConcurrencyError(msg) from e
-
-        except Exception as e:
-            LOGGER.exception(f"[IMPORT][FINANCIAL] erreur index {index}")
-            raise e
+        _make_link_ae_to_cp(new_financial_ae.id, new_financial_ae.n_ej, new_financial_ae.n_poste_ej)
 
 
 @celery.task(bind=True, name='import_line_financial_cp', autoretry_for=(FinancialException,),
              retry_kwargs={'max_retries': 4, 'countdown': 10})
+@handle_exception_import('FINANCIAL_CP')
 def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int):
     line = json.loads(data_cp)
-    try:
-        new_cp = FinancialCp(line, source_region=source_region, annee=annee)
+    new_cp = FinancialCp(line, source_region=source_region, annee=annee)
 
-        _check_ref(CodeProgramme, new_cp.programme)
-        _check_ref(CentreCouts, new_cp.centre_couts)
-        _check_ref(DomaineFonctionnel, new_cp.domaine_fonctionnel)
-        _check_ref(FournisseurTitulaire, new_cp.fournisseur_paye)
-        _check_ref(GroupeMarchandise, new_cp.groupe_marchandise)
-        _check_ref(LocalisationInterministerielle, new_cp.localisation_interministerielle)
-        _check_ref(ReferentielProgrammation, new_cp.referentiel_programmation)
+    _check_ref(CodeProgramme, new_cp.programme)
+    _check_ref(CentreCouts, new_cp.centre_couts)
+    _check_ref(DomaineFonctionnel, new_cp.domaine_fonctionnel)
+    _check_ref(FournisseurTitulaire, new_cp.fournisseur_paye)
+    _check_ref(GroupeMarchandise, new_cp.groupe_marchandise)
+    _check_ref(LocalisationInterministerielle, new_cp.localisation_interministerielle)
+    _check_ref(ReferentielProgrammation, new_cp.referentiel_programmation)
 
-        # SIRET
-        check_siret(new_cp.siret)
+    # SIRET
+    check_siret(new_cp.siret)
 
-        # FINANCIAL_AE
-        id_ae = _get_ae_for_cp(new_cp.n_ej, new_cp.n_poste_ej)
-        new_cp.id_ae = id_ae
-        _insert_financial_data(new_cp)
-
-    except LimitHitError as e:
-        delay = (e.delay) + 5
-        LOGGER.info(
-            f"[IMPORT][FINANCIAL] Limite d'appel à l'API entreprise atteinte pour l'index {str(index)}. "
-            f"Ré essai de la tâche dans {str(delay)} secondes"
-        )
-        # XXX: max_retries=None ne désactive pas le mécanisme
-        # de retry max contrairement à ce que stipule la doc !
-        # on met donc un grand nombre.
-        self.retry(countdown=delay, max_retries=1000, retry_jitter=True)
-
-    except sqlalchemy.exc.IntegrityError as e:
-        msg = (
-            f"IntegrityError pour l'index {index}. "
-            "Cela peut être dû à un soucis de concurrence. On retente."
-        )
-        LOGGER.exception(f"[IMPORT][FINANCIAL] {msg}")
-        raise FinancialLineConcurrencyError(msg) from e
-
-    except Exception as e:
-        LOGGER.exception(f"[IMPORT][FINANCIAL] erreur index {index}")
-        raise e
+    # FINANCIAL_AE
+    id_ae = _get_ae_for_cp(new_cp.n_ej, new_cp.n_poste_ej)
+    new_cp.id_ae = id_ae
+    _insert_financial_data(new_cp)
 
 @celery.task(bind=True, name='import_file_ademe')
 def import_file_ademe(self, fichier):
