@@ -1,10 +1,15 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from marshmallow import fields
 from sqlalchemy import Column, Integer, String, Date, Float, Boolean
+from sqlalchemy.orm import relationship
 
 from app import db, ma
-from app.models.financial import FinancialData
+from app.models.financial import FinancialData, json_type_object_code_label
+from app.models.refs.siret import Siret
+
+__all__ = ('Ademe','AdemeSchema')
 
 
 @dataclass
@@ -26,11 +31,15 @@ class Ademe(FinancialData, db.Model):
 
     #FK
     siret_attribuant = Column(String, db.ForeignKey('ref_siret.code'), nullable=True)
-    siret_beneficiaire: str = Column(String, db.ForeignKey('ref_siret.code'), nullable=True)
+    siret_beneficiaire = Column(String, db.ForeignKey('ref_siret.code'), nullable=True)
+
+    ref_siret_attribuant = relationship("Siret", lazy="select", foreign_keys=[siret_attribuant])
+    ref_siret_beneficiaire = relationship("Siret", lazy="select", foreign_keys=[siret_beneficiaire])
 
     location_lat = Column(Float)
     location_lon = Column(Float)
     departement = Column(String(5))
+
 
     def __init__(self, line_csv: dict):
         """
@@ -62,11 +71,50 @@ class Ademe(FinancialData, db.Model):
         ]
 
 
+
+
+class SiretField(fields.Field):
+    """Field Siret
+    """
+    def _jsonschema_type_mapping(self):
+        return {
+            'type': 'object',
+            'properties': {
+                'nom': {'type': 'string'},
+                'code': {'type': 'string'},
+                'categorie_juridique': {'type': 'string'}
+            }
+        }
+
+    def _serialize(self, siret: str, attr: str, obj: Ademe, **kwargs):
+        if siret is None:
+            return {}
+        return {
+            'nom': obj.ref_siret_beneficiaire.denomination,
+            'code': siret,
+            'categorie_juridique': obj.ref_siret_beneficiaire.type_categorie_juridique
+        }
+
+class CommuneField(fields.Field):
+    """Field Commune
+    """
+    def _jsonschema_type_mapping(self):
+        return json_type_object_code_label()
+
+    def _serialize(self, value:Siret, attr, obj: Ademe, **kwargs):
+        if value is None:
+            return {}
+        return {
+            'label': value.ref_commune.label_commune,
+            'code': value.ref_commune.code
+        }
+
 class AdemeSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Ademe
-        exclude = ('id',)
+        exclude = ('updated_at','created_at','location_lat','location_lon', 'ref_siret_attribuant')
 
-
+    siret_beneficiaire = SiretField(attribute="siret_beneficiaire")
+    commune = CommuneField(attribute="ref_siret_beneficiaire")
 
 

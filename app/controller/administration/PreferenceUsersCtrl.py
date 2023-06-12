@@ -210,7 +210,7 @@ class CrudPreferenceUsers(Resource):
             return abort(message="Error when delete preference", code=HTTPStatus.BAD_REQUEST)
 
 
-    #@oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @oidc.accept_token(require_token=True, scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.response(200, "User preference", preference_get)
     def get(self, uuid):

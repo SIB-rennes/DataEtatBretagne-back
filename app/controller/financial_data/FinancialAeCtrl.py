@@ -77,7 +77,7 @@ class FinancialAe(Resource):
         return {'items': result,
                 'pageInfo': Pagination(page_result.total, page_result.page, page_result.per_page).to_json()}, 200
 
-#
+
 schema = FinancialAeSchema()
 model_json = JSONSchema().dump(schema)['definitions']["FinancialAeSchema"]
 model_single_api = api.schema_model("FinancialAe", model_json)

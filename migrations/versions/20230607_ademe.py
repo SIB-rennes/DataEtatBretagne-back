@@ -44,7 +44,13 @@ def upgrade():
     with op.batch_alter_table('ref_siret', schema=None) as batch_op:
         batch_op.add_column(sa.Column('naf', postgresql.JSONB(astext_type=sa.Text()), nullable=True))
 
+    # supression value FINANCIAL_DATA
+    op.execute("ALTER TYPE datatype RENAME TO datatype_old")
+    op.execute("CREATE TYPE datatype AS ENUM('FINANCIAL_DATA_AE', 'FINANCIAL_DATA_CP', 'FRANCE_RELANCE','REFERENTIEL','ADEME')")
 
+    op.execute(
+        "ALTER TABLE audit.audit_update_data ALTER COLUMN data_type TYPE datatype USING data_type::text::datatype;")
+    op.execute("DROP TYPE datatype_old")
 
     # ### end Alembic commands ###
 

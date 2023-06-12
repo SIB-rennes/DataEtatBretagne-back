@@ -110,3 +110,6 @@ def update_siret_from_api_entreprise(code: str, insert_only = False):
 
     return siret
 
+
+class LimitHitError:
+    pass

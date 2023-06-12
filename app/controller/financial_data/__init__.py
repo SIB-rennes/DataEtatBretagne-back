@@ -50,6 +50,7 @@ def check_file_import():
 
 from app.controller.financial_data.FinancialAeCtrl import api as api_ae
 from app.controller.financial_data.FinancialCpCtrl import api as api_cp
+from app.controller.financial_data.AdemeCtrl import api as api_ademe
 api_financial = Blueprint('financial_data', __name__)
 
 authorizations = {"Bearer": {"type": "apiKey", "in": "header", "name": "Authorization"}}
@@ -58,6 +59,7 @@ api = Api(api_financial, doc='/doc', prefix="/api/v1", description="API de gesti
           authorizations=authorizations)
 api.add_namespace(api_ae)
 api.add_namespace(api_cp)
+api.add_namespace(api_ademe)
 
 
 @api_financial.errorhandler(DataRegatException)
