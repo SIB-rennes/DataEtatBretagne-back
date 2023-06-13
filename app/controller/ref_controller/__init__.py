@@ -13,6 +13,7 @@ from app.models.refs.groupe_marchandise import GroupeMarchandise
 from app.models.refs.ministere import Ministere
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.controller.ref_controller.LoginController import api as api_auth
+from app.models.refs.siret import Siret
 
 api_ref = Blueprint('api_ref', __name__)
 
@@ -59,6 +60,12 @@ api_ref_arrondissement = build_ref_controller(Arrondissement,
                                          description='API referentiels des arrondissements')
                                )
 
+api_ref_beneficiaire = build_ref_controller(Siret,
+                               Namespace(name="Beneficiaire", path='/beneficiaire',
+                                         description='API pour rechercher les beneficiares (siret)'),
+                                         cond_opt=(Siret.denomination,)
+                               )
+
 
 api.add_namespace(api_auth)
 
@@ -71,3 +78,4 @@ api.add_namespace(api_centre_cout)
 api.add_namespace(api_groupe_marchandise)
 api.add_namespace(crte_api)
 api.add_namespace(api_ref_arrondissement)
+api.add_namespace(api_ref_beneficiaire)
