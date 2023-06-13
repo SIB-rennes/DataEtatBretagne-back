@@ -90,7 +90,7 @@ class SiretField(fields.Field):
         if siret is None:
             return {}
         return {
-            'nom': obj.ref_siret_beneficiaire.denomination,
+            'nom_beneficiare': obj.ref_siret_beneficiaire.denomination,
             'code': siret,
             'categorie_juridique': obj.ref_siret_beneficiaire.type_categorie_juridique
         }
