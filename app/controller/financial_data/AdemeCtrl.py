@@ -58,7 +58,7 @@ class AdemeImport(Resource):
     @api.doc(security="Bearer")
     def get(self):
         """
-        Retourne les lignes d'engagements Chorus
+        Retourne les lignes de financement ADEME
         """
         params = parser_get.parse_args()
         page_result = search_ademe(**params)

@@ -109,7 +109,3 @@ def update_siret_from_api_entreprise(code: str, insert_only = False):
     _map(siret, etablissement)
 
     return siret
-
-
-class LimitHitError:
-    pass
