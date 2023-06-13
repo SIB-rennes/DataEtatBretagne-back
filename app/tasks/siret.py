@@ -4,7 +4,9 @@ from celery import subtask
 from app import celeryapp, db
 from app.models.refs.siret import Siret
 
-from app.services.siret import update_siret_from_api_entreprise, LimitHitError
+from app.services.siret import update_siret_from_api_entreprise
+from app.clients.entreprise import  LimitHitError
+
 
 logger = logging.getLogger()
 celery = celeryapp.celery

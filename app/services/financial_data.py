@@ -9,10 +9,12 @@ from app import db
 from app.exceptions.exceptions import InvalidFile, FileNotAllowedException
 from app.models.audit.AuditUpdateData import AuditUpdateData
 from app.models.enums.DataType import DataType
+from app.models.financial.Ademe import Ademe
 
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.financial.FinancialAe import FinancialAe
-from app.services import BuilderStatementFinancialAe
+from app.models.refs.siret import Siret
+from app.services import BuilderStatementFinancial
 from app.services.code_geo import BuilderCodeGeo
 from app.services.file_service import allowed_file
 
@@ -40,6 +42,7 @@ def import_cp(file_cp, source_region:str, annee: int, username=""):
     db.session.commit()
     return task
 
+
 def import_ademe(file_ademe, username=""):
     save_path = _check_file_and_save(file_ademe)
 
@@ -50,17 +53,55 @@ def import_ademe(file_ademe, username=""):
     db.session.commit()
     return task
 
-def get_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
+def get_financial_ae(id: int) -> FinancialAe:
+    query_select = BuilderStatementFinancial().select_ae() \
+        .join_filter_siret() \
+        .join_filter_programme_theme()\
+        .join_commune().by_ae_id(id).options_select_load()
+
+    result = query_select.do_single()
+    return result
+
+def search_ademe(siret_beneficiaire: list = None, code_geo: list = None, annee: list = None, page_number=1, limit=500):
+    query = db.select(Ademe)
+    query = query.join(Ademe.ref_siret_beneficiaire.and_(
+        Siret.code.in_(siret_beneficiaire))) if siret_beneficiaire is not None else query.join(Siret,
+                                                                                               Ademe.ref_siret_beneficiaire)
+    query = query.join(Siret.ref_categorie_juridique)
+
+    #utilisation du builder
+    query_ademe = BuilderStatementFinancial(query)
+
+    if code_geo is not None:
+        (type_geo, list_code_geo) = BuilderCodeGeo().build_list_code_geo(code_geo)
+        query_ademe.where_geo(type_geo, list_code_geo)
+    else:
+        query_ademe.join_commune()
+
+    if annee is not None:
+        query_ademe.where_custom( db.func.extract('year', Ademe.date_convention).in_(annee))
+
+    page_result = query_ademe.do_paginate(limit, page_number)
+    return page_result
+
+
+def get_ademe(id: int) -> Ademe:
+    query = db.select(Ademe).join(Siret,Ademe.ref_siret_beneficiaire).join(Siret.ref_categorie_juridique)
+
+    result = BuilderStatementFinancial(query).join_commune().where_custom(Ademe.id == id).do_single()
+    return result
+
+def search_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
                           code_geo: list = None, page_number=1, limit=500):
 
 
-    query_siret = BuilderStatementFinancialAe().select()\
+    query_siret = BuilderStatementFinancial().select_ae()\
         .join_filter_siret(siret_beneficiaire)\
         .join_filter_programme_theme(code_programme, theme)
 
     if code_geo is not None:
         (type_geo, list_code_geo) = BuilderCodeGeo().build_list_code_geo(code_geo)
-        query_siret.where_geo(type_geo, list_code_geo)
+        query_siret.where_geo_ae(type_geo, list_code_geo)
     else :
         query_siret.join_commune()
 

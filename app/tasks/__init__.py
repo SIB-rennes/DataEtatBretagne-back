@@ -5,7 +5,6 @@ from time import sleep
 import sqlalchemy
 from api_entreprise import LimitHitError
 from flask import current_app
-
 from app import celeryapp
 import redis
 
@@ -15,8 +14,8 @@ LOGGER = logging.getLogger()
 celery = celeryapp.celery
 from celery import current_app
 
-
 __all__= ('limiter_queue','LimitQueueException',)
+
 
 MAX_QUEUE_SIZE = 'max_queue_size'
 TIMEOUT_QUEUE_RETRY = 'timeout_queue_retry'
@@ -84,3 +83,8 @@ def handle_exception_import(name):
 
 class LimitQueueException(Exception):
     pass
+
+from .import_financial_tasks import *
+from .import_refs_tasks import *
+from .management_tasks import *
+from .refs import *

@@ -76,7 +76,7 @@ def build_ref_controller(cls, namespace: Namespace, help_query="Recherche sur le
     @api.route('/<code>')
     @api.doc(model=model_single_api)
     class RefByCode(Resource):
-        #@oidc.accept_token(require_token=True, scopes_required=['openid'])
+        @oidc.accept_token(require_token=True, scopes_required=['openid'])
         @api.doc(security="Bearer")
         @api.response(200, 'Success', model_single_api)
         def get(self, code):

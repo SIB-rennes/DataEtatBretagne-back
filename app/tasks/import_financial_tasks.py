@@ -4,13 +4,11 @@ import os
 
 import pandas
 import sqlalchemy.exc
-from api_entreprise import LimitHitError
 from celery import subtask
-from numpy import int64
 from sqlalchemy import update, delete
 
 from app import db, celeryapp
-from app.exceptions.exceptions import FinancialException,FinancialLineConcurrencyError
+from app.exceptions.exceptions import FinancialException
 from app.models.financial import FinancialData
 from app.models.financial.Ademe import Ademe
 from app.models.financial.FinancialAe import FinancialAe
@@ -155,10 +153,10 @@ def import_file_ademe(self, fichier):
                 _send_subtask_ademe(ademe_data.to_json())
 
         os.remove(fichier)
-        LOGGER.info('[IMPORT][FINANCIAL][CP] End')
+        LOGGER.info('[IMPORT][ADEME] End')
         return True
     except Exception as e:
-        LOGGER.exception(f"[IMPORT][FINANCIAL][CP] Error lors de l'import du fichier {fichier} chorus")
+        LOGGER.exception(f"[IMPORT][ADEME] Error lors de l'import du fichier {fichier} chorus")
         raise e
 
 

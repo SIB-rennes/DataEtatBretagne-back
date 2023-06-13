@@ -16,15 +16,18 @@ from ..models.refs.referentiel_programmation import ReferentielProgrammation
 from ..models.refs.siret import Siret
 from ..models.refs.theme import Theme
 
-__all__ = ('BadCodeGeoException', 'BuilderStatementFinancialAe')
+__all__ = ('BadCodeGeoException', 'BuilderStatementFinancial')
 
-class BuilderStatementFinancialAe():
+class BuilderStatementFinancial():
     """
     Classe permettant de construire une requête pour récupérer des données à partir de la table FinancialAe.
     """
     _stmt: Select = None
 
-    def select(self):
+    def __init__(self, stmt = None):
+        self._stmt = stmt
+
+    def select_ae(self):
         """
         Spécifie la table et les options de sélection pour la requête.
 
@@ -39,7 +42,7 @@ class BuilderStatementFinancialAe():
                      db.defer(Ae.contrat_etat_region))
         return self
 
-    def join_filter_programme_theme(self, code_programme: list, theme: list):
+    def join_filter_programme_theme(self, code_programme: list = None, theme: list= None):
         """
         Effectue des jointures avec les tables CodeProgramme et Theme en fonction des codes de programme et des thèmes fournis.
 
@@ -60,7 +63,7 @@ class BuilderStatementFinancialAe():
         self._stmt = self._stmt.join(Ae.ref_domaine_fonctionnel)
         return self
 
-    def join_filter_siret(self, siret: list):
+    def join_filter_siret(self, siret: list = None):
         """
         Effectue une jointure avec la table Siret en fonction des SIRET fournis.
 
@@ -82,6 +85,28 @@ class BuilderStatementFinancialAe():
             self._stmt = self._stmt.where(Ae.annee.in_(annee))
         return self
 
+    def where_ej(self, n_ej:str, n_poste_ej: int):
+        """
+        Ajoute une condition Where pour filter sur le poste_ej et numéro ej
+        :param n_ej: le numéro EJ
+        :param n_poste_ej:  Le poste ej
+        :return:  L'instance courante de BuilderStatementFinancialAe.
+        """
+
+        if n_ej is not None and n_poste_ej is not None:
+            self._stmt = self._stmt.where(Ae.n_ej == n_ej).where(Ae.n_poste_ej == n_poste_ej)
+        return self
+
+    def by_ae_id(self, id:int):
+        """
+        Sélection uniquement selon l'id technique
+        :param id: l'identifiant technique
+        :return: L'instance courante de BuilderStatementFinancialAe.
+        """
+        if id is not None :
+            self._stmt = self._stmt.where(Ae.id == id)
+        return self
+
     def join_commune(self):
         """
         Ajoute une jointure simple sur la commune siret
@@ -90,9 +115,9 @@ class BuilderStatementFinancialAe():
         self._stmt = self._stmt.join(Siret.ref_commune)
         return self
 
-    def where_geo(self, type_geo: TypeCodeGeo, list_code_geo: list):
+    def where_geo_ae(self, type_geo: TypeCodeGeo, list_code_geo: list):
         """
-        Ajoute une condition WHERE pour filtrer par géolocalisation.
+        Ajoute une condition WHERE pour filtrer par géolocalisation sur les engagements
 
         :param type_geo: Le type de géolocalisation (TypeCodeGeo).
         :param list_code_geo: Une liste de codes géographiques.
@@ -129,6 +154,32 @@ class BuilderStatementFinancialAe():
 
         return self
 
+    def where_geo(self, type_geo: TypeCodeGeo, list_code_geo: list):
+        """
+        Ajoute une condition WHERE pour filtrer par géolocalisation sans les loc interministerielles
+
+        :param type_geo: Le type de géolocalisation (TypeCodeGeo).
+        :param list_code_geo: Une liste de codes géographiques.
+        :return: L'instance courante de BuilderStatementFinancialAe.
+        """
+        if list_code_geo is not None:
+            self._stmt = self._stmt.join(Siret.ref_commune)
+
+            match type_geo:
+                case TypeCodeGeo.DEPARTEMENT:
+                    self._stmt = self._stmt.where(Commune.code_departement.in_(list_code_geo))
+                case TypeCodeGeo.EPCI:
+                    self._stmt = self._stmt.where(Commune.code_epci.in_(list_code_geo))
+                case TypeCodeGeo.CRTE:
+                    self._stmt = self._stmt.where(Commune.code_crte.in_(list_code_geo))
+                case TypeCodeGeo.ARRONDISSEMENT:
+                    self._stmt = self._stmt.where(Commune.code_arrondissement.in_(list_code_geo))
+                case _:
+                    self._stmt = self._stmt.where(Commune.code.in_(list_code_geo))
+
+        return self
+
+
     def options_select_load(self):
         """
         Ajoute les options de sélection et de chargement des colonnes pour la requête.
@@ -146,6 +197,10 @@ class BuilderStatementFinancialAe():
         )
         return self
 
+    def where_custom(self, stmt_where):
+        self._stmt = self._stmt.where(stmt_where)
+        return self
+
     def do_paginate(self, limit, page_number):
         """
         Effectue la pagination des résultats en utilisant les limites spécifiées.
@@ -154,3 +209,10 @@ class BuilderStatementFinancialAe():
         :return: L'objet Pagination contenant les résultats paginés.
         """
         return db.paginate(self._stmt, per_page=limit, page=page_number, error_out=False)
+
+    def do_single(self):
+        """
+        Effectue la recherche et retourne le seul résultat
+        :return:
+        """
+        return db.session.execute(self._stmt).scalar_one_or_none()
