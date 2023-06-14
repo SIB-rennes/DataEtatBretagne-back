@@ -30,6 +30,7 @@ parser_get.add_argument('siret_beneficiaire', type=str, action="split", help="Co
 parser_get.add_argument('annee', type=int, action="split", help="L'année comptable.")
 parser_get.add_argument('domaine_fonctionnel', type=str, action="split", help="Le(s) code(s) du domaine fonctionnel.")
 parser_get.add_argument('referentiel_programmation', type=str, action="split", help="Le(s) code(s) du référentiel de programmation.")
+parser_get.add_argument('source_region', type=str, action="split", help="Les codes INSEE des régions sources.")
 
 
 @api.errorhandler(BadCodeGeoException)
