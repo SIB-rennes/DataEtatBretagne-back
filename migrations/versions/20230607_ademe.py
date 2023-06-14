@@ -36,8 +36,8 @@ def upgrade():
     sa.Column('departement', sa.String(length=5), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['attribuant'], ['ref_siret.code'], ),
-    sa.ForeignKeyConstraint(['siret'], ['ref_siret.code'], ),
+    sa.ForeignKeyConstraint(['siret_attribuant'], ['ref_siret.code'], ),
+    sa.ForeignKeyConstraint(['siret_beneficiaire'], ['ref_siret.code'], ),
     sa.PrimaryKeyConstraint('id')
     )
 
