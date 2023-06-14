@@ -102,7 +102,9 @@ def _build_where_clause(cls,query_param: QueryParam, cond_opt: tuple):
     """
     like = query_param.get_search_like_param()
 
-    where_clause = ((cls.code.ilike(like)) | (cls.label.ilike(like)))
+    where_clause = cls.code.ilike(like)
+    if hasattr(cls, 'label'):
+        where_clause = where_clause | cls.label.ilike(like)
 
     if cond_opt is not None:
         for cond in cond_opt:
