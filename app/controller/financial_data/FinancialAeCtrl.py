@@ -25,9 +25,11 @@ parser_get.add_argument('code_geo', type=str, action="split", help="Le code d'un
                                                                      "le code epci (9 chiffres), "
                                                                      "le code d'arrondissement (3 ou 4 chiffres)"
                                                                      "ou le crte (préfixé par 'crte-')")
-parser_get.add_argument('theme', type=str, action="split", help="Le libelle theme (si code_programme est renseigné, le theme est ignoré)")
-parser_get.add_argument('siret_beneficiaire', type=str, action="split", help="Code siret d'un beneficiaire")
-parser_get.add_argument('annee', type=int, action="split", help="L'année comptable")
+parser_get.add_argument('theme', type=str, action="split", help="Le libelle theme (si code_programme est renseigné, le theme est ignoré).")
+parser_get.add_argument('siret_beneficiaire', type=str, action="split", help="Code siret d'un beneficiaire.")
+parser_get.add_argument('annee', type=int, action="split", help="L'année comptable.")
+parser_get.add_argument('domaine_fonctionnel', type=str, action="split", help="Le(s) code(s) du domaine fonctionnel.")
+parser_get.add_argument('referentiel_programmation', type=str, action="split", help="Le(s) code(s) du référentiel de programmation.")
 
 
 @api.errorhandler(BadCodeGeoException)

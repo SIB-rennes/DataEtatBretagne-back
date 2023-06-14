@@ -4,10 +4,10 @@ from kombu import Queue
 CELERY_TASK_LIST = ['app.tasks']
 
 db_session = None
-celery = None
+celery: Celery = None
 
 
-def create_celery_app(_app =None):
+def create_celery_app(_app =None) -> Celery:
     """
     Create a new Celery object and tie together the Celery config to the app's config.
 

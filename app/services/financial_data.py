@@ -13,6 +13,8 @@ from app.models.financial.Ademe import Ademe
 
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.financial.FinancialAe import FinancialAe
+from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
+from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.models.refs.siret import Siret
 from app.services import BuilderStatementFinancial
 from app.services.code_geo import BuilderCodeGeo
@@ -91,8 +93,10 @@ def get_ademe(id: int) -> Ademe:
     result = BuilderStatementFinancial(query).join_commune().where_custom(Ademe.id == id).do_single()
     return result
 
-def search_financial_data_ae(code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
-                          code_geo: list = None, page_number=1, limit=500):
+def search_financial_data_ae(
+        code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
+        domaine_fonctionnel: list = None, referentiel_programmation: list = None,
+        code_geo: list = None, page_number=1, limit=500):
 
 
     query_siret = BuilderStatementFinancial().select_ae()\
@@ -104,6 +108,12 @@ def search_financial_data_ae(code_programme: list = None, theme: list = None, si
         query_siret.where_geo_ae(type_geo, list_code_geo)
     else :
         query_siret.join_commune()
+    
+    if domaine_fonctionnel is not None:
+        query_siret.where_custom(DomaineFonctionnel.code.in_(domaine_fonctionnel))
+    
+    if referentiel_programmation is not None:
+        query_siret.where_custom(ReferentielProgrammation.code.in_(referentiel_programmation))
 
     page_result = query_siret.where_annee(annee).options_select_load().do_paginate(limit, page_number)
     return page_result
