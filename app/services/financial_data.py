@@ -95,7 +95,7 @@ def get_ademe(id: int) -> Ademe:
 
 def search_financial_data_ae(
         code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
-        domaine_fonctionnel: list = None, referentiel_programmation: list = None,
+        domaine_fonctionnel: list = None, referentiel_programmation: list = None, source_region: list = None,
         code_geo: list = None, page_number=1, limit=500):
 
 
@@ -114,6 +114,9 @@ def search_financial_data_ae(
     
     if referentiel_programmation is not None:
         query_siret.where_custom(ReferentielProgrammation.code.in_(referentiel_programmation))
+    
+    if source_region is not None:
+        query_siret.where_custom(FinancialAe.source_region.in_(source_region))
 
     page_result = query_siret.where_annee(annee).options_select_load().do_paginate(limit, page_number)
     return page_result
