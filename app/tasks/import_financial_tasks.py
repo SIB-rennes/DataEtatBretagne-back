@@ -114,8 +114,7 @@ def import_line_financial_ae(self, dict_financial: str, index: int, force_update
         _make_link_ae_to_cp(new_financial_ae.id, new_financial_ae.n_ej, new_financial_ae.n_poste_ej)
 
 
-@celery.task(bind=True, name='import_line_financial_cp', autoretry_for=(FinancialException,),
-             retry_kwargs={'max_retries': 4, 'countdown': 10})
+@celery.task(bind=True, name='import_line_financial_cp')
 @handle_exception_import('FINANCIAL_CP')
 def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int):
     line = json.loads(data_cp)
@@ -165,7 +164,7 @@ def _send_subtask_ademe(data_ademe):
     subtask("import_line_ademe").delay(data_ademe)
 
 
-@celery.task(bind=True, name='import_line_ademe', autoretry_for=(FinancialException,),  retry_kwargs={'max_retries': 4, 'countdown': 10})
+@celery.task(bind=True, name='import_line_ademe')
 @handle_exception_import('ADEME')
 def import_line_ademe(self, line_ademe: str):
     line = json.loads(line_ademe)

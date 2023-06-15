@@ -71,8 +71,7 @@ def handle_exception_import(name):
            except sqlalchemy.exc.IntegrityError as e:
                msg = "IntegrityError. Cela peut être dû à un soucis de concurrence. On retente."
                LOGGER.exception(f"[IMPORT][{name}] {msg}")
-               raise FinancialLineConcurrencyError(msg) from e
-
+               func.retry(countdown=10, max_retries=4, retry_jitter=True)
            except Exception as e:
                LOGGER.exception(f"[IMPORT][{name}] erreur")
                raise e
