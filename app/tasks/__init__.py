@@ -51,12 +51,26 @@ def limiter_queue(queue_name:str, max_queue_size: int = max_queue_size, timeout_
         return inner_wrapper
     return wrapper
 
-def handle_exception_import(name):
+def _handle_exception_import(name):
+    """
+    Gère les exceptions pour les imports
+
+    S'attend à être utilisé en conjonction des tâches celery
+
+    ```
+    ...
+    @celery.task(...)
+    @_handle_exception_import('nom')
+    def import_func():
+        ...
+    ...
+    ```
+    """
     def wrapper(func):
         @wraps(func)
-        def inner_wrapper(*args, **kwargs):
+        def inner_wrapper(caller, *args, **kwargs):
            try :
-               func(*args, **kwargs)
+               func(caller, *args, **kwargs)
            except LimitHitError as e:
                delay = (e.delay) + 5
                LOGGER.info(
@@ -66,12 +80,12 @@ def handle_exception_import(name):
                # XXX: max_retries=None ne désactive pas le mécanisme
                # de retry max contrairement à ce que stipule la doc !
                # on met donc un grand nombre.
-               func.retry(countdown=delay, max_retries=1000, retry_jitter=True)
+               caller.retry(countdown=delay, max_retries=1000, retry_jitter=True)
 
            except sqlalchemy.exc.IntegrityError as e:
                msg = "IntegrityError. Cela peut être dû à un soucis de concurrence. On retente."
                LOGGER.exception(f"[IMPORT][{name}] {msg}")
-               func.retry(countdown=10, max_retries=4, retry_jitter=True)
+               caller.retry(countdown=10, max_retries=4, retry_jitter=True)
            except Exception as e:
                LOGGER.exception(f"[IMPORT][{name}] erreur")
                raise e

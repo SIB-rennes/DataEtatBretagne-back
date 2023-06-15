@@ -22,7 +22,7 @@ from app.models.refs.localisation_interministerielle import LocalisationIntermin
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.services.siret import check_siret
 
-from app.tasks import limiter_queue, handle_exception_import
+from app.tasks import limiter_queue, _handle_exception_import
 
 LOGGER = logging.getLogger()
 
@@ -76,8 +76,8 @@ def _send_subtask_financial_ae(line, index, force_update):
 def _send_subtask_financial_cp(line, index, source_region, annee):
     subtask("import_line_financial_cp").delay(line, index, source_region, annee)
 
-@handle_exception_import('FINANCIAL_AE')
 @celery.task(bind=True, name='import_line_financial_ae', autoretry_for=(FinancialException,), retry_kwargs={'max_retries': 4, 'countdown': 10})
+@_handle_exception_import('FINANCIAL_AE')
 def import_line_financial_ae(self, dict_financial: str, index: int, force_update: bool):
     line = json.loads(dict_financial)
     try :
@@ -114,8 +114,8 @@ def import_line_financial_ae(self, dict_financial: str, index: int, force_update
         _make_link_ae_to_cp(new_financial_ae.id, new_financial_ae.n_ej, new_financial_ae.n_poste_ej)
 
 
-@handle_exception_import('FINANCIAL_CP')
 @celery.task(bind=True, name='import_line_financial_cp')
+@_handle_exception_import('FINANCIAL_CP')
 def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int):
     line = json.loads(data_cp)
     new_cp = FinancialCp(line, source_region=source_region, annee=annee)
@@ -164,8 +164,8 @@ def _send_subtask_ademe(data_ademe):
     subtask("import_line_ademe").delay(data_ademe)
 
 
-@handle_exception_import('ADEME')
 @celery.task(bind=True, name='import_line_ademe')
+@_handle_exception_import('ADEME')
 def import_line_ademe(self, line_ademe: str):
     line = json.loads(line_ademe)
     new_ademe = Ademe(line)
