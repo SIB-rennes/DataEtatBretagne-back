@@ -1,6 +1,7 @@
 import logging
 import smtplib
 import ssl
+from email import charset
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -47,6 +48,10 @@ class Mail:
         mail['Subject'] = subject
         mail['From'] = self.from_email
         mail['To'] = recipient
+
+        cs = charset.Charset('utf-8')
+        cs.body_encoding = charset.QP
+        mail.set_charset(cs)
 
         html_content = MIMEText(template_html, 'html')
         text_content = MIMEText(template_text, 'plain')

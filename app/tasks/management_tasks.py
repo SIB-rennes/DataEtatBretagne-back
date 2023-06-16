@@ -28,8 +28,9 @@ html_template = """
 <p>{0} souhaite vous partager un tableau de bord via le service {1}.</p>
 <p>{1} est un projet interministériel piloté par le SGAR Bretagne (Préfecture de région). 
 Il vise au partage et à la réutilisation des données de l’État dont financières pour piloter les politiques publiques et valoriser les financements de l’État sur les territoires.</p>
-<p>Pour y accéder, veuillez cliquer sur le lien {2} et vous connecter.</p>
-<p>Si vous n'avez pas de compte, vous pouvez faire une demande en suivant le lien {3}</p>"""
+<p>Pour y accéder, veuillez cliquer sur ce <a href="https://{2}">lien</a> et vous connecter.</p>
+<p>Si vous n'avez pas de compte, vous pouvez faire une demande en suivant ce <a href="https://{3}">lien</a></p>
+"""
 
 subject_budget = "Budget Data État Bretagne"
 subject_france_relance = "France Relance Bretagne"
