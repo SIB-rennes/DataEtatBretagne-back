@@ -169,6 +169,8 @@ def _send_subtask_ademe(data_ademe):
 def import_line_ademe(self, line_ademe: str):
     line = json.loads(line_ademe)
     new_ademe = Ademe(line)
+    LOGGER.info(
+        f'[IMPORT][ADEME] Tentative ligne Ademe referece decision {new_ademe.reference_decision}, beneficiaire {new_ademe.siret_beneficiaire}')
 
     # SIRET Attribuant
     check_siret(new_ademe.siret_attribuant)
