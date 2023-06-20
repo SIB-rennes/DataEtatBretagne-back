@@ -5,7 +5,8 @@ from unittest.mock import patch, call, ANY
 from app.models.financial.FinancialAe import FinancialAe
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.refs.siret import Siret
-from app.tasks.import_financial_tasks import import_file_cp_financial, import_line_financial_cp
+from app.tasks.financial.import_financial import import_file_cp_financial
+from app.tasks.financial.import_financial import import_line_financial_cp
 
 def _next_tech_info_fn():
     index = 0
@@ -17,7 +18,7 @@ def _next_tech_info_fn():
 
 _next_tech_info = _next_tech_info_fn()
 
-@patch('app.tasks.import_financial_tasks.subtask')
+@patch('app.tasks.financial.import_financial.subtask')
 def test_import_file_cp(mock_subtask, test_db):
     # DO
     with patch('os.remove', return_value=None):  # ne pas supprimer le fichier de tests :)

@@ -1,15 +1,10 @@
-import json
-import logging
-import os
 from collections import namedtuple
-
-import pandas
-import sqlalchemy.exc
-from celery import subtask, current_task
-from sqlalchemy import update, delete
-
-from app import db, celeryapp
+import json
+from celery import current_task, subtask
+from sqlalchemy import delete, update
+from app import celeryapp, db
 from app.exceptions.exceptions import FinancialException
+import sqlalchemy.exc
 from app.models.financial import FinancialData
 from app.models.financial.Ademe import Ademe
 from app.models.financial.FinancialAe import FinancialAe
@@ -22,19 +17,28 @@ from app.models.refs.groupe_marchandise import GroupeMarchandise
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielle
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.services.siret import check_siret
+from app.tasks import limiter_queue
 
-from app.tasks import limiter_queue, _handle_exception_import
 
-LOGGER = logging.getLogger()
+import pandas
+
+
+import os
+from app.tasks.financial import logger
+
+from app.tasks.financial.errors import _handle_exception_import
+
+
+@limiter_queue(queue_name='line')
+def _send_subtask_financial_ae(line, index, force_update):
+    subtask("import_line_financial_ae").delay(line, index, force_update)
+
 
 celery = celeryapp.celery
-
-LineImportTechInfo = namedtuple('LineImportTechInfo', ['file_import_taskid', 'lineno'])
-
 @celery.task(bind=True, name='import_file_ae_financial')
 def import_file_ae_financial(self, fichier, source_region: str, annee: int, force_update: bool):
     # get file
-    LOGGER.info(f'[IMPORT][FINANCIAL][AE] Start for region {source_region}, year {annee}, file {fichier}')
+    logger.info(f'[IMPORT][FINANCIAL][AE] Start for region {source_region}, year {annee}, file {fichier}')
     try:
         data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialAe.get_columns_files_ae(),
                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': int,
@@ -45,16 +49,41 @@ def import_file_ae_financial(self, fichier, source_region: str, annee: int, forc
             _send_subtask_financial_ae(line.append(series).to_json(), index, force_update)
 
         os.remove(fichier)
-        LOGGER.info('[IMPORT][FINANCIAL][AE] End')
+        logger.info('[IMPORT][FINANCIAL][AE] End')
         return True
     except Exception as e:
-        LOGGER.exception(f"[IMPORT][FINANCIAL][AE] Error lors de l'import du fichier {fichier} chorus")
+        logger.exception(f"[IMPORT][FINANCIAL][AE] Error lors de l'import du fichier {fichier} chorus")
         raise e
+
+
+LineImportTechInfo = namedtuple('LineImportTechInfo', ['file_import_taskid', 'lineno'])
+
+
+@limiter_queue(queue_name='line')
+def _send_subtask_financial_cp(line, index, source_region, annee, tech_info: LineImportTechInfo):
+    subtask("import_line_financial_cp").delay(line, index, source_region, annee, tech_info)
+
+
+def _delete_cp(annee: int, source_region: str):
+    """
+    Supprimes CP d'une année comptable
+    :param annee:
+    :param source_region:
+    :return:
+    """
+    stmt = (
+        delete(FinancialCp).
+        where(FinancialCp.annee == annee).
+        where(FinancialCp.source_region == source_region)
+    )
+    db.session.execute(stmt)
+    db.session.commit()
+
 
 @celery.task(bind=True, name='import_file_cp_financial')
 def import_file_cp_financial(self, fichier, source_region: str, annee: int):
     # get file
-    LOGGER.info(f'[IMPORT][FINANCIAL][CP] Start for region {source_region}, year {annee}, file {fichier}')
+    logger.info(f'[IMPORT][FINANCIAL][CP] Start for region {source_region}, year {annee}, file {fichier}')
     try:
         current_taskid = current_task.request.id
         data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialCp.get_columns_files_cp(),
@@ -69,19 +98,80 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
             _send_subtask_financial_cp(chorus_data.to_json(), index, source_region, annee, tech_info)
 
         os.remove(fichier)
-        LOGGER.info('[IMPORT][FINANCIAL][CP] End')
+        logger.info('[IMPORT][FINANCIAL][CP] End')
         return True
     except Exception as e:
-        LOGGER.exception(f"[IMPORT][FINANCIAL][CP] Error lors de l'import du fichier {fichier} chorus")
+        logger.exception(f"[IMPORT][FINANCIAL][CP] Error lors de l'import du fichier {fichier} chorus")
         raise e
 
 
-@limiter_queue(queue_name='line')
-def _send_subtask_financial_ae(line, index, force_update):
-    subtask("import_line_financial_ae").delay(line, index, force_update)
-@limiter_queue(queue_name='line')
-def _send_subtask_financial_cp(line, index, source_region, annee, tech_info: LineImportTechInfo):
-    subtask("import_line_financial_cp").delay(line, index, source_region, annee, tech_info)
+def _check_ref(model, code):
+    instance = db.session.query(model).filter_by(code=str(code)).one_or_none()
+    if not instance:
+        instance = model(**{'code':code})
+        logger.info(f'[IMPORT][REF] Ajout ref {model.__tablename__} code {code}')
+        try:
+            db.session.add(instance)
+            db.session.commit()
+        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+            logger.exception(f"[IMPORT][CHORUS] Error sur ajout ref {model.__tablename__} code {code}")
+            raise e
+
+
+def _check_insert_update_financial(financial_ae: FinancialData | None, line,force_update: bool) -> FinancialData | bool:
+    '''
+    :param financial_ae: l'instance financière déjà présente ou non
+    :param force_update:
+    :return: True -> Objet à créer
+             False -> rien à faire
+             Instance chorus -> Objet à update
+    '''
+
+    if financial_ae:
+        if force_update:
+            logger.info('[IMPORT][FINANCIAL] Doublon trouvé, Force Update')
+            return financial_ae
+        if financial_ae.should_update(line):
+            logger.info('[IMPORT][FINANCIAL] Doublon trouvé, MAJ à faire')
+            return financial_ae
+        else:
+            logger.info('[IMPORT][FINANCIAL] Doublon trouvé, Pas de maj')
+            return False
+    return True
+
+
+def _insert_financial_data(data: FinancialData) -> FinancialData:
+    db.session.add(data)
+    logger.info('[IMPORT][FINANCIAL] Ajout ligne financière')
+    db.session.commit()
+    return data
+
+
+def _update_financial_data(data, financial: FinancialData) -> FinancialData:
+    financial.update_attribute(data)
+    logger.info('[IMPORT][FINANCIAL] Update ligne financière')
+    db.session.commit()
+    return financial
+
+
+def _make_link_ae_to_cp(id_financial_ae: int, n_ej: str, n_poste_ej: int):
+    """
+    Lance une requête update pour faire le lien entre une AE et des CP
+    :param id_financial_ae: l'id d'une AE
+    :param n_ej : le numero d'ej
+    :parman n_poste_ej : le poste ej
+    :return:
+    """
+
+    stmt = (
+        update(FinancialCp).
+        where(FinancialCp.n_ej == n_ej).
+        where(FinancialCp.n_poste_ej == n_poste_ej).
+        values(id_ae=id_financial_ae)
+    )
+    db.session.execute(stmt)
+    db.session.commit()
+
 
 @celery.task(bind=True, name='import_line_financial_ae', autoretry_for=(FinancialException,), retry_kwargs={'max_retries': 4, 'countdown': 10})
 @_handle_exception_import('FINANCIAL_AE')
@@ -92,7 +182,7 @@ def import_line_financial_ae(self, dict_financial: str, index: int, force_update
                                                   n_poste_ej=line[FinancialAe.n_poste_ej.key]).one_or_none()
         financial_instance = _check_insert_update_financial(financial_ae_instance,line, force_update)
     except sqlalchemy.exc.OperationalError as o:
-        LOGGER.exception(f"[IMPORT][CHORUS] Erreur index {index} sur le check ligne chorus")
+        logger.exception(f"[IMPORT][CHORUS] Erreur index {index} sur le check ligne chorus")
         raise FinancialException(o) from o
 
 
@@ -121,7 +211,21 @@ def import_line_financial_ae(self, dict_financial: str, index: int, force_update
         _make_link_ae_to_cp(new_financial_ae.id, new_financial_ae.n_ej, new_financial_ae.n_poste_ej)
 
 
-@celery.task(bind=True, name='import_line_financial_cp')
+def _get_ae_for_cp(n_ej: str, n_poste_ej: int) -> int | None:
+    """
+    Récupère le bon AE pour le lié au CP
+    :param n_ej : le numero d'ej
+    :parman n_poste_ej : le poste ej
+    :return:
+    """
+    if n_ej is None or n_poste_ej is None :
+        return None
+
+    financial_ae = FinancialAe.query.filter_by(n_ej=str(n_ej), n_poste_ej=int(n_poste_ej)).one_or_none()
+    return financial_ae.id if financial_ae is not None else None
+
+
+@celery.task(bind=True, name='import_line_financial_cp', acks_late=True)
 @_handle_exception_import('FINANCIAL_CP')
 def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int, tech_info_list: list):
 
@@ -149,10 +253,26 @@ def import_line_financial_cp(self, data_cp, index, source_region: str, annee: in
     new_cp.id_ae = id_ae
     _insert_financial_data(new_cp)
 
+
+@limiter_queue(queue_name='line')
+def _send_subtask_ademe(data_ademe: str, tech_info: LineImportTechInfo):
+    subtask("import_line_ademe").delay(data_ademe, tech_info)
+
+
+def _delete_ademe():
+    """
+    Supprime toutes les données ADEME
+    :return:
+    """
+    stmt = delete(Ademe)
+    db.session.execute(stmt)
+    db.session.commit()
+
+
 @celery.task(bind=True, name='import_file_ademe')
 def import_file_ademe(self, fichier):
     # get file
-    LOGGER.info(f'[IMPORT][ADEME] Start for file {fichier}')
+    logger.info(f'[IMPORT][ADEME] Start for file {fichier}')
     try:
         current_taskid = current_task.request.id
         data_ademe_chunk = pandas.read_csv(fichier, sep=",", skiprows=1, names=Ademe.get_columns_files(),
@@ -168,21 +288,16 @@ def import_file_ademe(self, fichier):
                 tech_info = LineImportTechInfo(current_taskid, i)
                 _send_subtask_ademe(ademe_data.to_json(), tech_info)
 
-        LOGGER.info('[IMPORT][ADEME] End')
+        logger.info('[IMPORT][ADEME] End')
         return True
     except Exception as e:
-        LOGGER.exception(f"[IMPORT][ADEME] Error lors de l'import du fichier {fichier} chorus")
+        logger.exception(f"[IMPORT][ADEME] Error lors de l'import du fichier {fichier} chorus")
         raise e
     finally:
         os.remove(fichier)
 
 
-@limiter_queue(queue_name='line')
-def _send_subtask_ademe(data_ademe: str, tech_info: LineImportTechInfo):
-    subtask("import_line_ademe").delay(data_ademe, tech_info)
-
-
-@celery.task(bind=True, name='import_line_ademe')
+@celery.task(bind=True, name='import_line_ademe', acks_late=True)
 @_handle_exception_import('ADEME')
 def import_line_ademe(self, line_ademe: str, tech_info_list: list):
 
@@ -193,7 +308,7 @@ def import_line_ademe(self, line_ademe: str, tech_info_list: list):
     new_ademe.file_import_taskid = tech_info.file_import_taskid
     new_ademe.file_import_lineno = tech_info.lineno
 
-    LOGGER.info(
+    logger.info(
         f'[IMPORT][ADEME] Tentative ligne Ademe referece decision {new_ademe.reference_decision}, beneficiaire {new_ademe.siret_beneficiaire}')
 
     # SIRET Attribuant
@@ -202,112 +317,5 @@ def import_line_ademe(self, line_ademe: str, tech_info_list: list):
     check_siret(new_ademe.siret_beneficiaire)
 
     db.session.add(new_ademe)
-    LOGGER.info('[IMPORT][FINANCIAL] Ajout ligne financière')
+    logger.info('[IMPORT][FINANCIAL] Ajout ligne financière')
     db.session.commit()
-
-def _delete_ademe():
-    """
-    Supprime toutes les données ADEME
-    :return:
-    """
-    stmt = delete(Ademe)
-    db.session.execute(stmt)
-    db.session.commit()
-
-
-
-def _check_ref(model, code):
-    instance = db.session.query(model).filter_by(code=str(code)).one_or_none()
-    if not instance:
-        instance = model(**{'code':code})
-        LOGGER.info(f'[IMPORT][REF] Ajout ref {model.__tablename__} code {code}')
-        try:
-            db.session.add(instance)
-            db.session.commit()
-        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
-            LOGGER.exception(f"[IMPORT][CHORUS] Error sur ajout ref {model.__tablename__} code {code}")
-            raise e
-
-
-def _check_insert_update_financial(financial_ae: FinancialData | None, line,force_update: bool) -> FinancialData | bool:
-    '''
-
-    :param financial_ae: l'instance financière déjà présente ou non
-    :param force_update:
-    :return: True -> Objet à créer
-             False -> rien à faire
-             Instance chorus -> Objet à update
-    '''
-
-    if financial_ae:
-        if force_update:
-            LOGGER.info('[IMPORT][FINANCIAL] Doublon trouvé, Force Update')
-            return financial_ae
-        if financial_ae.should_update(line):
-            LOGGER.info('[IMPORT][FINANCIAL] Doublon trouvé, MAJ à faire')
-            return financial_ae
-        else:
-            LOGGER.info('[IMPORT][FINANCIAL] Doublon trouvé, Pas de maj')
-            return False
-    return True
-
-
-def _insert_financial_data(data: FinancialData) -> FinancialData:
-    db.session.add(data)
-    LOGGER.info('[IMPORT][FINANCIAL] Ajout ligne financière')
-    db.session.commit()
-    return data
-
-
-def _update_financial_data(data, financial: FinancialData) -> FinancialData:
-    financial.update_attribute(data)
-    LOGGER.info('[IMPORT][FINANCIAL] Update ligne financière')
-    db.session.commit()
-    return financial
-
-
-def _delete_cp(annee: int, source_region: str):
-    """
-    Supprimes CP d'une année comptable
-    :param annee:
-    :param source_region:
-    :return:
-    """
-    stmt = (
-        delete(FinancialCp).
-        where(FinancialCp.annee == annee).
-        where(FinancialCp.source_region == source_region)
-    )
-    db.session.execute(stmt)
-    db.session.commit()
-
-def _make_link_ae_to_cp(id_financial_ae: int, n_ej: str, n_poste_ej: int):
-    """
-    Lance une requête update pour faire le lien entre une AE et des CP
-    :param id_financial_ae: l'id d'une AE
-    :param n_ej : le numero d'ej
-    :parman n_poste_ej : le poste ej
-    :return:
-    """
-
-    stmt = (
-        update(FinancialCp).
-        where(FinancialCp.n_ej == n_ej).
-        where(FinancialCp.n_poste_ej == n_poste_ej).
-        values(id_ae=id_financial_ae)
-    )
-    db.session.execute(stmt)
-    db.session.commit()
-
-def _get_ae_for_cp(n_ej: str, n_poste_ej: int) -> int | None:
-    """
-    Récupère le bon AE pour le lié au CP
-    :param n_ej : le numero d'ej
-    :parman n_poste_ej : le poste ej
-    :return:
-    """
-    if n_ej is None or n_poste_ej is None :
-        return None
-
-    financial_ae = FinancialAe.query.filter_by(n_ej=str(n_ej), n_poste_ej=int(n_poste_ej)).one_or_none()
-    return financial_ae.id if financial_ae is not None else None
