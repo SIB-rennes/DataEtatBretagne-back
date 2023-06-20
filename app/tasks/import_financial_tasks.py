@@ -142,7 +142,7 @@ def import_file_ademe(self, fichier):
     LOGGER.info(f'[IMPORT][ADEME] Start for file {fichier}')
     try:
         data_ademe_chunk = pandas.read_csv(fichier, sep=",", skiprows=1, names=Ademe.get_columns_files(),
-                                      dtype={'location_lat': float,'pourcentage_subvention':float,
+                                      dtype={'location_lat': float,'pourcentage_subvention':float, 'siret_beneficiaire': str,'siret_attribuant':str,
                                              'location_lon': float, 'idBeneficiaire': str,"notification_ue": str,
                                              'idAttribuant': str}, chunksize=1000)
         _delete_ademe()
@@ -169,6 +169,8 @@ def _send_subtask_ademe(data_ademe):
 def import_line_ademe(self, line_ademe: str):
     line = json.loads(line_ademe)
     new_ademe = Ademe(line)
+    LOGGER.info(
+        f'[IMPORT][ADEME] Tentative ligne Ademe referece decision {new_ademe.reference_decision}, beneficiaire {new_ademe.siret_beneficiaire}')
 
     # SIRET Attribuant
     check_siret(new_ademe.siret_attribuant)

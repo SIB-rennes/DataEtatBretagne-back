@@ -4,7 +4,7 @@ from api_entreprise import ApiError
 
 from app import db
 from app.clients.entreprise import get_or_make_api_entreprise, DonneesEtablissement
-from app.clients.geo import get_info_commune
+from app.clients.geo import get_info_commune, ApiGeoException
 from app.models.refs.commune import Commune
 from app.models.refs.siret import Siret
 
@@ -32,6 +32,7 @@ def check_siret(siret):
         LimitHitError: Si le ratelimiter de l'API entreprise est déclenché
     """
     if siret is not None :
+        logger.info(f"[SIRET] Début check siret {siret}")
         siret_entity = update_siret_from_api_entreprise(siret, insert_only=True)
         __check_commune(siret_entity.code_commune)
         try:
@@ -50,7 +51,9 @@ def __check_commune(code):
         commune = Commune(code = code)
         try:
             commune = _maj_one_commune(commune)
-            db.session.add(commune)
+            with db.session.begin():
+                db.session.add(commune)
+                db.session.commit()
         except Exception:
             logger.exception(f"[IMPORT][CHORUS] Error sur ajout commune {code}")
 
@@ -60,18 +63,24 @@ def _maj_one_commune(commune: Commune):
     :param commune:
     :return:
     """
-    apigeo = get_info_commune(commune)
-    commune.label_commune = apigeo['nom']
-    if 'epci' in apigeo:
-        commune.code_epci = apigeo['epci']['code']
-        commune.label_epci = apigeo['epci']['nom']
-    if 'region' in apigeo:
-        commune.code_region = apigeo['region']['code']
-        commune.label_region = apigeo['region']['nom']
-    if 'departement' in apigeo:
-        commune.code_departement = apigeo['departement']['code']
-        commune.label_departement = apigeo['departement']['nom']
-    return commune
+    try :
+        apigeo = get_info_commune(commune)
+        commune.label_commune = apigeo['nom']
+        if 'epci' in apigeo:
+            commune.code_epci = apigeo['epci']['code']
+            commune.label_epci = apigeo['epci']['nom']
+        if 'region' in apigeo:
+            commune.code_region = apigeo['region']['code']
+            commune.label_region = apigeo['region']['nom']
+        if 'departement' in apigeo:
+            commune.code_departement = apigeo['departement']['code']
+            commune.label_departement = apigeo['departement']['nom']
+        return commune
+    except ApiGeoException:
+        logger.info(f"[MAJ COMMUNE] Commune {commune.code} non trouvé via API")
+        return  commune
+
+
 
 
 
