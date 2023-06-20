@@ -56,13 +56,17 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
     # get file
     LOGGER.info(f'[IMPORT][FINANCIAL][CP] Start for region {source_region}, year {annee}, file {fichier}')
     try:
+        current_taskid = current_task.request.id
         data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialCp.get_columns_files_cp(),
                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': str, 'n_dp': str,
                                              'fournisseur_paye': str,
                                              'siret': str})
         _delete_cp(annee, source_region)
+        i = 0
         for index, chorus_data in data_chorus.iterrows():
-            _send_subtask_financial_cp(chorus_data.to_json(), index, source_region, annee)
+            i += 1
+            tech_info = LineImportTechInfo(current_taskid, i)
+            _send_subtask_financial_cp(chorus_data.to_json(), index, source_region, annee, tech_info)
 
         os.remove(fichier)
         LOGGER.info('[IMPORT][FINANCIAL][CP] End')
@@ -76,8 +80,8 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
 def _send_subtask_financial_ae(line, index, force_update):
     subtask("import_line_financial_ae").delay(line, index, force_update)
 @limiter_queue(queue_name='line')
-def _send_subtask_financial_cp(line, index, source_region, annee):
-    subtask("import_line_financial_cp").delay(line, index, source_region, annee)
+def _send_subtask_financial_cp(line, index, source_region, annee, tech_info: LineImportTechInfo):
+    subtask("import_line_financial_cp").delay(line, index, source_region, annee, tech_info)
 
 @celery.task(bind=True, name='import_line_financial_ae', autoretry_for=(FinancialException,), retry_kwargs={'max_retries': 4, 'countdown': 10})
 @_handle_exception_import('FINANCIAL_AE')
@@ -119,9 +123,15 @@ def import_line_financial_ae(self, dict_financial: str, index: int, force_update
 
 @celery.task(bind=True, name='import_line_financial_cp')
 @_handle_exception_import('FINANCIAL_CP')
-def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int):
+def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int, tech_info_list: list):
+
+    tech_info = LineImportTechInfo(*tech_info_list)
+
     line = json.loads(data_cp)
+
     new_cp = FinancialCp(line, source_region=source_region, annee=annee)
+    new_cp.file_import_taskid = tech_info.file_import_taskid
+    new_cp.file_import_lineno = tech_info.lineno
 
     _check_ref(CodeProgramme, new_cp.programme)
     _check_ref(CentreCouts, new_cp.centre_couts)

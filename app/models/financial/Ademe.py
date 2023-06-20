@@ -47,7 +47,7 @@ class Ademe(FinancialData, db.Model):
     file_import_lineno = Column(Integer())
     """Numéro de ligne correspondant dans le fichier original"""
 
-    __table_args__ = UniqueConstraint('file_import_taskid', 'file_import_lineno', name="uq_file_line_import"),
+    __table_args__ = UniqueConstraint('file_import_taskid', 'file_import_lineno', name="uq_file_line_import_ademe"),
 
     def __init__(self, line_csv: dict):
         """

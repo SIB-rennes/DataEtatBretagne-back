@@ -1,7 +1,7 @@
 from datetime import datetime
 from dataclasses import dataclass
 
-from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Float
+from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Float, UniqueConstraint
 from app import db
 from app.models.financial import FinancialData
 
@@ -43,6 +43,14 @@ class FinancialCp(FinancialData, db.Model):
     montant: float = Column(Float)
     annee: int = Column(Integer, nullable= False)
 
+    # Données techniques 
+
+    file_import_taskid = Column(String(255))
+    """Task ID de la tâche d'import racine pour cette ligne"""
+    file_import_lineno = Column(Integer())
+    """Numéro de ligne correspondant dans le fichier original"""
+
+    __table_args__ = UniqueConstraint('file_import_taskid', 'file_import_lineno', name="uq_file_line_import_cp"),
 
     def __init__(self, line_chorus: dict,source_region:str,annee: int):
         """
