@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from marshmallow import fields
-from sqlalchemy import Column, Integer, String, Date, Float, Boolean
+from sqlalchemy import Column, Integer, String, Date, Float, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app import db, ma
@@ -40,6 +40,14 @@ class Ademe(FinancialData, db.Model):
     location_lon = Column(Float)
     departement = Column(String(5))
 
+    # Données techniques 
+
+    file_import_taskid = Column(String(255))
+    """Task ID de la tâche d'import racine pour cette ligne"""
+    file_import_lineno = Column(Integer())
+    """Numéro de ligne correspondant dans le fichier original"""
+
+    __table_args__ = UniqueConstraint('file_import_taskid', 'file_import_lineno', name="uq_file_line_import"),
 
     def __init__(self, line_csv: dict):
         """

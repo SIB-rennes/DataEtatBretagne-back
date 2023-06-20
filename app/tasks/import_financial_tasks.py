@@ -1,10 +1,11 @@
 import json
 import logging
 import os
+from collections import namedtuple
 
 import pandas
 import sqlalchemy.exc
-from celery import subtask
+from celery import subtask, current_task
 from sqlalchemy import update, delete
 
 from app import db, celeryapp
@@ -27,6 +28,8 @@ from app.tasks import limiter_queue, _handle_exception_import
 LOGGER = logging.getLogger()
 
 celery = celeryapp.celery
+
+LineImportTechInfo = namedtuple('LineImportTechInfo', ['file_import_taskid', 'lineno'])
 
 @celery.task(bind=True, name='import_file_ae_financial')
 def import_file_ae_financial(self, fichier, source_region: str, annee: int, force_update: bool):
@@ -141,34 +144,45 @@ def import_file_ademe(self, fichier):
     # get file
     LOGGER.info(f'[IMPORT][ADEME] Start for file {fichier}')
     try:
+        current_taskid = current_task.request.id
         data_ademe_chunk = pandas.read_csv(fichier, sep=",", skiprows=1, names=Ademe.get_columns_files(),
                                       dtype={'location_lat': float,'pourcentage_subvention':float, 'siret_beneficiaire': str,'siret_attribuant':str,
                                              'location_lon': float, 'idBeneficiaire': str,"notification_ue": str,
                                              'idAttribuant': str}, chunksize=1000)
         _delete_ademe()
 
+        i = 0
         for chunk in data_ademe_chunk:
-            for index,ademe_data in chunk.iterrows():
-                _send_subtask_ademe(ademe_data.to_json())
+            for _,ademe_data in chunk.iterrows():
+                i += 1
+                tech_info = LineImportTechInfo(current_taskid, i)
+                _send_subtask_ademe(ademe_data.to_json(), tech_info)
 
-        os.remove(fichier)
         LOGGER.info('[IMPORT][ADEME] End')
         return True
     except Exception as e:
         LOGGER.exception(f"[IMPORT][ADEME] Error lors de l'import du fichier {fichier} chorus")
         raise e
+    finally:
+        os.remove(fichier)
 
 
 @limiter_queue(queue_name='line')
-def _send_subtask_ademe(data_ademe):
-    subtask("import_line_ademe").delay(data_ademe)
+def _send_subtask_ademe(data_ademe: str, tech_info: LineImportTechInfo):
+    subtask("import_line_ademe").delay(data_ademe, tech_info)
 
 
 @celery.task(bind=True, name='import_line_ademe')
 @_handle_exception_import('ADEME')
-def import_line_ademe(self, line_ademe: str):
+def import_line_ademe(self, line_ademe: str, tech_info_list: list):
+
+    tech_info = LineImportTechInfo(*tech_info_list)
+
     line = json.loads(line_ademe)
     new_ademe = Ademe(line)
+    new_ademe.file_import_taskid = tech_info.file_import_taskid
+    new_ademe.file_import_lineno = tech_info.lineno
+
     LOGGER.info(
         f'[IMPORT][ADEME] Tentative ligne Ademe referece decision {new_ademe.reference_decision}, beneficiaire {new_ademe.siret_beneficiaire}')
 
