@@ -18,9 +18,9 @@ api = Namespace(name="Referentiel", path='/referentiels',
 auth = current_app.extensions['auth']
 
 parser = reqparse.RequestParser()
-parser.add_argument('file', type=FileStorage, help="Fichier calculette", location='files', required=True)
+parser.add_argument('fichier', type=FileStorage, help="Fichier calculette", location='files', required=True)
 
-@api.route('/')
+@api.route('')
 class TaskRunImportRef(Resource):
     @auth.token_auth('default', scopes_required=['openid'])
     @check_permission(AccountRole.ADMIN)
@@ -29,7 +29,7 @@ class TaskRunImportRef(Resource):
     def post(self):
 
         user = ConnectedUser.from_current_token_identity()
-        file_ref = request.files['file']
+        file_ref = request.files['fichier']
 
         try:
             import_ref_calculette(file_ref, user.username)
