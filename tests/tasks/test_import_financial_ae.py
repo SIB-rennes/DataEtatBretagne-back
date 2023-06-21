@@ -5,10 +5,11 @@ import json
 from app.models.financial.FinancialAe import FinancialAe
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.refs.siret import Siret
-from app.tasks.import_financial_tasks import import_line_financial_ae, import_file_ae_financial
+from app.tasks.financial.import_financial import import_file_ae_financial
+from app.tasks.financial.import_financial import import_line_financial_ae
 
 
-@patch('app.tasks.import_financial_tasks.subtask')
+@patch('app.tasks.financial.import_financial.subtask')
 def test_import_import_file_ae(mock_subtask):
     #DO
     with patch('os.remove', return_value=None): #ne pas supprimer le fichier de tests :)

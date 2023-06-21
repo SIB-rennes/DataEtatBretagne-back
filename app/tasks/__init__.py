@@ -2,15 +2,11 @@ import logging
 from functools import wraps
 from time import sleep
 
-import sqlalchemy
-from api_entreprise import LimitHitError
 from flask import current_app
 from app import celeryapp
 import redis
 
-from ..exceptions.exceptions import FinancialLineConcurrencyError
-
-LOGGER = logging.getLogger()
+logger = logging.getLogger()
 celery = celeryapp.celery
 from celery import current_app
 
@@ -44,6 +40,7 @@ def limiter_queue(queue_name:str, max_queue_size: int = max_queue_size, timeout_
                 while redis_conn.llen(queue_name) > max_queue_size:
                     if num_retries >= timeout_queue_retry:
                         raise LimitQueueException(f"Timeout exceeded while waiting for the queue '{queue_name}' to be available.")
+                    logger.warning("Limite de la file redis atteinte. On attend 1 seconde")
                     sleep(1)
                     num_retries +=1
 
@@ -51,53 +48,10 @@ def limiter_queue(queue_name:str, max_queue_size: int = max_queue_size, timeout_
         return inner_wrapper
     return wrapper
 
-def _handle_exception_import(name):
-    """
-    Gère les exceptions pour les imports
-
-    S'attend à être utilisé en conjonction des tâches celery
-
-    ```
-    ...
-    @celery.task(...)
-    @_handle_exception_import('nom')
-    def import_func():
-        ...
-    ...
-    ```
-    """
-    def wrapper(func):
-        @wraps(func)
-        def inner_wrapper(caller, *args, **kwargs):
-           try :
-               func(caller, *args, **kwargs)
-           except LimitHitError as e:
-               delay = (e.delay) + 5
-               LOGGER.info(
-                   f"[IMPORT][{name}] Limite d'appel à l'API entreprise atteinte. "
-                   f"Ré essai de la tâche dans {str(delay)} secondes"
-               )
-               # XXX: max_retries=None ne désactive pas le mécanisme
-               # de retry max contrairement à ce que stipule la doc !
-               # on met donc un grand nombre.
-               caller.retry(countdown=delay, max_retries=1000, retry_jitter=True)
-
-           except sqlalchemy.exc.IntegrityError as e:
-               msg = "IntegrityError. Cela peut être dû à un soucis de concurrence. On retente."
-               LOGGER.exception(f"[IMPORT][{name}] {msg}")
-               caller.retry(countdown=10, max_retries=4, retry_jitter=True)
-           except Exception as e:
-               LOGGER.exception(f"[IMPORT][{name}] erreur")
-               raise e
-
-        return inner_wrapper
-
-    return wrapper
-
 class LimitQueueException(Exception):
     pass
 
-from .import_financial_tasks import *
+from .financial.import_financial import *
 from .import_refs_tasks import *
 from .management_tasks import *
 from .refs import *

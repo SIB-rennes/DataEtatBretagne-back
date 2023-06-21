@@ -26,7 +26,7 @@ def import_ae(file_ae, source_region:str, annee: int, force_update: bool, userna
     _check_file(save_path, FinancialAe.get_columns_files_ae())
 
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
-    from app.tasks.import_financial_tasks import import_file_ae_financial
+    from app.tasks.financial.import_financial import import_file_ae_financial
     task = import_file_ae_financial.delay(str(save_path), source_region, annee, force_update)
     db.session.add(AuditUpdateData(username=username, filename=file_ae.filename, data_type=DataType.FINANCIAL_DATA_AE))
     db.session.commit()
@@ -38,7 +38,7 @@ def import_cp(file_cp, source_region:str, annee: int, username=""):
     _check_file(save_path, FinancialCp.get_columns_files_cp())
 
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
-    from app.tasks.import_financial_tasks import import_file_cp_financial
+    from app.tasks.financial.import_financial import import_file_cp_financial
     task = import_file_cp_financial.delay(str(save_path), source_region, annee)
     db.session.add(AuditUpdateData(username=username, filename=file_cp.filename, data_type=DataType.FINANCIAL_DATA_CP))
     db.session.commit()
@@ -49,7 +49,7 @@ def import_ademe(file_ademe, username=""):
     save_path = _check_file_and_save(file_ademe)
 
     logging.info(f'[IMPORT ADEME] Récupération du fichier {save_path}')
-    from app.tasks.import_financial_tasks import import_file_ademe
+    from app.tasks.financial.import_financial import import_file_ademe
     task = import_file_ademe.delay(str(save_path))
     db.session.add(AuditUpdateData(username=username, filename=file_ademe.filename, data_type=DataType.ADEME))
     db.session.commit()
