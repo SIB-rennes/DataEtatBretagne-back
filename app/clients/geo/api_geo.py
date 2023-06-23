@@ -16,9 +16,9 @@ class ApiGeoException(Exception):
 def get_info_commune(commune: Commune):
     api_geo = current_app.config['API_GEO']
 
-    response = requests.get(f'{api_geo}/communes/{commune.code_commune}?fields=nom,epci,codeDepartement,departement,codeRegion,region&format=json')
+    response = requests.get(f'{api_geo}/communes/{commune.code}?fields=nom,epci,codeDepartement,departement,codeRegion,region&format=json')
     if response.status_code == 200:
         return response.json()
     else:
-        raise ApiGeoException(f'Commune introuvable {commune.code_commune}')
+        raise ApiGeoException(f'Commune introuvable {commune.code}')
 

@@ -51,9 +51,8 @@ def __check_commune(code):
         commune = Commune(code = code)
         try:
             commune = _maj_one_commune(commune)
-            with db.session.begin():
-                db.session.add(commune)
-                db.session.commit()
+            db.session.add(commune)
+            db.session.commit()
         except Exception:
             logger.exception(f"[IMPORT][CHORUS] Error sur ajout commune {code}")
 
