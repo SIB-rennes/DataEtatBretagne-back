@@ -4,10 +4,15 @@
 /.idea
 **/__pycache__
 /config/config.yml
-/config/beat_config.py
 /migrations/data/ref_*.csv
 /config/keycloak.json
 /config/oidc.yml
+/config/beat_config*
+!/config/beat_config_template.py
+/migrations/data/ref_*.csv
+/config/keycloak*
+!/config/keycloak_template.json
+
 /tests/database.db
 /tests/tasks/database.db
 /test.py
