@@ -225,7 +225,7 @@ def _get_ae_for_cp(n_ej: str, n_poste_ej: int) -> int | None:
     return financial_ae.id if financial_ae is not None else None
 
 
-@celery.task(bind=True, name='import_line_financial_cp', acks_late=True)
+@celery.task(bind=True, name='import_line_financial_cp')
 @_handle_exception_import('FINANCIAL_CP')
 def import_line_financial_cp(self, data_cp, index, source_region: str, annee: int, tech_info_list: list):
 
@@ -297,7 +297,7 @@ def import_file_ademe(self, fichier):
         os.remove(fichier)
 
 
-@celery.task(bind=True, name='import_line_ademe', acks_late=True)
+@celery.task(bind=True, name='import_line_ademe')
 @_handle_exception_import('ADEME')
 def import_line_ademe(self, line_ademe: str, tech_info_list: list):
 
