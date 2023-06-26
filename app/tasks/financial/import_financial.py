@@ -301,6 +301,10 @@ def import_file_ademe(self, fichier):
 @_handle_exception_import('ADEME')
 def import_line_ademe(self, line_ademe: str, tech_info_list: list):
 
+    logger.debug(f"[IMPORT][ADEME][LINE] Traitement de la ligne ademe: {tech_info_list}")
+    logger.debug(f"[IMPORT][ADEME][LINE] Contenu de la ligne ADEME : {line_ademe}")
+    logger.debug(f"[IMPORT][ADEME][LINE] Contenu du tech info      : {tech_info_list}")
+
     tech_info = LineImportTechInfo(*tech_info_list)
 
     line = json.loads(line_ademe)
@@ -319,3 +323,5 @@ def import_line_ademe(self, line_ademe: str, tech_info_list: list):
     db.session.add(new_ademe)
     logger.info('[IMPORT][FINANCIAL] Ajout ligne financière')
     db.session.commit()
+
+    logger.debug(f"[IMPORT][ADEME][LINE] Traitement de la ligne ademe: {tech_info_list}")
