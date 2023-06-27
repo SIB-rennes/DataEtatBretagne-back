@@ -1,6 +1,10 @@
+.envrc
+.venv
+.vscode
 /.idea
 **/__pycache__
 /config/config.yml
+/config/beat_config.py
 /migrations/data/ref_*.csv
 /config/keycloak.json
 /tests/database.db

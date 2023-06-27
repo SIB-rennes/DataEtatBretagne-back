@@ -21,13 +21,14 @@
 
 # Description
 
-Ce projet contient une suite d'API REST développées avec Flask-RESTx et Python 3.9. 
+Ce projet contient une suite d'API REST développées avec Flask-RESTx et Python 3.11. 
 Ces API permettent de gérer des utilisateurs Keycloak, en les activant ou en les désactivant. 
 Elles permettent également d'interroger des outils nocode tels que NocoDb et d'intégrer les fichiers 
 Chorus de l'état pour recouper les données.
 
+# Pour le développement
 
-# Fichier de configuration
+## Fichier de configuration
 
 Copier le fichier [config_template.yml](./config/config_template.yml) en config.yml.
 ```
@@ -36,31 +37,35 @@ cp config/config_template.yml config/config.yml
 
 Remplacer les variables
 
-| Nom de la variable                                                           |                                     	Description                                      |  
-|:-----------------------------------------------------------------------------|:-------------------------------------------------------------------------------------:| 
-| DEBUG	                                                                       |                           Active ou désactive le mode debug                           |
-| SQLALCHEMY_DATABASE_URI                                                      |                   	URL de connexion à la base de données PostgreSQL                   |
-| CELERY_BROKER_URL                                                            |                           	URL du broker Redis pour Celery                            |
-| result_backend	                                                              | URL de connexion à la base de données PostgreSQL pour stocker les résultats de Celery |
-| api_siren |                                  	URL de l'API SIREN                                  |                                              
-| UPLOAD_FOLDER	|            Dossier où sont stockés les fichiers envoyés par l'utilisateur             |
-| KEYCLOAK_ADMIN_URL|                         	URL de l'administration de Keycloak                          |                      
-| KEYCLOAK_ADMIN_SECRET_KEY	|                     Clé secrète pour l'administration de Keycloak                     |
-| KEYCLOAK_ADMIN_REALM|                                  	Realm de Keycloak                                   |
-| SECRET_KEY                                                                   |                          	Clé secrète utilisée par keycloak                           
-| NOCODB_URL	|                                     URL de NocoDB                                     |                                              
-| NOCODB_PROJECT|              	Liste des projets de NocoDB à utiliser  avec le token api               |               
+| Nom de la variable        |                                      Description                                      |
+| :------------------------ | :-----------------------------------------------------------------------------------: |
+| DEBUG                     |                           Active ou désactive le mode debug                           |
+| SQLALCHEMY_DATABASE_URI   |                   URL de connexion à la base de données PostgreSQL                    |
+| CELERY_BROKER_URL         |                            URL du broker Redis pour Celery                            |
+| result_backend            | URL de connexion à la base de données PostgreSQL pour stocker les résultats de Celery |
+| UPLOAD_FOLDER             |            Dossier où sont stockés les fichiers envoyés par l'utilisateur             |
+| KEYCLOAK_ADMIN_URL        |                          URL de l'administration de Keycloak                          |
+| KEYCLOAK_ADMIN_SECRET_KEY |                     Clé secrète pour l'administration de Keycloak                     |
+| KEYCLOAK_ADMIN_REALM      |                                   Realm de Keycloak                                   |
+| SECRET_KEY                |                           Clé secrète utilisée par keycloak                           |
+| NOCODB_URL                |                                     URL de NocoDB                                     |
+| NOCODB_PROJECT            |               Liste des projets de NocoDB à utiliser  avec le token api               |
 
 
+## Installation
 
-# Installation
+*Initialisez un venv python*. Puis:
 
-
+```bash
+pip install pip-tools
+pip-compile --resolver=backtracking && pip-compile --resolver=backtracking dev-requirements.in
+pip-sync requirements.txt dev-requirements.txt
+```
 
 ## Mode Api
 
-```
-python ./manage.py
+```bash
+FLASK_APP="app:create_app_api" flask run  --host "0.0.0.0"
 ```
 
 # Utilisation
@@ -73,13 +78,4 @@ Pour utiliser ces API, vous pouvez utiliser un outil de test d'API comme Postman
 PATCH /users/disable/<uuid> : Désactive un utilisateur avec l'ID spécifié
 * `PATCH /users/disable/<uuid>` : Désactive un utilisateur avec l'ID spécifié
 * * `PATCH /users/enable/<uuid>` : Active un utilisateur avec l'ID spécifié
-
-
-### Mode Api
-
-```
-python ./manage.py
-```
-
-### Mode Worker
 
