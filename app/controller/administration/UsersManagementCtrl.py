@@ -43,19 +43,31 @@ class UsersManagement(Resource):
         if limit < 0:
             limit = 1
 
+
+
         only_disable = p_args.get("only_disable")
 
         logging.debug(f'[USERS] Call users get with limit {limit}, page {page_number}, only_disable {only_disable}')
+        source_region = '053' # TODO a récupérer du token
         try:
+            groups_id = _fetch_groups(source_region)
+
+
             keycloak_admin = make_or_get_keycloack_admin()
-            query = {'briefRepresentation': True, 'max': limit, 'first': (page_number-1) * limit}
-            if only_disable :
-                query['enabled'] = False
-            count_users = keycloak_admin.users_count(query)
-            users = keycloak_admin.get_users(query)
-            return { 'users' : users , 'pageInfo': Pagination(count_users, page_number, users.__len__()).to_json()}, 200
+            users = []
+            for group_id in groups_id :
+                #TODO filtrer que les enabled
+                users.append(keycloak_admin.get_group_members(group_id, {'briefRepresentation': True}))
+
+            debut_index = (page_number - 1) * limit
+            fin_index = debut_index + limit
+            users_to_return = users[debut_index:fin_index]
+
+            return {'users': users_to_return, 'pageInfo': Pagination(users.__len__(), page_number, users_to_return.__len__()).to_json()}, 200
         except KeycloakConfigurationException as admin_exception:
             return abort(message=admin_exception.message, code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
 
 
 @api.route('/<uuid>')
@@ -123,3 +135,22 @@ def _update_enable_user(keycloak_admin: KeycloakAdmin, user_uuid: str, enable: b
     response = keycloak_admin.update_user(user_id=user_uuid,
                                               payload={'enabled': enable})
     return response
+
+
+def _fetch_groups(source_region: str) -> list:
+    '''
+    Récupérer les groupes ids d'une région
+    :param source_region:
+    :return:
+    '''
+    keycloak_admin = make_or_get_keycloack_admin()
+    logging.debug(f'[USERS] Get groups for region {source_region}')
+
+    groups = keycloak_admin.get_groups({'briefRepresentation': False, 'q': f'region:{source_region}'})
+    if groups is None:
+        logging.warning(f'[USERS] Group for region {source_region} not found')
+        return abort(message="admin_exception.message", code=HTTPStatus.BAD_REQUEST)
+    groups_id = [groups[0]['id']]
+    for subgroup in groups[0]['subGroups']:
+        groups_id.append(subgroup['id'])
+    return groups_id
