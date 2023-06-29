@@ -11,6 +11,7 @@ from app.models.common.Pagination import Pagination
 from app.models.enums.AccountRole import AccountRole
 from app.models.financial.FinancialAe import FinancialAeSchema
 from app.services.authentication.connected_user import ConnectedUser
+from app.services.authentication.exceptions import InvalidTokenError
 from app.services.code_geo import BadCodeGeoException
 from app.services.financial_data import import_ae, search_financial_data_ae, get_financial_ae
 
@@ -35,6 +36,10 @@ parser_get.add_argument('referentiel_programmation', type=str, action="split", h
 @api.errorhandler(BadCodeGeoException)
 def handle_error_input_parameter(e: BadCodeGeoException):
     return ErrorController(e.message).to_json(), 400
+
+@api.errorhandler(InvalidTokenError)
+def handle_invalid_token(e: InvalidTokenError):
+    return ErrorController("Token invalide").to_json(), 400
 
 @api.route('/ae')
 class FinancialAe(Resource):
