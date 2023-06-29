@@ -6,6 +6,7 @@ from requests import RequestException
 
 from app.controller import ErrorController
 from app.models.enums.AccountRole import AccountRole
+from app.services.authentication.connected_user import ConnectedUser
 
 
 def check_permission(permissions):
@@ -23,7 +24,7 @@ def check_permission(permissions):
         @wraps(func)
         def inner_wrapper(*args, **kwargs):
 
-            user_roles = _get_user_roles()  # get the user's permissions
+            user = ConnectedUser.from_current_token_identity()
 
             if isinstance(permissions, AccountRole):
                 permissions_to_check = [permissions]
@@ -32,11 +33,11 @@ def check_permission(permissions):
             else:
                 raise TypeError("permissions should be an AccountRole or a list of AccountRole")
             
-            if user_roles is None:
+            if user.roles is None:
                 return _unauthorized_response()
 
             for perm in permissions_to_check:
-                if perm in user_roles:
+                if perm in user.roles:
                     return func(*args, **kwargs)  # the user has the required permission
 
             return _unauthorized_response()

@@ -12,6 +12,7 @@ from app.controller.Decorators import check_permission
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
 from app.models.enums.AccountRole import AccountRole
+from app.services.authentication.connected_user import ConnectedUser
 
 api = Namespace(name="users", path='/users',
                 description='API de gestion des utilisateurs')
@@ -41,6 +42,8 @@ class UsersManagement(Resource):
         """
         Retourne la liste des utilisateurs
         """
+        user = ConnectedUser.from_current_token_identity()
+
         p_args = parser_get.parse_args()
         page_number = p_args.get("page_number")
         limit = p_args.get("limit")
@@ -51,7 +54,7 @@ class UsersManagement(Resource):
         only_disable = p_args.get("only_disable")
 
         logging.debug(f'[USERS] Call users get with limit {limit}, page {page_number}, only_disable {only_disable}')
-        source_region = '053' # TODO a récupérer du token
+        source_region = user.current_region
         groups_id = _fetch_groups(source_region)
         keycloak_admin = make_or_get_keycloack_admin()
         users = []

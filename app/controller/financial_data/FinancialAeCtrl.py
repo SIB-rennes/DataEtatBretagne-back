@@ -10,6 +10,7 @@ from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
 from app.models.enums.AccountRole import AccountRole
 from app.models.financial.FinancialAe import FinancialAeSchema
+from app.services.authentication.connected_user import ConnectedUser
 from app.services.code_geo import BadCodeGeoException
 from app.services.financial_data import import_ae, search_financial_data_ae, get_financial_ae
 
@@ -49,6 +50,8 @@ class FinancialAe(Resource):
         Charge un fichier issue de Chorus pour enregistrer les lignes d'engagements
         Les lignes sont insérés de façon asynchrone
         """
+        user = ConnectedUser.from_current_token_identity()
+
         data = request.form
 
         file_ae = request.files['fichier']
@@ -56,7 +59,7 @@ class FinancialAe(Resource):
         if 'force_update' in data and data['force_update'] == 'true':
             force_update = True
 
-        source_region = '053' #todo en dur
+        source_region = user.current_region
 
         username = g.current_token_identity['username'] if hasattr(g,'current_token_identity') and 'username' in g.current_token_identity else ''
         task = import_ae(file_ae,source_region,int(data['annee']), force_update, username)
