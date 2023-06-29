@@ -2,7 +2,6 @@ import logging
 
 from flask import  current_app
 from sqlalchemy.exc import NoResultFound
-
 from app.controller.utils.Error import ErrorController
 
 
