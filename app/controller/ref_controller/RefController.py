@@ -10,7 +10,7 @@ from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
 from app.models.common.QueryParam import QueryParam
 
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 
 
@@ -50,7 +50,7 @@ def build_ref_controller(cls, namespace: Namespace, help_query="Recherche sur le
     @api.route('')
     @api.doc(model=pagination_with_model)
     class RefControllerList(Resource):
-        @oidc.accept_token(require_token=True, scopes_required=['openid'])
+        @auth.token_auth('default', scopes_required=['openid'])
         @api.doc(security="Bearer")
         @api.expect(parser_get)
         @api.response(200, 'Success', pagination_with_model)
@@ -76,7 +76,7 @@ def build_ref_controller(cls, namespace: Namespace, help_query="Recherche sur le
     @api.route('/<code>')
     @api.doc(model=model_single_api)
     class RefByCode(Resource):
-        @oidc.accept_token(require_token=True, scopes_required=['openid'])
+        @auth.token_auth('default', scopes_required=['openid'])
         @api.doc(security="Bearer")
         @api.response(200, 'Success', model_single_api)
         def get(self, code):

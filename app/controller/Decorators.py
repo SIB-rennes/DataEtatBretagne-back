@@ -1,10 +1,11 @@
+from typing import Iterable
 from flask import g
 from functools import wraps
 
 from requests import RequestException
 
 from app.controller import ErrorController
-from app.models.enums.ConnectionProfile import ConnectionProfile
+from app.models.enums.AccountRole import AccountRole
 
 
 def check_permission(permissions):
@@ -21,33 +22,42 @@ def check_permission(permissions):
     def wrapper(func):
         @wraps(func)
         def inner_wrapper(*args, **kwargs):
-            user_permissions = _get_user_permissions()  # get the user's permissions
-            if isinstance(permissions, ConnectionProfile):
+
+            user_roles = _get_user_roles()  # get the user's permissions
+
+            if isinstance(permissions, AccountRole):
                 permissions_to_check = [permissions]
             elif isinstance(permissions, list):
                 permissions_to_check = permissions
             else:
-                raise TypeError("permissions should be a ConnectionProfile or a list of ConnectionProfiles")
+                raise TypeError("permissions should be an AccountRole or a list of AccountRole")
+            
+            if user_roles is None:
+                return _unauthorized_response()
 
-            if user_permissions is not None :
-                for perm in permissions_to_check:
-                    if perm.value == user_permissions:
-                        return func(*args, **kwargs)  # the user has the required permission
+            for perm in permissions_to_check:
+                if perm in user_roles:
+                    return func(*args, **kwargs)  # the user has the required permission
 
-            response_body = ErrorController("Vous n`avez pas les droits").to_json()
-            return response_body, 403, {'WWW-Authenticate': 'Bearer'}
+            return _unauthorized_response()
+
         return inner_wrapper
     return wrapper
 
+def _unauthorized_response():
+    response_body = ErrorController("Vous n`avez pas les droits").to_json()
+    return response_body, 403, {'WWW-Authenticate': 'Bearer'}
 
-def _get_user_permissions():
-    """Get User permission.
+def _get_user_roles():
 
-    Returns:
-        None if no permission
-    """
-    return g.oidc_token_info['profile'] if 'profile' in g.oidc_token_info else None
+    roles = g.current_token_identity['roles'] if 'roles' in g.current_token_identity else None
 
+    assert isinstance(roles, Iterable), "Les rôles devraient être une liste"
+
+    if roles is not None:
+        roles = [x.upper() for x in roles]
+
+    return roles
 
 
 def retry_on_exception(max_retry):

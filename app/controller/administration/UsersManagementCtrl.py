@@ -12,14 +12,14 @@ from app.controller import ErrorController
 from app.controller.Decorators import check_permission
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
-from app.models.enums.ConnectionProfile import ConnectionProfile
+from app.models.enums.AccountRole import AccountRole
 
 api = Namespace(name="users", path='/users',
                 description='API de gestion des utilisateurs')
 parser_get = get_pagination_parser()
 parser_get.add_argument("only_disable", type=inputs.boolean, required=False, default=False, help="Uniquement les utilisateurs non actif ou non")
 
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 @api.route('')
 class UsersManagement(Resource):
@@ -29,8 +29,8 @@ class UsersManagement(Resource):
     @api.response(200, 'List of users and pagination information')
     @api.doc(security="Bearer")
     @api.expect(parser_get)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
+    @auth.token_auth('default', scopes_required=['openid'])
+    @check_permission(AccountRole.ADMIN)
     def get(self):
         """
         Retourne la liste des utilisateurs
@@ -63,8 +63,8 @@ class UserDelete(Resource):
     @api.response(200, 'Success')
     @api.response(400, 'Utilisateur est activé')
     @api.doc(security="Bearer")
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
+    @auth.token_auth('default', scopes_required=['openid'])
+    @check_permission(AccountRole.ADMIN)
     def delete(self, uuid):
         """
           Supprime l'utilisateur si il est désactivé
@@ -83,15 +83,15 @@ class UsersDisable(Resource):
 
     @api.response(200, 'Success')
     @api.doc(security="Bearer")
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
+    @auth.token_auth('default', scopes_required=['openid'])
+    @check_permission(AccountRole.ADMIN)
     def patch(self, uuid):
         """
         Désactive un utilisateur
         """
         logging.debug(f'[USERS] Call disable users {uuid}')
 
-        if 'sub' in g.oidc_token_info and g.oidc_token_info['sub'] == uuid:
+        if 'sub' in g.current_token_identity and g.current_token_identity['sub'] == uuid:
              return abort(message= "Vous ne pouvez désactiver votre utilisateur", code=HTTPStatus.FORBIDDEN)
         try:
             _update_enable_user(make_or_get_keycloack_admin(), uuid, False)
@@ -103,8 +103,8 @@ class UsersEnable(Resource):
 
     @api.response(200, 'Success')
     @api.doc(security="Bearer")
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
+    @auth.token_auth('default', scopes_required=['openid'])
+    @check_permission(AccountRole.ADMIN)
     def patch(self, uuid):
         """
         Active un compte utilisateur

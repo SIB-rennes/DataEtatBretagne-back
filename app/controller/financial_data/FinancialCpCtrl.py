@@ -3,20 +3,20 @@ from flask_restx import Namespace, Resource
 
 from app.controller.Decorators import check_permission
 from app.controller.financial_data import check_param_source_annee_import, parser_import, check_file_import
-from app.models.enums.ConnectionProfile import ConnectionProfile
+from app.models.enums.AccountRole import AccountRole
 from app.services.financial_data import import_cp
 
 api = Namespace(name="Crédit de paiement", path='/',
                 description='Api de  gestion des CP des données financières de l\'état')
 
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 @api.route('/cp')
 class FinancialCpImport(Resource):
 
     @api.expect(parser_import)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission([ConnectionProfile.ADMIN, ConnectionProfile.COMPTABLE])
+    @auth.token_auth('default', scopes_required=['openid'])
+    @check_permission([AccountRole.ADMIN, AccountRole.COMPTABLE])
     @check_param_source_annee_import()
     @check_file_import()
     @api.doc(security="Bearer")
@@ -28,7 +28,7 @@ class FinancialCpImport(Resource):
         data = request.form
         file_cp = request.files['fichier']
 
-        username = g.oidc_token_info['username'] if hasattr(g,'oidc_token_info') and 'username' in g.oidc_token_info else ''
+        username = g.current_token_identity['username'] if hasattr(g,'current_token_identity') and 'username' in g.current_token_identity else ''
 
         task = import_cp(file_cp,data['code_region'],int(data['annee']),username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import des engaments des données fiancières de l\'état en cours (taches asynchrone id = {task.id}'})

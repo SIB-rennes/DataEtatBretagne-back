@@ -1,0 +1,10 @@
+default:
+  client_metadata:
+    client_id: back-api
+    client_secret: <CLIENT_SECRET>
+  provider_metadata:
+    issuer: https://auth.nocode.csm.ovh/realms/Regions
+    authorization_endpoint: https://auth.nocode.csm.ovh/realms/Regions/protocol/openid-connect/auth
+    userinfo_endpoint: https://auth.nocode.csm.ovh/realms/Regions/protocol/openid-connect/userinfo
+    token_endpoint: https://auth.nocode.csm.ovh/realms/Regions/protocol/openid-connect/token
+    introspection_endpoint: https://auth.nocode.csm.ovh/realms/Regions/protocol/openid-connect/token/introspect

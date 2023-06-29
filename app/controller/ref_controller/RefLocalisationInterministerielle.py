@@ -9,7 +9,7 @@ from app.models.common.QueryParam import QueryParam
 from app.models.refs.localisation_interministerielle import LocalisationInterministerielleSchema, \
     LocalisationInterministerielle
 
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 api = build_ref_controller(LocalisationInterministerielle,
                            Namespace(name="Localisation interministerielle Controller", path='/loc-interministerielle',
@@ -23,7 +23,7 @@ parser_get_loc_child = get_pagination_parser()
 @api.route('/<code>/loc-interministerielle')
 @api.doc(model=api.models['LocalisationInterministerielle'])
 class RefLocalisationByCodeParent(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer", description="Remonte les localisations ministerielle associées au code parent")
     @api.expect(parser_get_loc_child)
     @api.response(200, 'Success', api.models['LocalisationInterministeriellePagination'])

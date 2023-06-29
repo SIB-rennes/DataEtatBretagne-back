@@ -1,0 +1,10 @@
+default:
+  client_metadata:
+    client_id: noop
+    client_secret: noop
+  provider_metadata:
+    issuer: https://noop
+    authorization_endpoint: https://noop
+    userinfo_endpoint: https://noop
+    token_endpoint: https://noop
+    introspection_endpoint: https://noop

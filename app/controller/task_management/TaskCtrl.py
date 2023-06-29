@@ -6,7 +6,7 @@ from flask_restx import Namespace, Resource, reqparse, inputs, fields
 from werkzeug.datastructures import FileStorage
 
 from app import celeryapp
-from app.models.enums.ConnectionProfile import ConnectionProfile
+from app.models.enums.AccountRole import AccountRole
 from app.controller.Decorators import check_permission
 
 from ...exceptions.exceptions import FileNotAllowedException
@@ -14,7 +14,7 @@ from ...services.import_refs import ReferentielNotFound, import_refs
 
 api = Namespace(name="task", path='/',
                 description='Gestion des task asynchrone')
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 
 parser = reqparse.RequestParser()
@@ -27,8 +27,8 @@ parser.add_argument('other', type=str, help="parametre technique format json", l
 
 @api.route('/run/import-ref')
 class TaskRunImportRef(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
+    @auth.token_auth('default', scopes_required=['openid'])
+    @check_permission(AccountRole.ADMIN)
     @api.doc(security="Bearer")
     @api.expect(parser)
     def post(self):
@@ -38,7 +38,7 @@ class TaskRunImportRef(Resource):
         if 'class_name' not in data or 'columns' not in data:
             return {"status":"Le modèle n'existe pas ou les colonnes sont manquantes"}, 400
 
-        username = g.oidc_token_info['username'] if hasattr(g,'oidc_token_info') and 'username' in g.oidc_token_info else ''
+        username = g.current_token_identity['username'] if hasattr(g,'current_token_identity') and 'username' in g.current_token_identity else ''
         try :
             task = import_refs(file_ref, data, username)
             return jsonify(
@@ -50,8 +50,8 @@ class TaskRunImportRef(Resource):
 
 @api.route('/run/update-siret')
 class SiretRef(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission(ConnectionProfile.ADMIN)
+    @auth.token_auth('default', scopes_required=['openid'])
+    @check_permission(AccountRole.ADMIN)
     @api.doc(security="Bearer")
     def post(self):
         from app.tasks.siret import update_all_siret_task

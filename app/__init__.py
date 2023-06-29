@@ -1,14 +1,14 @@
 # __init__.py is a special Python file that allows a directory to become
 # a Python package so it can be accessed using the 'import' statement.
 import logging
-from os.path import exists
 
 import yaml
 from flask import Flask
 from flask_caching import Cache
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
-from flask_oidc import OpenIDConnect
+from flask_pyoidc import OIDCAuthentication
+from flask_pyoidc.provider_configuration import ProviderConfiguration, ProviderMetadata, ClientMetadata
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 
@@ -61,22 +61,11 @@ def create_app_base(oidc_enable=True, expose_endpoint=True, init_celery=True, ex
 
     # init oidc
     if oidc_enable:
-        if exists('config/keycloak.json'):
-            app.config.update({
-                'OIDC_CLIENT_SECRETS': 'config/keycloak.json',
-                'OIDC_ID_TOKEN_COOKIE_SECURE': False,
-                'OIDC_REQUIRE_VERIFIED_EMAIL': False,
-                'OIDC_USER_INFO_ENABLED': True,
-                'OIDC_OPENID_REALM': 'nocode',
-                'OIDC_SCOPES': ['openid', 'email', 'profile'],
-                'OIDC_INTROSPECTION_AUTH_METHOD': 'client_secret_post'
-            })
-            oidc = OpenIDConnect(app)
-            app.extensions["oidc"] = oidc
-        elif 'oidc' in kwargs:
-            app.extensions["oidc"] = kwargs.get('oidc')
-
-
+        try:
+            _load_oidc_config(app)
+        except Exception:
+            logging.exception("Impossible de charger la configuration OIDC. Merci de vérifier votre configuration.")
+            raise
 
     # flask_restx
     app.config.update({ 'RESTX_INCLUDE_ALL_MODELS': True })
@@ -107,10 +96,36 @@ def read_config(app, extra_config_settings):
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+def _load_oidc_config(app):
+    app.config.update(OIDC_REDIRECT_URI = "*")
+
+    oidc_conf = _read_oidc_config()
+    provider_name = next(iter(oidc_conf))
+
+    client_metadata_kwargs = oidc_conf[provider_name]['client_metadata']
+    provider_metadata_kwargs = oidc_conf[provider_name]['provider_metadata']
+
+    client_metadata = ClientMetadata(**client_metadata_kwargs)
+    provider_metadata = ProviderMetadata(**provider_metadata_kwargs)
+    provider_config = ProviderConfiguration(
+        provider_metadata=provider_metadata,
+        client_metadata=client_metadata,
+    )
+
+    provider_configurations = {}
+    provider_configurations[provider_name] = provider_config
+    auth = OIDCAuthentication(provider_configurations, app)
+    app.extensions["auth"] = auth
+
+def _read_oidc_config() -> dict:
+    with open('config/oidc.yml') as yamlfile:
+        config_data = yaml.load(yamlfile, Loader=yaml.FullLoader)
+        return config_data
+    
 def _expose_endpoint(app: Flask):
     with app.app_context():
         app.wsgi_app = ProxyFix(app.wsgi_app)
-        CORS(app, resources={r"/api/*": {"origins": "*"}})
+        CORS(app, resources={r"*": {"origins": "*"}})
 
         from app.controller.financial_data import api_financial  # pour éviter les import circulaire avec oidc
         from app.controller.administration import api_administration
