@@ -10,7 +10,6 @@ from app.exceptions.exceptions import DataRegatException, BadRequestDataRegateNu
 
 parser_import = reqparse.RequestParser()
 parser_import.add_argument('fichier', type=FileStorage, help="fichier à importer", location='files', required=True)
-parser_import.add_argument('code_region', type=str, help="Code INSEE de la région émettrice du fichier",location='files', required=True)
 parser_import.add_argument('annee', type=int, help="Année d'engagement du fichier Chorus",location='files', required=True)
 parser_import.add_argument('force_update', type=inputs.boolean, required=False, default=False,location='files', help="Force la mise à jours si la ligne existe déjà")
 

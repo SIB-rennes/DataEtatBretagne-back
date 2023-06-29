@@ -9,6 +9,7 @@ from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
 from app.models.enums.AccountRole import AccountRole
 from app.models.financial.Ademe import AdemeSchema
+from app.services.authentication.connected_user import ConnectedUser
 from app.services.financial_data import import_ademe, search_ademe, get_ademe
 
 api = Namespace(name="Ademe", path='/',
@@ -46,11 +47,11 @@ class AdemeImport(Resource):
         Charge un fichier issue de l'ADEME
         Les lignes sont insérés de manière asynchrone
         """
+        user = ConnectedUser.from_current_token_identity()
+
         file_ademe = request.files['fichier']
 
-        username = g.current_token_identity['username'] if hasattr(g,'current_token_identity') and 'username' in g.current_token_identity else ''
-
-        task = import_ademe(file_ademe,username)
+        task = import_ademe(file_ademe, user.username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import des  données ADEME en cours (taches asynchrone id = {task.id}'})
 
     @api.expect(parser_get)
