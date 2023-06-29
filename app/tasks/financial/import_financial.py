@@ -40,13 +40,15 @@ def import_file_ae_financial(self, fichier, source_region: str, annee: int, forc
     # get file
     logger.info(f'[IMPORT][FINANCIAL][AE] Start for region {source_region}, year {annee}, file {fichier}')
     try:
-        data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialAe.get_columns_files_ae(),
+        data_chorus_chunk = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialAe.get_columns_files_ae(),
                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': int,
                                              'fournisseur_titulaire': str,
-                                             'siret': str})
+                                             'siret': str}, chunksize=1000)
         series = pandas.Series({ f'{FinancialAe.annee.key}' : annee, f'{FinancialAe.source_region.key}': source_region})
-        for index, line in data_chorus.iterrows():
-            _send_subtask_financial_ae(line.append(series).to_json(), index, force_update)
+
+        for chunk in data_chorus_chunk:
+            for index, line in chunk.iterrows():
+                _send_subtask_financial_ae(line.append(series).to_json(), index, force_update)
 
         os.remove(fichier)
         logger.info('[IMPORT][FINANCIAL][AE] End')
@@ -86,16 +88,18 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
     logger.info(f'[IMPORT][FINANCIAL][CP] Start for region {source_region}, year {annee}, file {fichier}')
     try:
         current_taskid = current_task.request.id
-        data_chorus = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialCp.get_columns_files_cp(),
+        data_chorus_chunk = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialCp.get_columns_files_cp(),
                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': str, 'n_dp': str,
                                              'fournisseur_paye': str,
-                                             'siret': str})
+                                             'siret': str}, chunksize=1000)
         _delete_cp(annee, source_region)
+
         i = 0
-        for index, chorus_data in data_chorus.iterrows():
-            i += 1
-            tech_info = LineImportTechInfo(current_taskid, i)
-            _send_subtask_financial_cp(chorus_data.to_json(), index, source_region, annee, tech_info)
+        for chunk in data_chorus_chunk:
+            for index, line in chunk.iterrows():
+                i += 1
+                tech_info = LineImportTechInfo(current_taskid, i)
+                _send_subtask_financial_cp(line.to_json(), index, source_region, annee, tech_info)
 
         os.remove(fichier)
         logger.info('[IMPORT][FINANCIAL][CP] End')
