@@ -11,7 +11,7 @@ parser_crte.add_argument("nom", type=str, required=False, help="Recherche sur le
 parser_crte.add_argument("departement", type=str, required=False, help="Recherche sur le numéro du département")
 parser_crte.add_argument("limit", type=int, required=False, default=500, help="Nombre de résultat")
 
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 crte_model = api.model('crte',model=  {
     'code': fields.String(),
@@ -21,7 +21,7 @@ crte_model = api.model('crte',model=  {
 @api.route('')
 @api.doc(model=crte_model)
 class RefCrte(Resource):
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.expect(parser_crte)
     @api.response(200, 'Success', fields.List(fields.Nested(crte_model)))

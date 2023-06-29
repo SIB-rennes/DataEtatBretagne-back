@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
-class ConnectionProfile(Enum):
+class AccountRole(StrEnum):
     ADMIN = "ADMIN"
     USER = "USER"
     COMPTABLE = "COMPTABLE"

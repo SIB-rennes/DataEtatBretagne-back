@@ -15,14 +15,14 @@ from app.models.audit.AuditUpdateData import AuditUpdateData, AuditUpdateDataSch
 from app.models.common.Pagination import Pagination
 from app.models.common.QueryParam import QueryParam
 from app.models.enums.DataType import DataType
-from app.models.enums.ConnectionProfile import ConnectionProfile
+from app.models.enums.AccountRole import AccountRole
 
 api = Namespace(name="audit", path='/audit',
                 description='API de récupération des audits')
 
 parser_get = get_pagination_parser(default_limit=5)
 
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 schema_many = AuditUpdateDataSchema(many=True)
 
@@ -47,9 +47,9 @@ class Audit(Resource):
     @api.response(200, 'List of update data')
     @api.doc(security="Bearer")
     @api.expect(parser_get)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.response(204, 'No Result')
-    @check_permission([ConnectionProfile.ADMIN, ConnectionProfile.COMPTABLE])
+    @check_permission([AccountRole.ADMIN, AccountRole.COMPTABLE])
     def get(self, type: DataType):
         query_param = QueryParam(parser_get)
         enum_type = DataType[type]
@@ -70,7 +70,7 @@ class Audit(Resource):
 @api.route('/<type>/last')
 class AuditLastImport(Resource):
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.marshal_with(api.model("date-last-import",{'date': fields.DateTime}), code=200)
     def get(self, type: DataType):

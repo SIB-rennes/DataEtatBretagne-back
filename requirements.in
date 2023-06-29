@@ -1,8 +1,7 @@
 --extra-index-url https://repository.csm.ovh/repository/pypi-group/simple
 
-flask~=2.2
-flask-oidc~=1.4
-itsdangerous==2.0.1 # XXX: Flask OIDC en a besoin car c'est une vieille version
+flask ~= 2.3
+flask-pyoidc ~= 3.14
 flask-migrate~=4.0
 flask-cors~=4.0 # XXX: from 3 to 4
 flask-sqlalchemy~=3.0.5

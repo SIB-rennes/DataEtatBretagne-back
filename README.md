@@ -35,7 +35,12 @@ Copier le fichier [config_template.yml](./config/config_template.yml) en config.
 cp config/config_template.yml config/config.yml
 ```
 
-Remplacer les variables
+Copier le fichier [oidc_template.yml](./config/oidc_template.yml) en config.yml.
+```
+cp config/oidc_template.yml config/oidc.yml
+```
+
+## Remplacer les variables
 
 | Nom de la variable        |                                      Description                                      |
 | :------------------------ | :-----------------------------------------------------------------------------------: |

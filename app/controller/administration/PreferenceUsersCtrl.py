@@ -23,7 +23,7 @@ from app.models.preference.Preference import Preference, PreferenceSchema, Prefe
 
 api = Namespace(name="preferences", path='/users/preferences',
                 description='API de gestion des préférences utilisateurs')
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 preference = api.model('CreateUpdatePreference', {
     'name': fields.String(required=True, description='Name of the preference'),
@@ -57,7 +57,7 @@ class PreferenceUsers(Resource):
     @api.response(200, 'The preference created', preference)
     @api.doc(security="Bearer")
     @api.expect(preference)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     def post(self):
         """
         Create a new preference for the current user
@@ -65,9 +65,9 @@ class PreferenceUsers(Resource):
         from app.tasks.management_tasks import share_filter_user
         logging.debug("[PREFERENCE][CTRL] Post users prefs")
         json_data = request.get_json()
-        if 'username' not in g.oidc_token_info :
+        if 'username' not in g.current_token_identity :
              return abort(message= "User not found", code=HTTPStatus.BAD_REQUEST)
-        json_data['username'] = g.oidc_token_info['username']
+        json_data['username'] = g.current_token_identity['username']
 
         schema_create_validation = PreferenceFormSchema()
         try:
@@ -97,7 +97,7 @@ class PreferenceUsers(Resource):
 
         return  PreferenceSchema().dump(pref)
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.response(200, "List of the user's preferences", [list_preference_get] )
     def get(self):
@@ -105,9 +105,9 @@ class PreferenceUsers(Resource):
         Retrieve the list
         """
 
-        if 'username' not in g.oidc_token_info:
+        if 'username' not in g.current_token_identity:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.oidc_token_info['username']
+        username = g.current_token_identity['username']
         application = get_origin_referrer(request)
         logging.debug(f"get users prefs {application}")
 
@@ -123,7 +123,7 @@ class PreferenceUsers(Resource):
 @api.route('/<uuid>')
 class CrudPreferenceUsers(Resource):
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.response(200, "Success if delete")
     def delete(self, uuid):
@@ -132,9 +132,9 @@ class CrudPreferenceUsers(Resource):
         """
         logging.debug(f"Delete users prefs {uuid}")
 
-        if 'username' not in g.oidc_token_info:
+        if 'username' not in g.current_token_identity:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.oidc_token_info['username']
+        username = g.current_token_identity['username']
         application = get_origin_referrer(request)
         preference = Preference.query.filter(cast(Preference.uuid, sqlalchemy.String)==uuid, Preference.application_host==application).one()
 
@@ -149,7 +149,7 @@ class CrudPreferenceUsers(Resource):
             logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid} {application}", e)
             return abort(message=f"Error when delete preference on application {application}", code=HTTPStatus.BAD_REQUEST)
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.expect(preference)
     @api.response(200, "Success if delete")
@@ -159,9 +159,9 @@ class CrudPreferenceUsers(Resource):
         """
         from app.tasks.management_tasks import share_filter_user
         logging.debug(f"Update users prefs {uuid}")
-        if 'username' not in g.oidc_token_info:
+        if 'username' not in g.current_token_identity:
             return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.oidc_token_info['username']
+        username = g.current_token_identity['username']
         application = get_origin_referrer(request)
         preference_to_save = Preference.query.filter(cast(Preference.uuid, sqlalchemy.String)==uuid, Preference.application_host==application).one()
 
@@ -210,7 +210,7 @@ class CrudPreferenceUsers(Resource):
             return abort(message="Error when delete preference", code=HTTPStatus.BAD_REQUEST)
 
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.response(200, "User preference", preference_get)
     def get(self, uuid):
@@ -246,7 +246,7 @@ class UsersSearch(Resource):
     @api.response(200, 'Search user by email/username for sharing')
     @api.doc(security="Bearer")
     @api.expect(parser_search)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     def get(self):
         """
         Search users by userName
