@@ -20,6 +20,7 @@ from app import db
 from app.clients.keycloack.factory import make_or_get_keycloack_admin, KeycloakConfigurationException
 from app.controller.utils.ControllerUtils import get_origin_referrer
 from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema, Share
+from app.services.authentication.connected_user import ConnectedUser
 
 api = Namespace(name="preferences", path='/users/preferences',
                 description='API de gestion des préférences utilisateurs')
@@ -62,12 +63,12 @@ class PreferenceUsers(Resource):
         """
         Create a new preference for the current user
         """
+        user = ConnectedUser.from_current_token_identity()
+
         from app.tasks.management_tasks import share_filter_user
         logging.debug("[PREFERENCE][CTRL] Post users prefs")
         json_data = request.get_json()
-        if 'username' not in g.current_token_identity :
-             return abort(message= "User not found", code=HTTPStatus.BAD_REQUEST)
-        json_data['username'] = g.current_token_identity['username']
+        json_data['username'] = user.username
 
         schema_create_validation = PreferenceFormSchema()
         try:
@@ -104,16 +105,14 @@ class PreferenceUsers(Resource):
         """
         Retrieve the list
         """
+        user = ConnectedUser.from_current_token_identity()
 
-        if 'username' not in g.current_token_identity:
-            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.current_token_identity['username']
         application = get_origin_referrer(request)
         logging.debug(f"get users prefs {application}")
 
-        list_pref = Preference.query.options(lazyload(Preference.shares)).filter_by(username=username,application_host=application).order_by(
+        list_pref = Preference.query.options(lazyload(Preference.shares)).filter_by(username=user.username,application_host=application).order_by(
             Preference.id).all()
-        list_pref_shared = Preference.query.join(Share).filter(Share.shared_username_email == username, Preference.application_host==application).distinct(Preference.id).all()
+        list_pref_shared = Preference.query.join(Share).filter(Share.shared_username_email == user.username, Preference.application_host==application).distinct(Preference.id).all()
 
         schema = PreferenceSchema(many=True)
         create_by_user = schema.dump(list_pref)
@@ -131,14 +130,12 @@ class CrudPreferenceUsers(Resource):
         Delete uuid preference
         """
         logging.debug(f"Delete users prefs {uuid}")
+        user = ConnectedUser.from_current_token_identity()
 
-        if 'username' not in g.current_token_identity:
-            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.current_token_identity['username']
         application = get_origin_referrer(request)
         preference = Preference.query.filter(cast(Preference.uuid, sqlalchemy.String)==uuid, Preference.application_host==application).one()
 
-        if preference.username != username:
+        if preference.username != user.username:
             return abort(message="Vous n'avez pas les droits de supprimer cette préférence", code=HTTPStatus.FORBIDDEN)
 
         try:
@@ -158,20 +155,19 @@ class CrudPreferenceUsers(Resource):
         Update uuid preference
         """
         from app.tasks.management_tasks import share_filter_user
-        logging.debug(f"Update users prefs {uuid}")
-        if 'username' not in g.current_token_identity:
-            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.current_token_identity['username']
+
+        user = ConnectedUser.from_current_token_identity()
+
         application = get_origin_referrer(request)
         preference_to_save = Preference.query.filter(cast(Preference.uuid, sqlalchemy.String)==uuid, Preference.application_host==application).one()
 
-        if preference_to_save.username != username:
+        if preference_to_save.username != user.username:
             return abort(message="Vous n'avez pas les droits de modifier cette préférence", code=HTTPStatus.FORBIDDEN)
 
         json_data = request.get_json()
 
-        # filter the shares list to exclude the current username
-        shares = list(filter(lambda d: d['shared_username_email'] != username, json_data['shares']))
+        # filter the shares list to exclude the current user
+        shares = list(filter(lambda d: d['shared_username_email'] != user.username, json_data['shares']))
         # create a list of Share objects from the filtered shares
         new_share_list = [Share(**share) for share in shares]
         # initialize a list to store the final shares to save

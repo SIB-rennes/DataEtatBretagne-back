@@ -84,7 +84,8 @@ class UserDelete(Resource):
         """
           Supprime l'utilisateur si il est désactivé et appartient à la region de l'admin
         """
-        source_region = '053'  # TODO a récupérer du token
+        user = ConnectedUser.from_current_token_identity()
+        source_region = user.current_region
         logging.debug(f'[USERS] Call delete users {uuid}')
         keycloak_admin = make_or_get_keycloack_admin()
         # on récupère l'utilisateur
@@ -115,13 +116,16 @@ class UsersDisable(Resource):
         """
         Désactive un utilisateur
         """
+        user = ConnectedUser.from_current_token_identity()
+
         logging.debug(f'[USERS] Call disable users {uuid}')
-        source_region = '053'  # TODO a récupérer du token
+        source_region = user.current_region
+
         # on check si l'utilisateur est bien dans un groupes de la région
         if (not _user_belong_region(uuid, source_region)):
             return ErrorController("L'utilisateur ne fait pas partie de la région").to_json(), HTTPStatus.BAD_REQUEST
 
-        if 'sub' in g.current_token_identity and g.current_token_identity['sub'] == uuid:
+        if user.sub == uuid:
              return abort(message= "Vous ne pouvez désactiver votre utilisateur", code=HTTPStatus.FORBIDDEN)
         _update_enable_user(uuid, False)
         return make_response("", 200)
@@ -137,8 +141,9 @@ class UsersEnable(Resource):
         """
         Active un compte utilisateur
         """
+        user = ConnectedUser.from_current_token_identity()
         logging.debug(f'[USERS] Call enable users {uuid}')
-        source_region = '053'  # TODO a récupérer du token
+        source_region = user.current_region
         # on check si l'utilisateur est bien dans un groupes de la région
         if (not _user_belong_region(uuid, source_region)):
             return ErrorController("L'utilisateur ne fait pas partie de la région").to_json(), HTTPStatus.BAD_REQUEST

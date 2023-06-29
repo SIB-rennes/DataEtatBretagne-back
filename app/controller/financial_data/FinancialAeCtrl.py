@@ -61,8 +61,7 @@ class FinancialAe(Resource):
 
         source_region = user.current_region
 
-        username = g.current_token_identity['username'] if hasattr(g,'current_token_identity') and 'username' in g.current_token_identity else ''
-        task = import_ae(file_ae,source_region,int(data['annee']), force_update, username)
+        task = import_ae(file_ae,source_region,int(data['annee']), force_update, user.username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import des engaments des données fiancières de l\'état en cours (taches asynchrone id = {task.id}'})
 
     @api.expect(parser_get)
@@ -72,8 +71,9 @@ class FinancialAe(Resource):
         """
         Retourne les lignes d'engagements Chorus
         """
+        user = ConnectedUser.from_current_token_identity()
         params = parser_get.parse_args()
-        params['source_region']  = '053' # TODO en dur
+        params['source_region']  = user.current_region
         page_result = search_financial_data_ae(**params)
 
         if page_result.items == []:

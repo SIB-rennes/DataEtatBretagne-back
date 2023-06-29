@@ -13,23 +13,42 @@ class ConnectedUser():
     """
     def __init__(self, token):
         self.token = token
+
+        self._current_roles = None
+        self._current_region = None
+        self._username = None
+        self._sub = None
     
     @property
     def roles(self):
         """Récupère les rôle actifs sur la région actuellement connectée"""
         if self._current_roles is None:
-            self._current_roles = self._compute_current_roles()
+            self._current_roles = self._retrieve_token_roles()
         return self._current_roles
     
     @property
     def current_region(self):
         """Récupère la region sur laquelle l'utilisateur est actuellement connecté"""
         if self._current_region is None:
-            self._current_region = self._compute_current_region()
+            self._current_region = self._retrieve_token_region()
         return self._current_region
     
+    @property
+    def username(self):
+        """Récupère l'username du token"""
+        if self._username is None:
+            self._username = self._retrieve_token_username()
+        return self._username
+    
+    @property
+    def sub(self):
+        """Récupère le claim 'sub' du token"""
+        if self._sub is None:
+            self._sub = self._retrieve_token_sub()
+        return self._sub
+    
     @wrap_all_ex_to(InvalidTokenError)
-    def _compute_current_roles(self):
+    def _retrieve_token_roles(self):
         roles = self.token['roles'] if 'roles' in self.token else None
         assert isinstance(roles, Iterable), "Les rôles devraient être une liste"
         if roles is not None:
@@ -37,11 +56,25 @@ class ConnectedUser():
         return roles
     
     @wrap_all_ex_to(NoCurrentRegion)
-    def _compute_current_region(self):
+    def _retrieve_token_region(self):
         region = self.token['region']
         if region is None:
             raise NoCurrentRegion()
         return region
+    
+    @wrap_all_ex_to(InvalidTokenError)
+    def _retrieve_token_username(self):
+        username = self.token['username']
+        if username is None:
+            raise InvalidTokenError()
+        return username
+
+    @wrap_all_ex_to(InvalidTokenError)
+    def _retrieve_token_sub(self):
+        sub = self.token['sub']
+        if sub is None:
+            raise InvalidTokenError()
+        return sub
 
     @staticmethod
     def from_current_token_identity():

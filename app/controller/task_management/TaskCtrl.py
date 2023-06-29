@@ -8,6 +8,7 @@ from werkzeug.datastructures import FileStorage
 from app import celeryapp
 from app.models.enums.AccountRole import AccountRole
 from app.controller.Decorators import check_permission
+from app.services.authentication.connected_user import ConnectedUser
 
 from ...exceptions.exceptions import FileNotAllowedException
 from ...services.import_refs import ReferentielNotFound, import_refs
@@ -32,15 +33,17 @@ class TaskRunImportRef(Resource):
     @api.doc(security="Bearer")
     @api.expect(parser)
     def post(self):
+
+        user = ConnectedUser.from_current_token_identity()
+
         data = request.form
         file_ref = request.files['file']
 
         if 'class_name' not in data or 'columns' not in data:
             return {"status":"Le modèle n'existe pas ou les colonnes sont manquantes"}, 400
 
-        username = g.current_token_identity['username'] if hasattr(g,'current_token_identity') and 'username' in g.current_token_identity else ''
         try :
-            task = import_refs(file_ref, data, username)
+            task = import_refs(file_ref, data, user.username)
             return jsonify(
                 {"status": f'Fichier récupéré. Demande d`import du referentiel (taches asynchrone id = {task.id}'})
         except ReferentielNotFound:

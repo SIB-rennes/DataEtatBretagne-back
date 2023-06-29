@@ -1,5 +1,3 @@
-from typing import Iterable
-from flask import g
 from functools import wraps
 
 from requests import RequestException
@@ -48,18 +46,6 @@ def check_permission(permissions):
 def _unauthorized_response():
     response_body = ErrorController("Vous n`avez pas les droits").to_json()
     return response_body, 403, {'WWW-Authenticate': 'Bearer'}
-
-def _get_user_roles():
-
-    roles = g.current_token_identity['roles'] if 'roles' in g.current_token_identity else None
-
-    assert isinstance(roles, Iterable), "Les rôles devraient être une liste"
-
-    if roles is not None:
-        roles = [x.upper() for x in roles]
-
-    return roles
-
 
 def retry_on_exception(max_retry):
     """
