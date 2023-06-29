@@ -30,8 +30,6 @@ parser_get.add_argument('siret_beneficiaire', type=str, action="split", help="Co
 parser_get.add_argument('annee', type=int, action="split", help="L'année comptable.")
 parser_get.add_argument('domaine_fonctionnel', type=str, action="split", help="Le(s) code(s) du domaine fonctionnel.")
 parser_get.add_argument('referentiel_programmation', type=str, action="split", help="Le(s) code(s) du référentiel de programmation.")
-parser_get.add_argument('source_region', type=str, action="split", help="Les codes INSEE des régions sources.")
-
 
 @api.errorhandler(BadCodeGeoException)
 def handle_error_input_parameter(e: BadCodeGeoException):
@@ -58,8 +56,10 @@ class FinancialAe(Resource):
         if 'force_update' in data and data['force_update'] == 'true':
             force_update = True
 
+        source_region = '053' #todo en dur
+
         username = g.current_token_identity['username'] if hasattr(g,'current_token_identity') and 'username' in g.current_token_identity else ''
-        task = import_ae(file_ae,data['code_region'],int(data['annee']), force_update, username)
+        task = import_ae(file_ae,source_region,int(data['annee']), force_update, username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import des engaments des données fiancières de l\'état en cours (taches asynchrone id = {task.id}'})
 
     @api.expect(parser_get)
@@ -70,6 +70,7 @@ class FinancialAe(Resource):
         Retourne les lignes d'engagements Chorus
         """
         params = parser_get.parse_args()
+        params['source_region']  = '053' # TODO en dur
         page_result = search_financial_data_ae(**params)
 
         if page_result.items == []:

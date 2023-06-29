@@ -77,7 +77,6 @@ class UserDelete(Resource):
     @api.doc(security="Bearer")
     @auth.token_auth('default', scopes_required=['openid'])
     @check_permission(AccountRole.ADMIN)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
     def delete(self, uuid):
         """
           Supprime l'utilisateur si il est désactivé et appartient à la region de l'admin

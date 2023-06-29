@@ -29,6 +29,6 @@ class FinancialCpImport(Resource):
         file_cp = request.files['fichier']
 
         username = g.current_token_identity['username'] if hasattr(g,'current_token_identity') and 'username' in g.current_token_identity else ''
-
-        task = import_cp(file_cp,data['code_region'],int(data['annee']),username)
+        source_region = '053' #TODO en dur
+        task = import_cp(file_cp,source_region,int(data['annee']),username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import des engaments des données fiancières de l\'état en cours (taches asynchrone id = {task.id}'})
