@@ -28,8 +28,8 @@ html_template = """
 <p>{0} souhaite vous partager un tableau de bord via le service {1}.</p>
 <p>{1} est un projet interministériel piloté par le SGAR Bretagne (Préfecture de région). 
 Il vise au partage et à la réutilisation des données de l’État dont financières pour piloter les politiques publiques et valoriser les financements de l’État sur les territoires.</p>
-<p>Pour y accéder, veuillez cliquer sur ce <a href="https://{2}">lien</a> et vous connecter.</p>
-<p>Si vous n'avez pas de compte, vous pouvez faire une demande en suivant ce <a href="https://{3}">lien</a></p>
+<p>Pour y accéder, veuillez cliquer sur ce <a href="{2}">lien</a> et vous connecter.</p>
+<p>Si vous n'avez pas de compte, vous pouvez faire une demande en suivant ce <a href="{3}">lien</a></p>
 """
 
 subject_budget = "Budget Data État Bretagne"
@@ -55,9 +55,11 @@ def share_filter_user(self, preference_uuid, host_link):
     if (preference is not None and len(preference.shares) > 0):
         for share in preference.shares:
             if share.email_send == False:
-                mail.send_email(subject, share.shared_username_email,
-                                text_template.format(preference.username,subject,link_preference,link_register),
-                                html_template.format(preference.username,subject, link_preference,link_register))
+                txt = text_template.format(preference.username,subject, link_preference, link_register)
+                htm = html_template.format(preference.username,subject, link_preference, link_register)
+
+                mail.send_email(subject, share.shared_username_email, txt, htm)
+
                 share.email_send = True
                 share.date_email_send = datetime.datetime.utcnow()
                 db.session.commit()
