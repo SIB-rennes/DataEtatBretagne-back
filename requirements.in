@@ -31,6 +31,7 @@ pandas~=1.5
 requests~=2.31
 pyrate-limiter~=2.10
 wget~=3.2
+tenacity ~= 8.2
 
 flower~=2.0 # XXX: from 1 to 2
 

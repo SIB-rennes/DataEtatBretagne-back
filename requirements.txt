@@ -152,7 +152,7 @@ packaging==23.1
 pandas==1.5.3
     # via -r requirements.in
 pika==1.3.2
-   # via -r requirements.in
+    # via -r requirements.in
 prometheus-client==0.17.0
     # via flower
 prompt-toolkit==3.0.38
@@ -171,7 +171,7 @@ pycryptodomex==3.18.0
     # via
     #   oic
     #   pyjwkest
-pydantic==1.10.9
+pydantic==1.10.10
     # via oic
 pyjwkest==1.4.2
     # via oic
@@ -225,9 +225,11 @@ sqlalchemy==2.0.17
     #   alembic
     #   flask-sqlalchemy
     #   marshmallow-sqlalchemy
+tenacity==8.2.2
+    # via -r requirements.in
 tornado==6.3.2
     # via flower
-typing-extensions==4.6.3
+typing-extensions==4.7.0
     # via
     #   alembic
     #   psycopg

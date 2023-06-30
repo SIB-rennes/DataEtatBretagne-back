@@ -48,7 +48,7 @@ pytest==7.4.0
     #   pytest-cov
 pytest-cov==4.1.0
     # via -r dev-requirements.in
-typing-extensions==4.6.3
+typing-extensions==4.7.0
     # via
     #   -c requirements.txt
     #   mypy
