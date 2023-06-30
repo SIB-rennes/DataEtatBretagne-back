@@ -23,7 +23,9 @@ from app.services.file_service import allowed_file
 
 def import_ae(file_ae, source_region:str, annee: int, force_update: bool, username=""):
     save_path = _check_file_and_save(file_ae)
+
     _check_file(save_path, FinancialAe.get_columns_files_ae())
+    source_region = _sanitize_source_region(source_region)
 
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
     from app.tasks.financial.import_financial import import_file_ae_financial
@@ -35,7 +37,9 @@ def import_ae(file_ae, source_region:str, annee: int, force_update: bool, userna
 
 def import_cp(file_cp, source_region:str, annee: int, username=""):
     save_path = _check_file_and_save(file_cp)
+
     _check_file(save_path, FinancialCp.get_columns_files_cp())
+    source_region = _sanitize_source_region(source_region)
 
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
     from app.tasks.financial.import_financial import import_file_cp_financial
@@ -98,6 +102,7 @@ def search_financial_data_ae(
         domaine_fonctionnel: list = None, referentiel_programmation: list = None, source_region: str = None,
         code_geo: list = None, page_number=1, limit=500):
 
+    source_region = _sanitize_source_region(source_region)
 
     query_siret = BuilderStatementFinancial().select_ae()\
         .join_filter_siret(siret_beneficiaire)\
@@ -165,5 +170,8 @@ def _check_file(fichier, columns_name):
 
     if data_financial.isnull().values.any():
         raise InvalidFile(message="Le fichier contient des valeurs vides")
+
+def _sanitize_source_region(source_region):
+    return source_region.lstrip('0')
 
 
