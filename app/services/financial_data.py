@@ -4,6 +4,7 @@ import tempfile
 import pandas
 from flask import current_app
 from werkzeug.utils import secure_filename
+from sqlalchemy.orm import selectinload, contains_eager
 
 from app import db
 from app.exceptions.exceptions import InvalidFile, FileNotAllowedException
@@ -13,6 +14,8 @@ from app.models.financial.Ademe import Ademe
 
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.financial.FinancialAe import FinancialAe
+from app.models.refs.categorie_juridique import CategorieJuridique
+from app.models.refs.commune import Commune
 from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.models.refs.siret import Siret
@@ -69,7 +72,11 @@ def get_financial_ae(id: int) -> FinancialAe:
     return result
 
 def search_ademe(siret_beneficiaire: list = None, code_geo: list = None, annee: list = None, page_number=1, limit=500):
-    query = db.select(Ademe)
+    query = db.select(Ademe).options(
+            contains_eager(Ademe.ref_siret_beneficiaire).load_only(Siret.code, Siret.denomination).contains_eager(
+                Siret.ref_commune).load_only(Commune.label_commune, Commune.code),
+            contains_eager(Ademe.ref_siret_beneficiaire).contains_eager(Siret.ref_categorie_juridique).load_only(CategorieJuridique.type)
+        )
     query = query.join(Ademe.ref_siret_beneficiaire.and_(
         Siret.code.in_(siret_beneficiaire))) if siret_beneficiaire is not None else query.join(Siret,
                                                                                                Ademe.ref_siret_beneficiaire)
