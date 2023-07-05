@@ -1,6 +1,9 @@
+import datetime
+import shutil
 from collections import namedtuple
 import json
 from celery import current_task, subtask
+from flask import current_app
 from sqlalchemy import delete, update
 from app import celeryapp, db
 from app.exceptions.exceptions import FinancialException
@@ -39,6 +42,9 @@ celery = celeryapp.celery
 def import_file_ae_financial(self, fichier, source_region: str, annee: int, force_update: bool):
     # get file
     logger.info(f'[IMPORT][FINANCIAL][AE] Start for region {source_region}, year {annee}, file {fichier}')
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+    move_folder = current_app.config['UPLOAD_FOLDER'] + "/save/"
     try:
         data_chorus_chunk = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialAe.get_columns_files_ae(),
                                       dtype={'programme': str, 'n_ej': str, 'n_poste_ej': int,
@@ -50,7 +56,10 @@ def import_file_ae_financial(self, fichier, source_region: str, annee: int, forc
             for index, line in chunk.iterrows():
                 _send_subtask_financial_ae(line.append(series).to_json(), index, force_update)
 
-        os.remove(fichier)
+        move_filename = os.path.join(move_folder,timestamp, os.path.basename(fichier))
+        if not os.path.exists(move_filename):
+            logger.info(f'[IMPORT][FINANCIAL][AE] Save file {fichier} in {move_filename}')
+            shutil.move(fichier, move_filename)
         logger.info('[IMPORT][FINANCIAL][AE] End')
         return True
     except Exception as e:
@@ -86,6 +95,10 @@ def _delete_cp(annee: int, source_region: str):
 def import_file_cp_financial(self, fichier, source_region: str, annee: int):
     # get file
     logger.info(f'[IMPORT][FINANCIAL][CP] Start for region {source_region}, year {annee}, file {fichier}')
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+    move_folder = current_app.config['UPLOAD_FOLDER'] + "/save/"
+
     try:
         current_taskid = current_task.request.id
         data_chorus_chunk = pandas.read_csv(fichier, sep=",", skiprows=8, names=FinancialCp.get_columns_files_cp(),
@@ -101,7 +114,13 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
                 tech_info = LineImportTechInfo(current_taskid, i)
                 _send_subtask_financial_cp(line.to_json(), index, source_region, annee, tech_info)
 
-        os.remove(fichier)
+        move_filename = os.path.join(move_folder,timestamp, os.path.basename(fichier))
+        if not os.path.exists(move_filename):
+            logger.info(f'[IMPORT][FINANCIAL][CP] Save file {fichier} in {move_filename}')
+            shutil.move(fichier, move_filename)
+        else :
+            os.remove(fichier)
+
         logger.info('[IMPORT][FINANCIAL][CP] End')
         return True
     except Exception as e:

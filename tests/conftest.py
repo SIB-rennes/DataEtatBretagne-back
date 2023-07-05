@@ -15,7 +15,8 @@ extra_config = {
     'SECRET_KEY': "secret",
     'OIDC_CLIENT_SECRETS': "ser",
     'TESTING': True,
-    "SERVER_NAME": "localhost"
+    "SERVER_NAME": "localhost",
+    "UPLOAD_FOLDER": ""
 }
 
 

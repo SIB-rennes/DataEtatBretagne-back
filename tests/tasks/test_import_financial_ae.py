@@ -12,7 +12,7 @@ from app.tasks.financial.import_financial import import_line_financial_ae
 @patch('app.tasks.financial.import_financial.subtask')
 def test_import_import_file_ae(mock_subtask):
     #DO
-    with patch('os.remove', return_value=None): #ne pas supprimer le fichier de tests :)
+    with patch('shutil.move', return_value=None): #ne pas supprimer le fichier de tests :)
         import_file_ae_financial(os.path.abspath(os.getcwd()) + '/data/chorus/chorus_ae.csv', "35", 2023, False)
 
     mock_subtask.assert_has_calls([
