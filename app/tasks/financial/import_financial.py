@@ -56,11 +56,13 @@ def import_file_ae_financial(self, fichier, source_region: str, annee: int, forc
             for index, line in chunk.iterrows():
                 _send_subtask_financial_ae(line.append(series).to_json(), index, force_update)
 
-        move_filename = os.path.join(move_folder,timestamp, os.path.basename(fichier))
-        if not os.path.exists(move_filename):
-            logger.info(f'[IMPORT][FINANCIAL][AE] Save file {fichier} in {move_filename}')
-            shutil.move(fichier, move_filename)
+        move_folder = os.path.join(move_folder,timestamp)
+        if not os.path.exists(move_folder):
+            os.makedirs(move_folder)
+        logger.info(f'[IMPORT][FINANCIAL][AE] Save file {fichier} in {move_folder}')
+        shutil.move(fichier, move_folder)
         logger.info('[IMPORT][FINANCIAL][AE] End')
+
         return True
     except Exception as e:
         logger.exception(f"[IMPORT][FINANCIAL][AE] Error lors de l'import du fichier {fichier} chorus")
@@ -114,12 +116,12 @@ def import_file_cp_financial(self, fichier, source_region: str, annee: int):
                 tech_info = LineImportTechInfo(current_taskid, i)
                 _send_subtask_financial_cp(line.to_json(), index, source_region, annee, tech_info)
 
-        move_filename = os.path.join(move_folder,timestamp, os.path.basename(fichier))
-        if not os.path.exists(move_filename):
-            logger.info(f'[IMPORT][FINANCIAL][CP] Save file {fichier} in {move_filename}')
-            shutil.move(fichier, move_filename)
-        else :
-            os.remove(fichier)
+
+        move_folder = os.path.join(move_folder, timestamp)
+        if not os.path.exists(move_folder):
+            os.makedirs(move_folder)
+        logger.info(f'[IMPORT][FINANCIAL][CP] Save file {fichier} in {move_folder}')
+        shutil.move(fichier, move_folder)
 
         logger.info('[IMPORT][FINANCIAL][CP] End')
         return True
