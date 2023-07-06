@@ -36,12 +36,7 @@ class Ademe(FinancialData, db.Model):
     ref_siret_attribuant = relationship("Siret", lazy="select", foreign_keys=[siret_attribuant])
     ref_siret_beneficiaire = relationship("Siret", lazy="select", foreign_keys=[siret_beneficiaire])
 
-    location_lat = Column(Float)
-    location_lon = Column(Float)
-    departement = Column(String(5))
-
     # Données techniques 
-
     file_import_taskid = Column(String(255))
     """Task ID de la tâche d'import racine pour cette ligne"""
     file_import_lineno = Column(Integer())
@@ -49,36 +44,30 @@ class Ademe(FinancialData, db.Model):
 
     __table_args__ = UniqueConstraint('file_import_taskid', 'file_import_lineno', name="uq_file_line_import_ademe"),
 
-    def __init__(self, line_csv: dict):
-        """
-        init à partir d'une ligne issue d'un fichier csv
-
-        :param line_chorus: dict contenant les valeurs d'une ligne issue d'un fichier chorus
-        :param source_region:
-        :param annee:
-        """
-
-        self.update_attribute(line_csv)
-
-
-    def __setattr__(self, key, value):
-        if (key == 'notification_ue') :
-            value = True if value is not None else False
-
-        if key == "date_convention" and isinstance(value, str):
-            value = datetime.strptime(value, '%Y-%m-%d').date()
-
-        super().__setattr__(key, value)
-
     @staticmethod
-    def get_columns_files():
-        return [
-            'Nom de l attribuant', 'siret_attribuant', 'date_convention', 'reference_decision', 'nomBeneficiaire', 'siret_beneficiaire',
-            'objet','montant', 'nature', 'conditions_versement', 'dates_periode_versement', 'notification_ue', 'pourcentage_subvention',
-            'location_lat', 'location_lon', 'departement', 'naf1etlib', 'naf2etlib', 'naf3etlib', 'naf4etlib', 'naf5etlib'
-        ]
+    def from_datagouv_csv_line(line_dict: dict):
+        ademe = Ademe()
 
+        date_convention = line_dict['dateConvention']
+        date_convention = datetime.strptime(date_convention, '%Y-%m-%d').date()
 
+        notification_ue = line_dict['notificationUE']
+        notification_ue = True if notification_ue is not None else False
+
+        ademe.date_convention = date_convention
+        ademe.reference_decision = line_dict['referenceDecision']
+        ademe.objet = line_dict['objet']
+        ademe.montant = line_dict['montant']
+        ademe.nature = line_dict['nature']
+        ademe.conditions_versement = line_dict['conditionsVersement']
+        ademe.dates_periode_versement = line_dict['datesPeriodeVersement']
+        ademe.notification_ue = notification_ue
+        ademe.pourcentage_subvention = line_dict['pourcentageSubvention']
+
+        ademe.siret_attribuant = line_dict['idAttribuant']
+        ademe.siret_beneficiaire = line_dict['idBeneficiaire']
+
+        return ademe
 
 
 class SiretField(fields.Field):
