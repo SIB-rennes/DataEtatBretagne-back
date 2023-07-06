@@ -324,10 +324,11 @@ def import_file_ademe(self, fichier: str):
             columns = pandas.read_csv(f, header=0).columns.tolist()
             f.seek(0)
 
-            data_ademe_chunk = pandas.read_csv(fichier, sep=",", skiprows=1, names=columns,
-                                        dtype={'pourcentage_subvention':float, 'siret_beneficiaire': str,'siret_attribuant':str,
-                                                'idBeneficiaire': str,"notification_ue": str,
-                                                'idAttribuant': str}, chunksize=1000)
+            data_ademe_chunk = pandas.read_csv(
+                fichier, sep=",", skiprows=1, names=columns,
+                dtype={'pourcentageSubvention':float, 'idBeneficiaire': str,'idAttribuant':str, "notificationUE": str },
+                chunksize=1000
+            )
 
             _delete_ademe()
 
