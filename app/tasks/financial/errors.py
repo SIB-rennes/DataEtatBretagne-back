@@ -55,12 +55,14 @@ def _handle_exception_import(name):
     """
     def wrapper(func):
 
+
         @_map_exceptions
         def mapped(*args, **kwargs):
             return func(*args, **kwargs)
 
         @wraps(func)
         def inner_wrapper(caller, *args, **kwargs):
+            logger.debug("Call mapped")
             try :
                 return mapped(caller, *args, **kwargs)
             except Reessayer as e:
@@ -68,6 +70,7 @@ def _handle_exception_import(name):
                 # de retry max contrairement à ce que stipule la doc !
                 # on met donc un grand nombre.
                 nb_retries = e.max_retries if e.max_retries is not None else 1000
+                logger.debug(f"On retry avec countdown {e.delai}, max_retries {nb_retries} et le jitter")
                 caller.retry(countdown=e.delai, max_retries=nb_retries, retry_jitter = True)
             
             except AnnuleLaTache as e:

@@ -2,6 +2,7 @@ import logging
 import pika
 import time
 from functools import wraps
+from tenacity import retry, stop_after_attempt
 
 from flask import current_app
 from app import celeryapp
@@ -61,8 +62,7 @@ def limiter_queue(queue_name:str, max_queue_size: int = max_queue_size, timeout_
                 num_retries = 0
 
                 while True:
-                    channel = lazy_channel()
-                    queue_info = channel.queue_declare(queue_name, passive = True) if channel is not None else None
+                    queue_info = _get_queue(queue_name)
                     msg_count = queue_info.method.message_count
 
                     if msg_count <= max_queue_size:
@@ -81,6 +81,12 @@ def limiter_queue(queue_name:str, max_queue_size: int = max_queue_size, timeout_
 
 class LimitQueueException(Exception):
     pass
+
+@retry(stop=stop_after_attempt(2))
+def _get_queue(queue_name: str):
+    channel = lazy_channel()
+    queue = channel.queue_declare(queue_name, passive = True) if channel is not None else None
+    return queue
 
 from .financial.import_financial import *
 from .import_refs_tasks import *

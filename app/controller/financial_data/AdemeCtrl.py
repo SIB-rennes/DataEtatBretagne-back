@@ -7,14 +7,15 @@ from app.controller.Decorators import check_permission
 from app.controller.financial_data import check_file_import
 from app.controller.utils.ControllerUtils import get_pagination_parser
 from app.models.common.Pagination import Pagination
-from app.models.enums.ConnectionProfile import ConnectionProfile
+from app.models.enums.AccountRole import AccountRole
 from app.models.financial.Ademe import AdemeSchema
+from app.services.authentication.connected_user import ConnectedUser
 from app.services.financial_data import import_ademe, search_ademe, get_ademe
 
 api = Namespace(name="Ademe", path='/',
                 description='Api de gestion des données ADEME')
 
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 parser_get = get_pagination_parser(default_limit=5000)
 parser_get.add_argument('code_geo', type=str, action="split", help="Le code d'une commune (5 chiffres), "
@@ -37,8 +38,8 @@ model_single_api = api.schema_model("Ademe", model_json)
 class AdemeImport(Resource):
 
     @api.expect(parser_import_file)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
-    @check_permission([ConnectionProfile.ADMIN, ConnectionProfile.COMPTABLE])
+    @auth.token_auth('default', scopes_required=['openid'])
+    @check_permission([AccountRole.ADMIN, AccountRole.COMPTABLE])
     @check_file_import()
     @api.doc(security="Bearer")
     def post(self):
@@ -46,15 +47,15 @@ class AdemeImport(Resource):
         Charge un fichier issue de l'ADEME
         Les lignes sont insérés de manière asynchrone
         """
+        user = ConnectedUser.from_current_token_identity()
+
         file_ademe = request.files['fichier']
 
-        username = g.oidc_token_info['username'] if hasattr(g,'oidc_token_info') and 'username' in g.oidc_token_info else ''
-
-        task = import_ademe(file_ademe,username)
+        task = import_ademe(file_ademe, user.username)
         return jsonify({"status": f'Fichier récupéré. Demande d`import des  données ADEME en cours (taches asynchrone id = {task.id}'})
 
     @api.expect(parser_get)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     def get(self):
         """
@@ -79,7 +80,7 @@ class GetAdemeByid(Resource):
       Récupére les infos d'une dépense ADEME
       :return:
     """
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     def get(self, id: str):
         result = get_ademe(int(id))

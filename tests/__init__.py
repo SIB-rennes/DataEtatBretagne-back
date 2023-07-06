@@ -13,4 +13,4 @@ def mock_accept_token(*args, **kwargs):
     return wrapper
 
 
-patch('flask_oidc.OpenIDConnect.accept_token', mock_accept_token).start()
+patch('flask_pyoidc.OIDCAuthentication.token_auth', mock_accept_token).start()

@@ -1,6 +1,5 @@
 import os
 import pytest
-from flask_oidc import OpenIDConnect
 from app import create_app_base, db
 file_path = os.path.abspath(os.getcwd())+"\database.db"
 settings_path = os.path.abspath(os.getcwd())+"\settings.db"
@@ -16,11 +15,12 @@ extra_config = {
     'SECRET_KEY': "secret",
     'OIDC_CLIENT_SECRETS': "ser",
     'TESTING': True,
-    "SERVER_NAME": "localhost"
+    "SERVER_NAME": "localhost",
+    "UPLOAD_FOLDER": ""
 }
 
 
-test_app = create_app_base(extra_config_settings=extra_config, oidc=OpenIDConnect())
+test_app = create_app_base(extra_config_settings=extra_config)
 test_app.app_context().push()
 @pytest.fixture(scope="session")
 def app():

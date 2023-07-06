@@ -4,6 +4,7 @@ import tempfile
 import pandas
 from flask import current_app
 from werkzeug.utils import secure_filename
+from sqlalchemy.orm import selectinload, contains_eager
 
 from app import db
 from app.exceptions.exceptions import InvalidFile, FileNotAllowedException
@@ -13,6 +14,8 @@ from app.models.financial.Ademe import Ademe
 
 from app.models.financial.FinancialCp import FinancialCp
 from app.models.financial.FinancialAe import FinancialAe
+from app.models.refs.categorie_juridique import CategorieJuridique
+from app.models.refs.commune import Commune
 from app.models.refs.domaine_fonctionnel import DomaineFonctionnel
 from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.models.refs.siret import Siret
@@ -23,7 +26,9 @@ from app.services.file_service import allowed_file
 
 def import_ae(file_ae, source_region:str, annee: int, force_update: bool, username=""):
     save_path = _check_file_and_save(file_ae)
+
     _check_file(save_path, FinancialAe.get_columns_files_ae())
+    source_region = _sanitize_source_region(source_region)
 
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
     from app.tasks.financial.import_financial import import_file_ae_financial
@@ -35,7 +40,9 @@ def import_ae(file_ae, source_region:str, annee: int, force_update: bool, userna
 
 def import_cp(file_cp, source_region:str, annee: int, username=""):
     save_path = _check_file_and_save(file_cp)
+
     _check_file(save_path, FinancialCp.get_columns_files_cp())
+    source_region = _sanitize_source_region(source_region)
 
     logging.info(f'[IMPORT FINANCIAL] Récupération du fichier {save_path}')
     from app.tasks.financial.import_financial import import_file_cp_financial
@@ -65,7 +72,11 @@ def get_financial_ae(id: int) -> FinancialAe:
     return result
 
 def search_ademe(siret_beneficiaire: list = None, code_geo: list = None, annee: list = None, page_number=1, limit=500):
-    query = db.select(Ademe)
+    query = db.select(Ademe).options(
+            contains_eager(Ademe.ref_siret_beneficiaire).load_only(Siret.code, Siret.denomination).contains_eager(
+                Siret.ref_commune).load_only(Commune.label_commune, Commune.code),
+            contains_eager(Ademe.ref_siret_beneficiaire).contains_eager(Siret.ref_categorie_juridique).load_only(CategorieJuridique.type)
+        )
     query = query.join(Ademe.ref_siret_beneficiaire.and_(
         Siret.code.in_(siret_beneficiaire))) if siret_beneficiaire is not None else query.join(Siret,
                                                                                                Ademe.ref_siret_beneficiaire)
@@ -95,9 +106,10 @@ def get_ademe(id: int) -> Ademe:
 
 def search_financial_data_ae(
         code_programme: list = None, theme: list = None, siret_beneficiaire: list = None, annee: list = None,
-        domaine_fonctionnel: list = None, referentiel_programmation: list = None, source_region: list = None,
+        domaine_fonctionnel: list = None, referentiel_programmation: list = None, source_region: str = None,
         code_geo: list = None, page_number=1, limit=500):
 
+    source_region = _sanitize_source_region(source_region)
 
     query_siret = BuilderStatementFinancial().select_ae()\
         .join_filter_siret(siret_beneficiaire)\
@@ -116,7 +128,7 @@ def search_financial_data_ae(
         query_siret.where_custom(ReferentielProgrammation.code.in_(referentiel_programmation))
     
     if source_region is not None:
-        query_siret.where_custom(FinancialAe.source_region.in_(source_region))
+        query_siret.where_custom(FinancialAe.source_region == source_region)
 
     page_result = query_siret.where_annee(annee).options_select_load().do_paginate(limit, page_number)
     return page_result
@@ -165,5 +177,8 @@ def _check_file(fichier, columns_name):
 
     if data_financial.isnull().values.any():
         raise InvalidFile(message="Le fichier contient des valeurs vides")
+
+def _sanitize_source_region(source_region):
+    return source_region.lstrip('0')
 
 

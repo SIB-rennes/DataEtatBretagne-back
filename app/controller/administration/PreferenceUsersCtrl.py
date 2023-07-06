@@ -20,10 +20,11 @@ from app import db
 from app.clients.keycloack.factory import make_or_get_keycloack_admin, KeycloakConfigurationException
 from app.controller.utils.ControllerUtils import get_origin_referrer
 from app.models.preference.Preference import Preference, PreferenceSchema, PreferenceFormSchema, Share
+from app.services.authentication.connected_user import ConnectedUser
 
 api = Namespace(name="preferences", path='/users/preferences',
                 description='API de gestion des préférences utilisateurs')
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 preference = api.model('CreateUpdatePreference', {
     'name': fields.String(required=True, description='Name of the preference'),
@@ -57,17 +58,17 @@ class PreferenceUsers(Resource):
     @api.response(200, 'The preference created', preference)
     @api.doc(security="Bearer")
     @api.expect(preference)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     def post(self):
         """
         Create a new preference for the current user
         """
+        user = ConnectedUser.from_current_token_identity()
+
         from app.tasks.management_tasks import share_filter_user
         logging.debug("[PREFERENCE][CTRL] Post users prefs")
         json_data = request.get_json()
-        if 'username' not in g.oidc_token_info :
-             return abort(message= "User not found", code=HTTPStatus.BAD_REQUEST)
-        json_data['username'] = g.oidc_token_info['username']
+        json_data['username'] = user.username
 
         schema_create_validation = PreferenceFormSchema()
         try:
@@ -97,23 +98,21 @@ class PreferenceUsers(Resource):
 
         return  PreferenceSchema().dump(pref)
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.response(200, "List of the user's preferences", [list_preference_get] )
     def get(self):
         """
         Retrieve the list
         """
+        user = ConnectedUser.from_current_token_identity()
 
-        if 'username' not in g.oidc_token_info:
-            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.oidc_token_info['username']
         application = get_origin_referrer(request)
         logging.debug(f"get users prefs {application}")
 
-        list_pref = Preference.query.options(lazyload(Preference.shares)).filter_by(username=username,application_host=application).order_by(
+        list_pref = Preference.query.options(lazyload(Preference.shares)).filter_by(username=user.username,application_host=application).order_by(
             Preference.id).all()
-        list_pref_shared = Preference.query.join(Share).filter(Share.shared_username_email == username, Preference.application_host==application).distinct(Preference.id).all()
+        list_pref_shared = Preference.query.join(Share).filter(Share.shared_username_email == user.username, Preference.application_host==application).distinct(Preference.id).all()
 
         schema = PreferenceSchema(many=True)
         create_by_user = schema.dump(list_pref)
@@ -123,7 +122,7 @@ class PreferenceUsers(Resource):
 @api.route('/<uuid>')
 class CrudPreferenceUsers(Resource):
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.response(200, "Success if delete")
     def delete(self, uuid):
@@ -131,14 +130,12 @@ class CrudPreferenceUsers(Resource):
         Delete uuid preference
         """
         logging.debug(f"Delete users prefs {uuid}")
+        user = ConnectedUser.from_current_token_identity()
 
-        if 'username' not in g.oidc_token_info:
-            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.oidc_token_info['username']
         application = get_origin_referrer(request)
         preference = Preference.query.filter(cast(Preference.uuid, sqlalchemy.String)==uuid, Preference.application_host==application).one()
 
-        if preference.username != username:
+        if preference.username != user.username:
             return abort(message="Vous n'avez pas les droits de supprimer cette préférence", code=HTTPStatus.FORBIDDEN)
 
         try:
@@ -149,7 +146,7 @@ class CrudPreferenceUsers(Resource):
             logging.error(f"[PREFERENCE][CTRL] Error when delete preference {uuid} {application}", e)
             return abort(message=f"Error when delete preference on application {application}", code=HTTPStatus.BAD_REQUEST)
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.expect(preference)
     @api.response(200, "Success if delete")
@@ -158,20 +155,19 @@ class CrudPreferenceUsers(Resource):
         Update uuid preference
         """
         from app.tasks.management_tasks import share_filter_user
-        logging.debug(f"Update users prefs {uuid}")
-        if 'username' not in g.oidc_token_info:
-            return abort(message="Utilisateur introuvable", code=HTTPStatus.BAD_REQUEST)
-        username = g.oidc_token_info['username']
+
+        user = ConnectedUser.from_current_token_identity()
+
         application = get_origin_referrer(request)
         preference_to_save = Preference.query.filter(cast(Preference.uuid, sqlalchemy.String)==uuid, Preference.application_host==application).one()
 
-        if preference_to_save.username != username:
+        if preference_to_save.username != user.username:
             return abort(message="Vous n'avez pas les droits de modifier cette préférence", code=HTTPStatus.FORBIDDEN)
 
         json_data = request.get_json()
 
-        # filter the shares list to exclude the current username
-        shares = list(filter(lambda d: d['shared_username_email'] != username, json_data['shares']))
+        # filter the shares list to exclude the current user
+        shares = list(filter(lambda d: d['shared_username_email'] != user.username, json_data['shares']))
         # create a list of Share objects from the filtered shares
         new_share_list = [Share(**share) for share in shares]
         # initialize a list to store the final shares to save
@@ -210,7 +206,7 @@ class CrudPreferenceUsers(Resource):
             return abort(message="Error when delete preference", code=HTTPStatus.BAD_REQUEST)
 
 
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @api.doc(security="Bearer")
     @api.response(200, "User preference", preference_get)
     def get(self, uuid):
@@ -246,7 +242,7 @@ class UsersSearch(Resource):
     @api.response(200, 'Search user by email/username for sharing')
     @api.doc(security="Bearer")
     @api.expect(parser_search)
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     def get(self):
         """
         Search users by userName

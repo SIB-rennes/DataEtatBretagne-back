@@ -22,14 +22,14 @@ args_get.add_argument('offset', type=int, required=False, help="Limit de résult
 api = Namespace(name="nocodb", path='/',
                 description='API passe plats nocodb')
 
-oidc = current_app.extensions['oidc']
+auth = current_app.extensions['auth']
 
 @api.route('/<table>/<views>')
 class NocoDb(Resource):
     @api.expect(args_get)
     @api.response(200, 'Success')
     @api.doc(security="Bearer")
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     @retry_on_exception(max_retry=3) # Ajout du décorateur ici
     def get(self, table, views):
         # le nom du projet correspond au nom du blueprint
@@ -56,7 +56,7 @@ class NocoDb(Resource):
 class ExportCsv(Resource):
     @api.response(200, 'Success')
     @api.doc(security="Bearer")
-    @oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @auth.token_auth('default', scopes_required=['openid'])
     def get(self, table, views):
         project = request.blueprint
         client = build_client(project)
