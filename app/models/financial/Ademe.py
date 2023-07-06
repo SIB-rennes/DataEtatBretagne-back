@@ -109,7 +109,7 @@ class CommuneField(fields.Field):
 class AdemeSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Ademe
-        exclude = ('updated_at','created_at','location_lat','location_lon', 'ref_siret_attribuant')
+        exclude = ('updated_at', 'created_at', 'ref_siret_attribuant')
 
     siret_beneficiaire = SiretField(attribute="siret_beneficiaire")
     commune = CommuneField(attribute="ref_siret_beneficiaire")
