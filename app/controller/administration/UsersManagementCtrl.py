@@ -96,11 +96,11 @@ class UserDelete(Resource):
             return ErrorController(
                 "L'utilisateur est actif. Merci de le désactiver dans un premier temps").to_json(), HTTPStatus.BAD_REQUEST
 
-        # on check si l'utilisateur est bien dans un groupes de la région
-        if (not _user_belong_region(uuid, source_region)) :
-            return ErrorController("L'utilisateur ne fait pas partie de la région").to_json(), HTTPStatus.BAD_REQUEST
+        groups_id_region = _fetch_groups(source_region)
 
-        keycloak_admin.delete_user(user_id=uuid)
+        for group_id in groups_id_region:
+            keycloak_admin.group_user_remove(uuid, group_id)
+
         return "Success", HTTPStatus.OK
 
 
