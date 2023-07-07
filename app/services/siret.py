@@ -34,7 +34,9 @@ def check_siret(siret):
     if siret is not None :
         logger.info(f"[SIRET] Début check siret {siret}")
         siret_entity = update_siret_from_api_entreprise(siret, insert_only=True)
-        __check_commune(siret_entity.code_commune)
+        if siret_entity.code_commune is not None:
+            __check_commune(siret_entity.code_commune)
+
         try:
             db.session.add(siret_entity)
             db.session.commit()
