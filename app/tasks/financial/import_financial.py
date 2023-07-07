@@ -22,13 +22,15 @@ from app.models.refs.referentiel_programmation import ReferentielProgrammation
 from app.services.siret import check_siret
 from app.tasks import limiter_queue
 
-
+from collections import namedtuple
 import pandas
-
+import json
+import requests
+import tempfile
 
 import os
-from app.tasks.financial import logger
 
+from app.tasks.financial import logger
 from app.tasks.financial.errors import _handle_exception_import
 
 
@@ -278,6 +280,9 @@ def import_line_financial_cp(self, data_cp, index, source_region: str, annee: in
     new_cp.id_ae = id_ae
     _insert_financial_data(new_cp)
 
+@limiter_queue(queue_name='file')
+def _send_subtask_ademe_file(filepath: str):
+    subtask("import_file_ademe").delay(filepath)
 
 @limiter_queue(queue_name='line')
 def _send_subtask_ademe(data_ademe: str, tech_info: LineImportTechInfo):
@@ -293,30 +298,51 @@ def _delete_ademe():
     db.session.execute(stmt)
     db.session.commit()
 
+@celery.task(bind=True, name='import_file_ademe_from_website')
+def import_file_ademe_from_website(self, url: str):
+
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                temp_file.write(chunk)
+        
+        logger.info(f"Fichier téléchargé. Import...")
+        _send_subtask_ademe_file(temp_file.name)
+
 
 @celery.task(bind=True, name='import_file_ademe')
-def import_file_ademe(self, fichier):
+def import_file_ademe(self, fichier: str):
     # get file
     logger.info(f'[IMPORT][ADEME] Start for file {fichier}')
     try:
-        current_taskid = current_task.request.id
-        data_ademe_chunk = pandas.read_csv(fichier, sep=",", skiprows=1, names=Ademe.get_columns_files(),
-                                      dtype={'location_lat': float,'pourcentage_subvention':float, 'siret_beneficiaire': str,'siret_attribuant':str,
-                                             'location_lon': float, 'idBeneficiaire': str,"notification_ue": str,
-                                             'idAttribuant': str}, chunksize=1000)
-        _delete_ademe()
+        with open(fichier, 'r') as f:
 
-        i = 0
-        for chunk in data_ademe_chunk:
-            for _,ademe_data in chunk.iterrows():
-                i += 1
-                tech_info = LineImportTechInfo(current_taskid, i)
-                _send_subtask_ademe(ademe_data.to_json(), tech_info)
+            current_taskid = current_task.request.id
+            columns = pandas.read_csv(f, header=0).columns.tolist()
+            f.seek(0)
 
-        logger.info('[IMPORT][ADEME] End')
-        return True
+            data_ademe_chunk = pandas.read_csv(
+                fichier, sep=",", skiprows=1, names=columns,
+                dtype={'pourcentageSubvention':float, 'idBeneficiaire': str,'idAttribuant':str, "notificationUE": str },
+                chunksize=1000
+            )
+
+            _delete_ademe()
+
+            i = 0
+            for chunk in data_ademe_chunk:
+                for _,ademe_data in chunk.iterrows():
+                    i += 1
+                    tech_info = LineImportTechInfo(current_taskid, i)
+                    _send_subtask_ademe(ademe_data.to_json(), tech_info)
+
+            logger.info('[IMPORT][ADEME] End')
+            return True
     except Exception as e:
-        logger.exception(f"[IMPORT][ADEME] Error lors de l'import du fichier {fichier} chorus")
+        logger.exception(f"[IMPORT][ADEME] Error lors de l'import du fichier ademe: {fichier}")
         raise e
     finally:
         os.remove(fichier)
@@ -333,7 +359,7 @@ def import_line_ademe(self, line_ademe: str, tech_info_list: list):
     tech_info = LineImportTechInfo(*tech_info_list)
 
     line = json.loads(line_ademe)
-    new_ademe = Ademe(line)
+    new_ademe = Ademe.from_datagouv_csv_line(line)
     new_ademe.file_import_taskid = tech_info.file_import_taskid
     new_ademe.file_import_lineno = tech_info.lineno
 
